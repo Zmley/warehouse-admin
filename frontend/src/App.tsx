@@ -1,7 +1,7 @@
-import React from 'react'
-import { BrowserRouter as Router } from 'react-router-dom'
-import { AuthProvider } from './contexts/auth'
-import PublicRoute from './routes/PublicRoute'
+import React from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+import { AuthProvider } from "./contexts/auth";
+import PublicRoute from "./routes/PublicRoute";
 
 const App: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ const App: React.FC = () => {
         <PublicRoute />
       </AuthProvider>
     </Router>
-  )
-}
+  );
+};
 
-export default App
+export default App;
