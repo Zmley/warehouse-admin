@@ -55,7 +55,6 @@ let currentLogLevel: number = logger.levels[logger.level]
 
 logger.info(`Logger level is set to ${logger.level}`)
 
-// Refresh log level on runtime
 RnR(() => {
   if (currentLogLevel < avbLogLevels.length - 1) {
     currentLogLevel += 1
@@ -66,7 +65,6 @@ RnR(() => {
     ([, value]) => value === currentLogLevel
   )
   if (found && found.length) {
-    // eslint-disable-next-line
     console.log(
       `${new Date().toISOString()} system: Switch logger level from ${
         logger.level

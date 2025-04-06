@@ -14,8 +14,10 @@ const PrivateRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/adminManagement" element={<AdminManagement />} />
+      <Route
+        path="/admin-management/:warehouseId"
+        element={<AdminManagement />}
+      />{" "}
     </Routes>
   );
 };

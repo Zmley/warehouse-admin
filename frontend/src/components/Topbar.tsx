@@ -1,24 +1,17 @@
-import React, { useState } from "react";
-import {
-  Box,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Typography,
-  Popover,
-} from "@mui/material";
-import { Search, Menu } from "@mui/icons-material";
+import React, { useContext, useState } from "react";
+import { Box, Typography, IconButton, Popover } from "@mui/material";
+import { Menu as MenuIcon } from "@mui/icons-material";
 import Profile from "../pages/Profile";
+import { AuthContext } from "../contexts/auth";
 
 const Topbar: React.FC = () => {
+  const { userProfile } = useContext(AuthContext)!;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // 处理菜单点击
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // 关闭弹窗
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -35,39 +28,27 @@ const Topbar: React.FC = () => {
         boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
       }}
     >
-      {/* 标题 */}
+      {/* 左侧欢迎语 */}
       <Typography variant="h6" sx={{ fontWeight: "bold", color: "#333" }}>
-        Welcome Name!
+        Welcome {userProfile.firstName}!
       </Typography>
 
-      {/* 搜索框 */}
-      <TextField
-        variant="outlined"
-        placeholder="Search"
-        size="small"
-        sx={{
-          width: "250px",
-          borderRadius: "20px",
-          backgroundColor: "#f5f5f5",
-          "& .MuiOutlinedInput-root": {
-            borderRadius: "20px",
-          },
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search />
-            </InputAdornment>
-          ),
-        }}
-      />
+      {/* 中间显示当前仓库 */}
+      {userProfile.warehouseCode ? (
+        <Typography variant="body1" sx={{ color: "#333", fontWeight: "bold" }}>
+          Warehouse: {userProfile.warehouseCode}
+        </Typography>
+      ) : (
+        <Typography variant="body1" sx={{ color: "#999" }}>
+          No Warehouse Selected
+        </Typography>
+      )}
 
-      {/* 菜单按钮 */}
+      {/* 右侧菜单按钮（弹出 Profile） */}
       <IconButton onClick={handleMenuClick}>
-        <Menu sx={{ fontSize: "28px", color: "#333" }} />
+        <MenuIcon sx={{ fontSize: 28, color: "#333" }} />
       </IconButton>
 
-      {/* 弹出 Profile */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
@@ -80,12 +61,10 @@ const Topbar: React.FC = () => {
           vertical: "top",
           horizontal: "right",
         }}
-        sx={{
-          mt: 1,
-        }}
+        sx={{ mt: 1 }}
       >
         <Box sx={{ width: 350, height: 700 }}>
-          <Profile /> {/* 这里加载 Profile.tsx */}
+          <Profile />
         </Box>
       </Popover>
     </Box>

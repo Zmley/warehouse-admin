@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import InventoryPage from "./InventoryPage";
+import TaskPage from "../components/TaskPage";
 
 const AdminManagement: React.FC = () => {
   // 使用 useState 来管理页面状态
@@ -15,9 +16,8 @@ const AdminManagement: React.FC = () => {
     switch (currentPage) {
       case "inventory":
         return <InventoryPage />;
-      // 可以根据需要添加更多的页面
-      // case "tasks":
-      //   return <TaskPage />;
+      case "tasks":
+        return <TaskPage />;
       // case "products":
       //   return <ProductPage />;
       // case "users":

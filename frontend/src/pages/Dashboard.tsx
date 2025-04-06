@@ -1,19 +1,48 @@
 import React from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import useWarehouses from "../hooks/useWarehouses"; // 自定义 hook 用于获取仓库数据
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-
-  const warehouses = [
-    { id: "1", name: "Warehouse 1" },
-    { id: "2", name: "Warehouse 2" },
-    { id: "3", name: "Warehouse 3" },
-  ];
+  const { warehouses, loading, error } = useWarehouses(); // 获取仓库数据
 
   const handleSelectWarehouse = (warehouseId: string) => {
-    navigate(`/dashboard/${warehouseId}`);
+    // 跳转到管理页面
+    navigate(`/admin-management/${warehouseId}`);
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -30,11 +59,11 @@ const Dashboard: React.FC = () => {
       <Box sx={{ display: "flex", gap: 2 }}>
         {warehouses.map((warehouse) => (
           <Button
-            key={warehouse.id}
+            key={warehouse.warehouseID}
             variant="outlined"
-            onClick={() => handleSelectWarehouse(warehouse.id)}
+            onClick={() => handleSelectWarehouse(warehouse.warehouseID)} // 点击仓库后跳转到管理页面
           >
-            {warehouse.name}
+            {warehouse.warehouseCode}
           </Button>
         ))}
       </Box>

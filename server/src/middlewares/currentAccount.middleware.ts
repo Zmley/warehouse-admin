@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express'
-
 import httpStatus from 'http-status'
 import Account from 'routes/accounts/accounts.model'
 import AppError from 'utils/appError'
@@ -10,8 +9,9 @@ const currentAccount = async (
   next: NextFunction
 ) => {
   try {
-    const accountID = res.locals.accountID
+    const { payload } = res.locals
 
+    const accountID = payload.sub
     if (!accountID) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
@@ -20,14 +20,19 @@ const currentAccount = async (
     }
 
     const account = await Account.findOne({ where: { accountID } })
-
     if (!account) {
-      res
+      return res
         .status(httpStatus.UNAUTHORIZED)
         .json({ error: '❌ Unauthorized: Account not found' })
     }
 
     res.locals.currentAccount = account.dataValues
+
+    res.locals.accountID = account.accountID
+    res.locals.role = account.role
+    res.locals.cartID = account.cartID
+    res.locals.warehouseID = account.warehouseID
+
     next()
   } catch (error) {
     res.status(httpStatus.UNAUTHORIZED).json({ error: error.message })

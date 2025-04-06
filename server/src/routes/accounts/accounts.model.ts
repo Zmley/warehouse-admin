@@ -1,16 +1,17 @@
-import { DataTypes, Model } from 'sequelize'
-import { sequelize } from 'config/db'
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "config/db";
+import Warehouse from "routes/warehouses/warehouse.model";
 
 export class Account extends Model {
-  public accountID!: string
-  public email!: string
-  public role!: 'ADMIN' | 'TRANSPORT_WORKER' | 'PICKER' | 'SUPER_ADMIN'
-  public firstName!: string
-  public lastName!: string
-  public cartID!: string | null
-  public warehouseID!: string | null
-  public readonly createdAt!: Date
-  public readonly updatedAt!: Date
+  public accountID!: string;
+  public email!: string;
+  public role!: "ADMIN" | "TRANSPORT_WORKER" | "PICKER" | "SUPER_ADMIN";
+  public firstName!: string;
+  public lastName!: string;
+  public cartID!: string | null;
+  public warehouseID!: string | null;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 Account.init(
@@ -19,53 +20,59 @@ Account.init(
       type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
-      unique: true
+      unique: true,
     },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: { isEmail: true }
+      validate: { isEmail: true },
     },
     role: {
       type: DataTypes.ENUM(
-        'ADMIN',
-        'PICKER',
-        'TRANSPORT_WORKER',
-        'SUPER_ADMIN'
+        "ADMIN",
+        "PICKER",
+        "TRANSPORT_WORKER",
+        "SUPER_ADMIN"
       ),
-      allowNull: false
+      allowNull: false,
     },
     firstName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     lastName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     cartID: {
       type: DataTypes.UUID,
-      allowNull: true
+      allowNull: true,
     },
     warehouseID: {
       type: DataTypes.UUID,
-      allowNull: true
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
     updatedAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
-    }
+      defaultValue: DataTypes.NOW,
+    },
   },
   {
     sequelize,
-    tableName: 'account',
-    timestamps: true
+    tableName: "account",
+    timestamps: true,
   }
-)
+);
 
-export default Account
+// // Account model
+// Account.belongsTo(Warehouse, {
+//   foreignKey: "warehouseID", // 外键字段
+//   targetKey: "warehouseID", // 目标表字段
+// });
+
+export default Account;
