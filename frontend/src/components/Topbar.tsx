@@ -51,7 +51,7 @@ const Topbar: React.FC = () => {
           </IconButton>
         </Tooltip>
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#2e3a59" }}>
-          👋 Welcome back, {userProfile.firstName}!
+          Welcome back, {userProfile.firstName}!
         </Typography>
       </Box>
 

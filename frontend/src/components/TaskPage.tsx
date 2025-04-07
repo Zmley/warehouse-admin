@@ -89,7 +89,7 @@ const AdminTaskPage: React.FC = () => {
         }}
       >
         <Typography variant="h5" sx={{ fontWeight: "bold", color: "#333" }}>
-          📋 All Tasks
+          All Tasks
         </Typography>
         <Button
           variant="contained"
@@ -101,7 +101,7 @@ const AdminTaskPage: React.FC = () => {
             fontWeight: "bold",
           }}
         >
-          ➕ Create Task
+          Create Task
         </Button>
       </Box>
 
@@ -118,7 +118,7 @@ const AdminTaskPage: React.FC = () => {
 
       <Stack direction="row" spacing={2} mb={3} alignItems="center">
         <TextField
-          label="🔍 Search tasks"
+          label="Search tasks"
           variant="outlined"
           size="small"
           value={searchKeyword}
