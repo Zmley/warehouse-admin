@@ -1,4 +1,3 @@
-// warehouses/warehouse.model.ts
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "../../config/db";
 import Account from "routes/accounts/accounts.model";

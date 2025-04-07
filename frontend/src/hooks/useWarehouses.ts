@@ -26,7 +26,7 @@ const useWarehouses = () => {
     };
 
     fetchWarehouses();
-  }, []); // 只在组件加载时调用一次
+  }, []);
 
   return { warehouses, loading, error };
 };

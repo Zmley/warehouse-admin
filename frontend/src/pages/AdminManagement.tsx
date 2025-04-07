@@ -6,12 +6,10 @@ import InventoryPage from "./InventoryPage";
 import TaskPage from "../components/TaskPage";
 
 const AdminManagement: React.FC = () => {
-  // 使用 useState 来管理页面状态
   const [currentPage, setCurrentPage] = useState<
     "inventory" | "tasks" | "products" | "users"
   >("inventory");
 
-  // 根据 currentPage 渲染不同的页面
   const renderPage = () => {
     switch (currentPage) {
       case "inventory":

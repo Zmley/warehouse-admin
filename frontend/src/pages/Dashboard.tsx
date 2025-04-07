@@ -1,14 +1,13 @@
 import React from "react";
 import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import useWarehouses from "../hooks/useWarehouses"; // 自定义 hook 用于获取仓库数据
+import useWarehouses from "../hooks/useWarehouses";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { warehouses, loading, error } = useWarehouses(); // 获取仓库数据
+  const { warehouses, loading, error } = useWarehouses();
 
   const handleSelectWarehouse = (warehouseId: string) => {
-    // 跳转到管理页面
     navigate(`/admin-management/${warehouseId}`);
   };
 

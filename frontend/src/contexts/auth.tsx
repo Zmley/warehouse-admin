@@ -2,7 +2,6 @@ import React, { createContext, useState } from "react";
 import { areTokensValid } from "../utils/Storages";
 import { fetchUserProfile } from "../api/authApi";
 
-// 包含 warehouseCode 的 userProfile 接口
 interface UserProfile {
   firstName: string;
   lastName: string;

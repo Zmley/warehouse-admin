@@ -1,4 +1,3 @@
-// warehouses/warehouse.controller.ts
 import { Request, Response } from "express";
 import {
   getAllWarehouses,
@@ -8,7 +7,6 @@ import {
   deleteWarehouse,
 } from "./warehouse.service";
 
-// 获取所有仓库
 export const getAllWarehousesHandler = async (req: Request, res: Response) => {
   try {
     const warehouses = await getAllWarehouses();
@@ -18,7 +16,6 @@ export const getAllWarehousesHandler = async (req: Request, res: Response) => {
   }
 };
 
-// 获取单个仓库
 export const getWarehouseByIdHandler = async (req: Request, res: Response) => {
   const { warehouseID } = req.params;
   try {
@@ -29,7 +26,6 @@ export const getWarehouseByIdHandler = async (req: Request, res: Response) => {
   }
 };
 
-// 创建仓库
 export const createWarehouseHandler = async (req: Request, res: Response) => {
   const { warehouseCode } = req.body;
   try {
@@ -40,7 +36,6 @@ export const createWarehouseHandler = async (req: Request, res: Response) => {
   }
 };
 
-// 更新仓库
 export const updateWarehouseHandler = async (req: Request, res: Response) => {
   const { warehouseID } = req.params;
   const { warehouseCode } = req.body;
@@ -52,7 +47,6 @@ export const updateWarehouseHandler = async (req: Request, res: Response) => {
   }
 };
 
-// 删除仓库
 export const deleteWarehouseHandler = async (req: Request, res: Response) => {
   const { warehouseID } = req.params;
   try {

@@ -14,7 +14,7 @@ export default function useAdminTasks() {
     try {
       setLoading(true);
       const res = await fetchAllTasksAsAdmin();
-      setTasks(res.tasks); // 注意：解构
+      setTasks(res.tasks);
     } catch (err) {
       console.error("❌ Error fetching admin tasks:", err);
       setError("Failed to fetch tasks");
@@ -31,7 +31,7 @@ export default function useAdminTasks() {
     try {
       await cancelTaskApi(taskID);
       alert("✅ Task canceled successfully.");
-      refetch(); // 关键点：取消后刷新
+      refetch();
     } catch (error) {
       console.error("❌ Failed to cancel task:", error);
       alert("Failed to cancel task.");

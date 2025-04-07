@@ -29,7 +29,7 @@ const Topbar: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1); // 返回上一页
+    navigate(-1);
   };
 
   return (
@@ -44,7 +44,6 @@ const Topbar: React.FC = () => {
         borderBottom: "1px solid #e0e0e0",
       }}
     >
-      {/* 左侧返回按钮 + 欢迎语 */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <Tooltip title="Back">
           <IconButton onClick={handleBack}>
@@ -70,7 +69,6 @@ const Topbar: React.FC = () => {
         </Typography>
       )}
 
-      {/* 右侧头像按钮 */}
       <Tooltip title="Account Settings">
         <IconButton onClick={handleMenuClick}>
           <Avatar sx={{ bgcolor: deepPurple[500] }}>
@@ -79,7 +77,6 @@ const Topbar: React.FC = () => {
         </IconButton>
       </Tooltip>
 
-      {/* 弹出 Profile */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
