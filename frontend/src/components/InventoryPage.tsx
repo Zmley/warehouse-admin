@@ -29,7 +29,6 @@ import { useBin } from "../hooks/useBin";
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleString("en-US", {
-    weekday: "short", // 'Mon'
     year: "numeric", // '2025'
     month: "short", // 'Apr'
     day: "numeric", // '1'
@@ -47,10 +46,10 @@ const InventoryPage: React.FC = () => {
     error,
     removeInventoryItem,
     editInventoryItem,
-    fetchAllInventory, // Ensure this function is available to re-fetch the inventory list
+    fetchAllInventory,
   } = useInventory();
 
-  const { bins, fetchAllBins, loading: binLoading } = useBin(); // 使用 bins 代替 binCodes
+  const { bins, fetchAllBins, loading: binLoading } = useBin();
 
   const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>(
     []
@@ -58,8 +57,6 @@ const InventoryPage: React.FC = () => {
   const [selectedBin, setSelectedBin] = useState<string>("All");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-
-  // 新增：用于打开创建库存模态框
   const [createInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false);
 
@@ -112,9 +109,8 @@ const InventoryPage: React.FC = () => {
     binCode: bin.binCode,
   }));
 
-  // Success callback to refresh inventory after adding an item
   const handleSuccess = () => {
-    fetchAllInventory(); // Refresh inventory list after item is added
+    fetchAllInventory();
   };
 
   return (
@@ -140,11 +136,11 @@ const InventoryPage: React.FC = () => {
               label="Bin Code"
               variant="outlined"
               sx={{
-                minWidth: "300px", // Ensure the input field has a minimum width
-                maxWidth: "600px", // Limit the input field width
-                width: "100%", // Ensure it takes up the available space within its container
+                minWidth: "300px",
+                maxWidth: "600px",
+                width: "100%",
                 "& .MuiInputBase-root": {
-                  height: "50px", // Set the height of the input box
+                  height: "50px",
                 },
               }}
             />
@@ -161,8 +157,8 @@ const InventoryPage: React.FC = () => {
               height: "50px",
               paddingLeft: "20px",
               paddingRight: "20px",
-              alignSelf: "center", // Aligns the button with the input
-              marginLeft: "10px", // Add space between the input and button
+              alignSelf: "center",
+              marginLeft: "10px",
             }}
             onClick={handleCreateInventoryOpen}
           >
@@ -212,7 +208,10 @@ const InventoryPage: React.FC = () => {
                   </TableCell>
                   <TableCell>{formatDate(item.updatedAt)}</TableCell>
                   <TableCell>
-                    <Typography sx={{ color: "#555" }}>
+                    <Typography
+                      sx={{ color: "#555", cursor: "pointer" }}
+                      onClick={() => handleOpenModal(item)} // Clickable quantity
+                    >
                       {item.quantity}
                     </Typography>
                   </TableCell>
@@ -259,7 +258,7 @@ const InventoryPage: React.FC = () => {
           <CreateInventoryItemModal
             open={createInventoryModalOpen}
             onClose={handleCreateInventoryClose}
-            onSuccess={handleSuccess} // Use handleSuccess to re-fetch inventory
+            onSuccess={handleSuccess}
             binCode={selectedBinData?.binCode || ""}
             binID={selectedBinData?.binID || ""}
           />

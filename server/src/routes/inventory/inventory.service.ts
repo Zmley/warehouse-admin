@@ -48,20 +48,24 @@ export const addInventoryItemService = async ({
   quantity: number;
 }) => {
   try {
-    // Check if the product already exists in the specified bin
+    // 查找当前 bin 中是否已经存在该 productCode
     const existingItem = await Inventory.findOne({
       where: { productCode, binID },
     });
 
     if (existingItem) {
-      // If the product already exists in the bin, return an error response
+      // 如果产品已存在，直接增加数量
+      existingItem.quantity += quantity;
+      await existingItem.save(); // 更新数量
+
       return {
-        success: false,
-        message: "This product is already added to the bin.",
+        success: true,
+        message: `Product quantity updated successfully.`,
+        data: existingItem, // 返回更新后的库存项
       };
     }
 
-    // If the product does not exist, create a new inventory item
+    // 如果产品不存在，则创建新的库存项
     const newItem = await Inventory.create({
       productCode,
       binID,
@@ -70,10 +74,10 @@ export const addInventoryItemService = async ({
 
     return {
       success: true,
-      data: newItem, // Return the newly created inventory item
+      data: newItem, // 返回新创建的库存项
     };
   } catch (error) {
-    // Catch and handle any errors
+    // 捕获并处理任何错误
     return {
       success: false,
       message: error.message || "Failed to add inventory item",
