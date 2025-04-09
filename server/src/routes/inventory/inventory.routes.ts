@@ -1,9 +1,21 @@
-import express from 'express'
-import { getInventoriesByCart } from './inventory.controller'
-import transportWorkerOnly from '../../middlewares/transportWorker.middleware'
+// inventory.route.ts
+import express from "express";
+import {
+  getAllInventoriesController,
+  deleteInventoryItemController,
+  addInventoryItemController,
+  updateInventoryItemController,
+} from "./inventory.controller";
+import adminOnly from "../../middlewares/admin.middleware";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/inventoriesInCart', transportWorkerOnly, getInventoriesByCart)
+router.get("/all", adminOnly, getAllInventoriesController);
 
-export default router
+router.delete("/:inventoryID", adminOnly, deleteInventoryItemController); // 新增删除库存
+
+router.post("/", addInventoryItemController);
+
+router.put("/:inventoryID", updateInventoryItemController);
+
+export default router;

@@ -21,15 +21,23 @@ const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState("");
   const [productCode, setProductCode] = useState("");
 
-  const { fetchAllBinCodes } = useBin();
+  // 修改：获取 bin 数据
+  const { bins, fetchAllBins } = useBin();
   const [allBinCodes, setAllBinCodes] = useState<string[]>([]);
 
   const { productCodes, loadProducts } = useProduct();
 
   useEffect(() => {
-    fetchAllBinCodes().then(setAllBinCodes).catch(console.error);
+    fetchAllBins()
+      .then((binsData) => {
+        // 提取 binCode 数组
+        const binCodes = binsData.map((bin) => bin.binCode);
+        setAllBinCodes(binCodes);
+      })
+      .catch(console.error);
+
     loadProducts();
-  }, [fetchAllBinCodes, loadProducts]);
+  }, [fetchAllBins, loadProducts]);
 
   const handleSubmit = async () => {
     try {

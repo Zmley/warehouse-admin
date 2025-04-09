@@ -1,36 +1,35 @@
+// src/components/FilterComponent.tsx
 import React from "react";
-import { Box, Select, MenuItem, Button } from "@mui/material";
+import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 
-interface FilterProps {
+interface FilterComponentProps {
   selectedBin: string;
-  setSelectedBin: (bin: string) => void;
+  setSelectedBin: (binID: string) => void;
   bins: { binID: string; binCode: string }[];
   onNewProductClick: () => void;
 }
 
-const FilterComponent: React.FC<FilterProps> = ({
+const FilterComponent: React.FC<FilterComponentProps> = ({
   selectedBin,
   setSelectedBin,
   bins,
   onNewProductClick,
 }) => {
   return (
-    <Box
-      sx={{
-        marginBottom: 2,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "#d2e0f0",
-        padding: "10px",
-        borderRadius: "8px",
-      }}
-    >
+    <FormControl sx={{ minWidth: 200, mb: 2 }}>
+      <InputLabel id="bin-select-label">Bin</InputLabel>
       <Select
+        labelId="bin-select-label"
         value={selectedBin}
         onChange={(e) => setSelectedBin(e.target.value)}
-        size="small"
-        sx={{ width: "150px" }}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 200, // ✅ 设置最大高度
+              overflowY: "auto", // ✅ 出现滚动条
+            },
+          },
+        }}
       >
         <MenuItem value="All">All Bins</MenuItem>
         {bins.map((bin) => (
@@ -39,11 +38,7 @@ const FilterComponent: React.FC<FilterProps> = ({
           </MenuItem>
         ))}
       </Select>
-
-      <Button variant="contained" color="primary" onClick={onNewProductClick}>
-        + New Product
-      </Button>
-    </Box>
+    </FormControl>
   );
 };
 

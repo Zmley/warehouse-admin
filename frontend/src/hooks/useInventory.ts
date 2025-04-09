@@ -1,3 +1,4 @@
+// src/hooks/useInventory.ts
 import { useEffect, useState } from "react";
 import {
   fetchInventory,
@@ -6,59 +7,33 @@ import {
   updateInventoryItem,
 } from "../api/inventoryApi";
 import { InventoryItem } from "../types/inventoryTypes";
-import { useInventoryContext } from "../contexts/Inventory";
 
 const useInventory = () => {
-  const { inventory, setInventory } = useInventoryContext();
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Function to fetch all inventory items
+  const fetchAllInventory = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchInventory();
+      setInventory(data.inventory);
+      setError(null);
+    } catch (err) {
+      setError("❌ Failed to fetch inventory data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchInventory();
-        setInventory(data);
-      } catch (err) {
-        setError("❌ Failed to fetch inventory data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [setInventory]);
+    fetchAllInventory(); // Load inventory when the component mounts
+  }, []);
 
   const removeInventoryItem = async (id: string) => {
     await deleteInventoryItem(id);
-    setInventory((prevInventory) =>
-      prevInventory.filter((item) => item.id !== id)
-    );
-  };
-
-  const addNewItem = async (item: Omit<InventoryItem, "id">) => {
-    const existingItem = inventory.find(
-      (i) =>
-        i.warehouse_code === item.warehouse_code &&
-        i.bin_code === item.bin_code &&
-        i.product_code === item.product_code
-    );
-
-    if (existingItem) {
-      const updatedQuantity = existingItem.quantity + item.quantity;
-
-      await updateInventoryItem(existingItem.id, { quantity: updatedQuantity });
-
-      setInventory((prevInventory) =>
-        prevInventory.map((inv) =>
-          inv.id === existingItem.id
-            ? { ...inv, quantity: updatedQuantity }
-            : inv
-        )
-      );
-    } else {
-      const newItem = await addInventoryItem(item);
-      setInventory((prevInventory) => [...prevInventory, newItem]);
-    }
+    setInventory((prev) => prev.filter((item) => item.inventoryID !== id));
   };
 
   const editInventoryItem = async (
@@ -66,9 +41,9 @@ const useInventory = () => {
     updatedData: Partial<InventoryItem>
   ) => {
     await updateInventoryItem(id, updatedData);
-    setInventory((prevInventory) =>
-      prevInventory.map((item) =>
-        item.id === id ? { ...item, ...updatedData } : item
+    setInventory((prev) =>
+      prev.map((item) =>
+        item.inventoryID === id ? { ...item, ...updatedData } : item
       )
     );
   };
@@ -78,8 +53,8 @@ const useInventory = () => {
     loading,
     error,
     removeInventoryItem,
-    addNewItem,
     editInventoryItem,
+    fetchAllInventory, // Added function to refresh inventory
   };
 };
 

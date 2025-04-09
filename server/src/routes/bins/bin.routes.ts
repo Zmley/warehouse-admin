@@ -2,7 +2,7 @@ import express from "express";
 import {
   getBinByCode,
   getBinCodes,
-  getAllBinCodesInWarehouse,
+  getBinsForWarehouse,
 } from "./bin.controller";
 
 const router = express.Router();
@@ -11,6 +11,6 @@ router.get("/:binCode", getBinByCode);
 
 router.get("/code/:productCode", getBinCodes);
 
-router.get("/", getAllBinCodesInWarehouse);
+router.get("/", getBinsForWarehouse);
 
 export default router;

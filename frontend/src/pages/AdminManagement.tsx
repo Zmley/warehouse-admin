@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Box } from "@mui/material";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import InventoryPage from "./InventoryPage";
 import TaskPage from "../components/TaskPage";
+import InventoryPage from "../components/InventoryPage";
 
 const AdminManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<

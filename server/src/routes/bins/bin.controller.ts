@@ -1,8 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { getBinByBinCode } from "./bin.service";
-import { getBinCodesByProductCode } from "../bins/bin.service";
+import {
+  getBinCodesByProductCode,
+  getAllBinsInWarehouse,
+} from "../bins/bin.service";
 import AppError from "utils/appError";
 import Bin from "./bin.model";
+const express = require("express");
+const router = express.Router();
 
 export const getBinByCode = async (
   req: Request,
@@ -45,28 +50,17 @@ export const getBinCodes = async (
   }
 };
 
-export const getAllBinCodesInWarehouse = async (
+export const getBinsForWarehouse = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
-    const { warehouseID } = res.locals;
-
-    if (!warehouseID) {
-      throw new AppError(400, "Warehouse ID is missing in request");
-    }
-
-    const bins = await Bin.findAll({
-      where: { warehouseID },
-      attributes: ["binCode"],
-    });
-
-    const binCodes = bins.map((bin) => bin.binCode);
-
+    const warehouseID = res.locals.warehouseID; // 或者你从 req.user 拿
+    const bins = await getAllBinsInWarehouse(warehouseID);
     res.status(200).json({
-      message: "All bin codes fetched successfully",
-      binCodes,
+      message: "All bins fetched successfully",
+      bins,
     });
   } catch (error) {
     next(error);

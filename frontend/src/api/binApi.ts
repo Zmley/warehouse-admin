@@ -13,7 +13,15 @@ export const getBinCodesByProductCode = async (
   return response.data.binCodes;
 };
 
-export const getAllBinCodesInWarehouse = async (): Promise<string[]> => {
-  const response = await apiClient.get("/bins/");
-  return response.data.binCodes;
+export const getBinsInWarehouse = async (): Promise<
+  { binID: string; binCode: string }[]
+> => {
+  const response = await apiClient.get("/bins");
+  return response.data.bins;
+};
+
+export const deleteBinInWarehouse = async (binID: string): Promise<any> => {
+  // 调用删除 bin 的 API
+  const response = await apiClient.delete(`/bins/${binID}`);
+  return response.data;
 };

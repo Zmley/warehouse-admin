@@ -7,6 +7,7 @@ import warehouseRoutes from "routes/warehouses/warehouse.router";
 import tasks from "routes/tasks/task.routes";
 import bins from "routes/bins/bin.routes";
 import products from "routes/products/product.routes";
+import inventories from "routes/inventory/inventory.routes";
 
 const router: Router = Router();
 router.use(healthCheck);
@@ -16,5 +17,6 @@ router.use("/warehouses", warehouseRoutes);
 router.use("/tasks", tasks);
 router.use("/bins", bins);
 router.use("/products", products);
+router.use("/Inventories", inventories);
 
 export default router;
