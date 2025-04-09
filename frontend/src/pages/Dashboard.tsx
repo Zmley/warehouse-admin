@@ -1,14 +1,26 @@
-import React from "react";
-import { Box, Button, Typography, CircularProgress } from "@mui/material";
+import React, { useContext } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useWarehouses from "../hooks/useWarehouses";
+import { useAuth } from "../hooks/useAuth";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { warehouses, loading, error } = useWarehouses();
+  const { userProfile } = useAuth();
 
   const handleSelectWarehouse = (warehouseId: string) => {
-    navigate(`/admin-management/${warehouseId}`);
+    if (userProfile.warehouseID === warehouseId) {
+      navigate(`/admin-management/${warehouseId}`);
+    } else {
+      alert("You are not authorized to manage this warehouse.");
+    }
   };
 
   if (loading) {
@@ -60,7 +72,7 @@ const Dashboard: React.FC = () => {
           <Button
             key={warehouse.warehouseID}
             variant="outlined"
-            onClick={() => handleSelectWarehouse(warehouse.warehouseID)} // 点击仓库后跳转到管理页面
+            onClick={() => handleSelectWarehouse(warehouse.warehouseID)} // 判断并跳转
           >
             {warehouse.warehouseCode}
           </Button>
