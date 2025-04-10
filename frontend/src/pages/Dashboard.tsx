@@ -12,7 +12,7 @@ const Dashboard: React.FC = () => {
     if (userProfile.warehouseID === warehouseID) {
       navigate(`/admin-management/${warehouseID}`);
     } else {
-      alert("You are not authorized to manage this warehouse.");
+      navigate(`/admin-management/${warehouseID}`);
     }
   };
 
@@ -65,7 +65,7 @@ const Dashboard: React.FC = () => {
           <Button
             key={warehouse.warehouseID}
             variant="outlined"
-            onClick={() => handleSelectWarehouse(warehouse.warehouseID)} // 判断并跳转
+            onClick={() => handleSelectWarehouse(warehouse.warehouseID)}
           >
             {warehouse.warehouseCode}
           </Button>
