@@ -8,9 +8,9 @@ const Dashboard: React.FC = () => {
   const { warehouses, loading, error } = useWarehouses();
   const { userProfile } = useAuth();
 
-  const handleSelectWarehouse = (warehouseId: string) => {
-    if (userProfile.warehouseID === warehouseId) {
-      navigate(`/admin-management/${warehouseId}`);
+  const handleSelectWarehouse = (warehouseID: string) => {
+    if (userProfile.warehouseID === warehouseID) {
+      navigate(`/admin-management/${warehouseID}`);
     } else {
       alert("You are not authorized to manage this warehouse.");
     }
