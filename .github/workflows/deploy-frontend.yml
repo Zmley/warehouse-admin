@@ -21,7 +21,7 @@ jobs:
         run: yarn build
         working-directory: frontend
         env:
-          REACT_APP_SERVER_API_BASE_URL: "https://18.118.137.232:6100"
+          REACT_APP_SERVER_API_BASE_URL: "http://18.118.137.232:6100"
           PORT: "3100"
 
       - name: Deploy to S3
