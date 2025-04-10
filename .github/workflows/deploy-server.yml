@@ -1,0 +1,45 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - admin-dashboard
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu
+
+            if [ -d "warehouse-admin" ]; then
+              echo "Deleting old project files"
+              rm -rf warehouse-admin
+            fi
+
+            echo "Cloning the repository"
+            git clone --filter=blob:none --no-checkout https://github.com/Zmley/warehouse-admin
+            cd warehouse-admin
+            git checkout admin-dashboard
+
+            git sparse-checkout init --cone
+            git sparse-checkout set server
+
+            cd server
+
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            sudo npm install -g yarn pm2
+
+            yarn install
+
+            yarn build
+
+            pm2 restart server || pm2 start dist/server.js --name server
