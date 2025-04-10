@@ -19,7 +19,6 @@ import {
   TablePagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterComponent from "../components/FilterComponent";
 import QuantityEditModal from "../components/QuantityEditModal";
 import CreateInventoryItemModal from "../components/CreateInventoryForm"; // 引入创建库存项的模态框组件
 import { InventoryItem } from "../types/inventoryTypes";

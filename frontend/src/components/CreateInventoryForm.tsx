@@ -8,9 +8,7 @@ import {
   TextField,
   Autocomplete,
   Alert,
-  Box,
   Stack,
-  Typography,
   Paper,
 } from "@mui/material";
 import { addInventoryItem } from "../api/inventoryApi";

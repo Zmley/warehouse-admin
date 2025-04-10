@@ -9,7 +9,7 @@ import {
   Tooltip,
   Divider,
 } from "@mui/material";
-import { ArrowBack, AccountCircle } from "@mui/icons-material";
+import { ArrowBack } from "@mui/icons-material";
 import { deepPurple } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/auth";

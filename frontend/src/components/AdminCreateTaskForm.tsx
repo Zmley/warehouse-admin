@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
   Button,
   Stack,
   TextField,
@@ -21,8 +20,7 @@ const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState("");
   const [productCode, setProductCode] = useState("");
 
-  // 修改：获取 bin 数据
-  const { bins, fetchAllBins } = useBin();
+  const { fetchAllBins } = useBin();
   const [allBinCodes, setAllBinCodes] = useState<string[]>([]);
 
   const { productCodes, loadProducts } = useProduct();
