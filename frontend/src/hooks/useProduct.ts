@@ -3,7 +3,7 @@ import { getProducts } from "../api/productApi";
 
 export const useProduct = () => {
   const [productCodes, setProductCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(false); // Add loading state
+  const [loading] = useState<boolean>(false);
 
   const loadProducts = useCallback(async () => {
     try {

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   fetchInventory,
   deleteInventoryItem,
-  addInventoryItem,
   updateInventoryItem,
 } from "../api/inventoryApi";
 import { InventoryItem } from "../types/inventoryTypes";

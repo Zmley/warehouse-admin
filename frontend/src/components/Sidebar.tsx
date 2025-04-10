@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Tooltip,
-  Stack,
-  Icon,
-  IconButton,
-} from "@mui/material";
+import { Box, Typography, Tooltip, Stack, Icon } from "@mui/material";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import CategoryIcon from "@mui/icons-material/Category";
