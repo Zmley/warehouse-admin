@@ -27,7 +27,7 @@ const AdminTaskPage: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [page, setPage] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const rowsPerPage = 20;
+  const rowsPerPage = 10;
 
   const handleOpen = () => setOpenDialog(true);
   const handleClose = () => setOpenDialog(false);

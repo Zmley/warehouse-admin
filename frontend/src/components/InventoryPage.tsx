@@ -16,6 +16,7 @@ import {
   Dialog,
   Autocomplete,
   TextField,
+  TablePagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FilterComponent from "../components/FilterComponent";
@@ -59,6 +60,10 @@ const InventoryPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [createInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false);
+
+  // 分页状态
+  const [page, setPage] = useState(0); // 当前页数
+  const [rowsPerPage, setRowsPerPage] = useState(10); // 每页展示20项
 
   // 🔁 页面加载时拉取 bins 数据
   useEffect(() => {
@@ -112,6 +117,23 @@ const InventoryPage: React.FC = () => {
   const handleSuccess = () => {
     fetchAllInventory();
   };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0); // Reset to first page when rows per page change
+  };
+
+  // 计算分页
+  const currentItems = filteredInventory.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <Box sx={{ padding: "20px" }}>
@@ -186,8 +208,8 @@ const InventoryPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredInventory.length > 0 ? (
-              filteredInventory.map((item) => (
+            {currentItems.length > 0 ? (
+              currentItems.map((item) => (
                 <TableRow
                   key={item.inventoryID}
                   sx={{ "&:hover": { backgroundColor: "#f5f5f5" } }}
@@ -238,6 +260,17 @@ const InventoryPage: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Table Pagination */}
+      <TablePagination
+        rowsPerPageOptions={[20, 50, 100]}
+        component="div"
+        count={filteredInventory.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       {selectedItem && (
         <QuantityEditModal
