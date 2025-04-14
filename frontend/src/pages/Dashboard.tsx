@@ -11,7 +11,8 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchWarehouses()
-  }, [fetchWarehouses])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSelectWarehouse = (
     warehouseID: string,
