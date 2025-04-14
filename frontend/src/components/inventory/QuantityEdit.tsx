@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -6,16 +6,16 @@ import {
   DialogActions,
   Button,
   TextField,
-  CircularProgress,
-} from "@mui/material";
-import { updateInventory } from "../../api/inventoryApi";
+  CircularProgress
+} from '@mui/material'
+import { updateInventory } from '../../api/inventoryApi'
 
 interface QuantityEditModalProps {
-  open: boolean;
-  onClose: () => void;
-  inventoryId: string;
-  initialQuantity: number;
-  onQuantityUpdated: (updatedQuantity: number) => void;
+  open: boolean
+  onClose: () => void
+  inventoryId: string
+  initialQuantity: number
+  onQuantityUpdated: (updatedQuantity: number) => void
 }
 
 const QuantityEdit: React.FC<QuantityEditModalProps> = ({
@@ -23,42 +23,42 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
   onClose,
   inventoryId,
   initialQuantity,
-  onQuantityUpdated,
+  onQuantityUpdated
 }) => {
-  const [newQuantity, setNewQuantity] = useState<number>(initialQuantity);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [newQuantity, setNewQuantity] = useState<number>(initialQuantity)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSave = async () => {
     if (!inventoryId) {
-      setError("❌ Missing inventory ID");
-      return;
+      setError('❌ Missing inventory ID')
+      return
     }
 
     try {
-      setLoading(true);
+      setLoading(true)
       console.log(
         `🟢 Sending API Request: /api/inventory/${inventoryId} with quantity:`,
         newQuantity
-      );
-      await updateInventory(inventoryId, { quantity: newQuantity });
-      onQuantityUpdated(newQuantity);
-      onClose();
+      )
+      await updateInventory(inventoryId, { quantity: newQuantity })
+      onQuantityUpdated(newQuantity)
+      onClose()
     } catch (err) {
-      setError("❌ Failed to update quantity");
-      console.error("❌ Error updating inventory:", err);
+      setError('❌ Failed to update quantity')
+      console.error('❌ Error updating inventory:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>🔄 Update Quantity</DialogTitle>
       <DialogContent>
         <TextField
-          type="number"
+          type='number'
           value={newQuantity}
-          onChange={(e) => setNewQuantity(Number(e.target.value))}
+          onChange={e => setNewQuantity(Number(e.target.value))}
           fullWidth
           sx={{ mt: 2 }}
           error={!!error}
@@ -66,20 +66,20 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="secondary" disabled={loading}>
+        <Button onClick={onClose} color='secondary' disabled={loading}>
           Cancel
         </Button>
         <Button
           onClick={handleSave}
-          color="primary"
-          variant="contained"
+          color='primary'
+          variant='contained'
           disabled={loading}
         >
-          {loading ? <CircularProgress size={24} /> : "Save"}
+          {loading ? <CircularProgress size={24} /> : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>
-  );
-};
+  )
+}
 
-export default QuantityEdit;
+export default QuantityEdit
