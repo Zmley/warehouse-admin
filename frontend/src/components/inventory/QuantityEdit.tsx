@@ -8,7 +8,7 @@ import {
   TextField,
   CircularProgress
 } from '@mui/material'
-import { updateInventory } from '../../api/inventoryApi'
+import { useInventory } from '../../hooks/useInventory'
 
 interface QuantityEditModalProps {
   open: boolean
@@ -28,6 +28,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
   const [newQuantity, setNewQuantity] = useState<number>(initialQuantity)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const { editInventoryItem } = useInventory()
 
   const handleSave = async () => {
     if (!inventoryId) {
@@ -41,7 +42,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         `🟢 Sending API Request: /api/inventory/${inventoryId} with quantity:`,
         newQuantity
       )
-      await updateInventory(inventoryId, { quantity: newQuantity })
+      await editInventoryItem(inventoryId, { quantity: newQuantity })
       onQuantityUpdated(newQuantity)
       onClose()
     } catch (err) {

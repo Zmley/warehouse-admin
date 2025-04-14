@@ -11,7 +11,7 @@ import {
   Stack,
   Paper
 } from '@mui/material'
-import { addInventory } from '../../api/inventoryApi'
+import { useInventory } from '../../hooks/useInventory'
 import { useProduct } from '../../hooks/useProduct'
 
 interface Props {
@@ -38,6 +38,8 @@ const CreateInventory: React.FC<Props> = ({
     'success' | 'error' | undefined
   >(undefined)
 
+  const { addInventoryItem } = useInventory()
+
   useEffect(() => {
     if (open) {
       loadProducts()
@@ -46,7 +48,7 @@ const CreateInventory: React.FC<Props> = ({
 
   const handleCreateInventory = async () => {
     try {
-      const response = await addInventory({
+      const response = await addInventoryItem({
         productCode,
         binID,
         quantity

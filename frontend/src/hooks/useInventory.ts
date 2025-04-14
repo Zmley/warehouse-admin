@@ -2,7 +2,8 @@ import { useState } from 'react'
 import {
   fetchInventory,
   deleteInventory,
-  updateInventory
+  updateInventory,
+  addInventory
 } from '../api/inventoryApi'
 import { InventoryItem } from '../types/inventoryTypes'
 import { useParams } from 'react-router-dom'
@@ -47,12 +48,25 @@ export const useInventory = () => {
     )
   }
 
+  const addInventoryItem = async (newItem: {
+    productCode: string
+    binID: string
+    quantity: number
+  }) => {
+    const response = await addInventory(newItem)
+    if (response.inventory) {
+      setInventory(prev => [...prev, response.inventory])
+    }
+    return response
+  }
+
   return {
     inventory,
     loading,
     error,
     removeInventoryItem,
     editInventoryItem,
-    fetchAllInventory
+    fetchAllInventory,
+    addInventoryItem
   }
 }
