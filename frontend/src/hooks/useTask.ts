@@ -1,6 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { fetchTasks, cancelTask as cancelTaskApi } from '../api/taskApi'
+import {
+  fetchTasks,
+  cancelTask as cancelTaskApi,
+  createTask
+} from '../api/taskApi'
 import { useParams } from 'react-router-dom'
+
+interface CreateTaskPayload {
+  sourceBinCode: string
+  destinationBinCode: string
+  productCode: string
+}
 
 export default function useTask() {
   const [tasks, setTasks] = useState<any[]>([])
@@ -39,5 +49,20 @@ export default function useTask() {
     }
   }
 
-  return { tasks, loading, error, cancelTask, refetch }
+  const handleCreateTask = async (payload: CreateTaskPayload) => {
+    try {
+      setLoading(true)
+      const result = await createTask(payload)
+      setError(null)
+      return result
+    } catch (err: any) {
+      console.error('❌ Failed to create task:', err)
+      setError('Failed to create task')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { tasks, loading, error, cancelTask, refetch, handleCreateTask }
 }

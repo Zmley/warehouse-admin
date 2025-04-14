@@ -12,7 +12,7 @@ export const createTask = async (payload: {
   destinationBinCode: string
   productCode: string
 }) => {
-  const response = await apiClient.post('/tasks/', payload)
+  const response = await apiClient.post('/tasks/admin', payload)
   return response.data
 }
 
