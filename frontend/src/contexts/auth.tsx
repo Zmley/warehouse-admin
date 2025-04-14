@@ -7,7 +7,6 @@ interface UserProfile {
   lastName: string
   email: string
   role: string
-  warehouseID: string
 }
 
 interface AuthContextType {
@@ -27,12 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     firstName: '',
     lastName: '',
     email: '',
-    role: '',
-    warehouseID: ''
+    role: ''
   })
 
-  const [isAuthenticated, setIsAuthenticated] =
-    useState<boolean>(areTokensValid())
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    areTokensValid()
+  )
 
   const getMe = async () => {
     const account = await fetchUserProfile()
@@ -40,8 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       firstName: account.firstName,
       lastName: account.lastName,
       email: account.email,
-      role: account.role,
-      warehouseID: account.warehouse?.warehouseID || ''
+      role: account.role
     })
   }
 
