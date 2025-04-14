@@ -35,12 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getMe = async () => {
     const account = await fetchUserProfile()
-    setUserProfile({
-      firstName: account.firstName,
-      lastName: account.lastName,
-      email: account.email,
-      role: account.role
-    })
+    setUserProfile(account)
   }
 
   return (
