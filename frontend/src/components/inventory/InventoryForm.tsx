@@ -18,7 +18,7 @@ import {
 import QuantityEditModal from "./QuantityEdit";
 import CreateInventoryItemModal from "./CreateInventory";
 import { InventoryItem } from "../../types/inventoryTypes";
-import useInventory from "../../hooks/useInventory";
+import { useInventory } from "../../hooks/useInventory";
 import { useBin } from "../../hooks/useBin";
 import { useParams } from "react-router-dom";
 import { formatDate } from "../../utils/format";

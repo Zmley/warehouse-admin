@@ -7,22 +7,19 @@ import {
 import { InventoryItem } from "../types/inventoryTypes";
 import { useParams } from "react-router-dom";
 
-const useInventory = () => {
+export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { warehouseID } = useParams();
 
-  // Function to fetch all inventory items
   const fetchAllInventory = async () => {
     try {
       setLoading(true);
-
       if (!warehouseID) {
         setError("❌ No warehouse selected.");
         return;
       }
-
       const data = await fetchInventory(warehouseID);
       setInventory(data.inventory);
       setError(null);
@@ -32,10 +29,6 @@ const useInventory = () => {
       setLoading(false);
     }
   };
-
-  // useEffect(() => {
-  //   fetchAllInventory(); // Load inventory when the component mounts
-  // }, []);
 
   const removeInventoryItem = async (id: string) => {
     await deleteInventoryItem(id);
@@ -60,8 +53,6 @@ const useInventory = () => {
     error,
     removeInventoryItem,
     editInventoryItem,
-    fetchAllInventory, // Added function to refresh inventory
+    fetchAllInventory,
   };
 };
-
-export default useInventory;

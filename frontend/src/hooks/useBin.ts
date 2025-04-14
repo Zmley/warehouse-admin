@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { getBinsInWarehouse } from "../api/binApi";
 
 export const useBin = (autoLoad: boolean = false) => {
@@ -22,12 +22,6 @@ export const useBin = (autoLoad: boolean = false) => {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    if (autoLoad) {
-      fetchAllBins();
-    }
-  }, [autoLoad, fetchAllBins]);
 
   return {
     bins,
