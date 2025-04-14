@@ -1,101 +1,90 @@
-import React from 'react'
-import {
-  Typography,
-  Box,
-  IconButton,
-  BottomNavigation,
-  BottomNavigationAction
-} from '@mui/material'
-import { Menu as MenuIcon } from '@mui/icons-material'
+import { useEffect, useState } from 'react'
+import { Box, Button, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { getAllWarehouses } from '../api/warehouseApi'
+import Topbar from '../components/Topbar'
+
+interface Warehouse {
+  warehouseID: string
+  warehouseCode: string
+}
 
 const Dashboard: React.FC = () => {
-  const { userProfile } = useAuth()
   const navigate = useNavigate()
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#F7F9FC'
-      }}
-    >
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchWarehouses = async () => {
+      try {
+        const data = await getAllWarehouses()
+        setWarehouses(data)
+      } catch (err) {
+        setError('Error fetching warehouses')
+        console.error(err)
+      }
+    }
+
+    fetchWarehouses()
+  }, [])
+
+  const handleSelectWarehouse = (
+    warehouseID: string,
+    warehouseCode: string
+  ) => {
+    navigate(`/${warehouseID}/${warehouseCode}`)
+  }
+
+  if (error) {
+    return (
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px',
-          backgroundColor: '#FFF',
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <IconButton onClick={() => navigate('/profile')}>
-          <MenuIcon sx={{ fontSize: '28px', color: '#333' }} />
-        </IconButton>
-
-        <Typography variant='h6' sx={{ fontWeight: 'bold', color: '#333' }}>
-          Hello, {userProfile.firstName} {userProfile.lastName}!
-        </Typography>
-
-        <Box sx={{ width: '48px' }} />
-      </Box>
-
-      <Box
-        sx={{
-          flexGrow: 1,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          textAlign: 'center'
+          height: '100vh'
         }}
       >
-        <Typography variant='h6' sx={{ color: '#666' }}>
-          🚧 Task List Section (Under Development)
+        <Typography variant='h6' color='error'>
+          {error}
         </Typography>
       </Box>
+    )
+  }
 
-      <BottomNavigation
-        showLabels
+  return (
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Topbar />
+      <Box
         sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: '#FFF',
-          boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.1)'
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
-        <BottomNavigationAction
-          label='Task List'
-          showLabel
-          icon={
-            <img
-              src='/Vector-2.png'
-              alt='Task List'
-              style={{ width: 24, height: 24 }}
-            />
-          }
-          onClick={() => navigate('/task-list')}
-          sx={{ minWidth: '50%' }}
-        />
-        <BottomNavigationAction
-          label='Create new task'
-          showLabel
-          icon={
-            <img
-              src='/Vector.png'
-              alt='Create new task'
-              style={{ width: 24, height: 24 }}
-            />
-          }
-          onClick={() => navigate('/create-task')}
-          sx={{ minWidth: '50%' }}
-        />
-      </BottomNavigation>
+        <Typography variant='h4' gutterBottom>
+          Select a Warehouse
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {warehouses.map(warehouse => (
+            <Button
+              key={warehouse.warehouseID}
+              variant='outlined'
+              onClick={() =>
+                handleSelectWarehouse(
+                  warehouse.warehouseID,
+                  warehouse.warehouseCode
+                )
+              }
+            >
+              {warehouse.warehouseCode}
+            </Button>
+          ))}
+        </Box>
+      </Box>
     </Box>
   )
 }
