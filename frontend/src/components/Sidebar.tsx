@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Tooltip, Stack, Icon } from "@mui/material";
+import { Box, Typography, Tooltip, Icon } from "@mui/material";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import CategoryIcon from "@mui/icons-material/Category";
@@ -22,49 +22,52 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentPage }) => {
   return (
     <Box
       sx={{
-        width: 110,
-        height: "100vh",
-        backgroundColor: "#3F72AF",
+        width: 120,
+        height: "%100",
+        backgroundColor: "#2f3e4e", // 专业风格深蓝灰色
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        pt: 8,
-        boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
+        justifyContent: "space-around",
+        py: 4,
+        boxShadow: "4px 0 10px rgba(0,0,0,0.1)",
       }}
     >
-      <Stack spacing={4} alignItems="center" width="100%">
-        {sidebarItems.map((item, index) => (
-          <Tooltip title={item.label} placement="right" key={index}>
-            <Box
-              onClick={() =>
-                setCurrentPage(
-                  item.page as "inventory" | "tasks" | "products" | "users"
-                )
-              }
+      {sidebarItems.map((item, index) => (
+        <Tooltip title={item.label} placement="right" key={index}>
+          <Box
+            onClick={() =>
+              setCurrentPage(
+                item.page as "inventory" | "tasks" | "products" | "users"
+              )
+            }
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              color: "#ffffff",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                color: "#90caf9", // Material UI 的蓝色高亮
+                transform: "scale(1.1)",
+              },
+            }}
+          >
+            <Icon sx={{ fontSize: 30, mb: 0.5 }}>{item.icon}</Icon>
+            <Typography
+              variant="caption"
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                color: "#fff",
-                cursor: "pointer",
-                "&:hover": {
-                  color: "#FFD700",
-                  transform: "scale(1.05)",
-                  transition: "all 0.3s ease",
-                },
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                textAlign: "center",
               }}
             >
-              <Icon sx={{ fontSize: 30 }}>{item.icon}</Icon>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, fontSize: "0.8rem", mt: 0.5 }}
-              >
-                {item.label}
-              </Typography>
-            </Box>
-          </Tooltip>
-        ))}
-      </Stack>
+              {item.label}
+            </Typography>
+          </Box>
+        </Tooltip>
+      ))}
     </Box>
   );
 };

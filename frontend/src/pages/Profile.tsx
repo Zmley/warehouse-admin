@@ -1,17 +1,6 @@
 import React from "react";
-import {
-  Container,
-  Typography,
-  Box,
-  IconButton,
-  Button,
-  Avatar,
-  Divider,
-} from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-  Logout as LogoutIcon,
-} from "@mui/icons-material";
+import { Typography, Box, Avatar, Divider, Button } from "@mui/material";
+import { Logout as LogoutIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
@@ -20,123 +9,59 @@ const Profile: React.FC = () => {
   const { handleLogout, userProfile } = useAuth();
 
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        textAlign: "center",
-        padding: "20px",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <IconButton
-          onClick={() => navigate("/")}
-          sx={{ alignSelf: "flex-start" }}
+    <Box sx={{ fontSize: "0.8rem", px: 1, py: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+        <Avatar src="/profile.jpg" sx={{ width: 36, height: 36, mr: 1 }} />
+        <Box>
+          <Typography sx={{ fontWeight: "bold", fontSize: "0.85rem" }}>
+            {userProfile?.firstName} {userProfile?.lastName}
+          </Typography>
+          <Typography sx={{ fontSize: "0.75rem", color: "#555" }}>
+            {userProfile?.email}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Divider sx={{ my: 1 }} />
+
+      <Box sx={{ mb: 1 }}>
+        <Typography
+          sx={{ fontWeight: "bold", fontSize: "0.75rem", color: "#777" }}
         >
-          <ArrowBackIcon sx={{ fontSize: "28px", color: "#333" }} />
-        </IconButton>
-      </Box>
-
-      <Typography
-        variant="h4"
-        sx={{
-          fontWeight: "bold",
-          color: "black",
-          textAlign: "left",
-          marginBottom: "20px",
-          paddingLeft: "8px",
-        }}
-      >
-        Profile
-      </Typography>
-
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          textAlign: "left",
-          paddingLeft: "16px",
-          mb: 2,
-        }}
-      >
-        <Avatar
-          src="/profile.jpg"
-          sx={{ width: 70, height: 70, marginRight: "12px" }}
-        />
-        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          {userProfile?.firstName} {userProfile?.lastName}
-        </Typography>
-      </Box>
-
-      <Box sx={{ textAlign: "left", paddingLeft: "16px", width: "100%" }}>
-        <Typography sx={{ fontWeight: "bold", color: "#666", mb: 0.5 }}>
-          Username
-        </Typography>
-        <Typography sx={{ color: "#2279B8", fontWeight: "bold", mb: 1 }}>
-          {userProfile?.email}
-        </Typography>
-        <Divider sx={{ width: "80%", borderColor: "#DDD" }} />
-
-        <Typography sx={{ fontWeight: "bold", color: "#666", mt: 2, mb: 0.5 }}>
-          First Name
-        </Typography>
-        <Typography sx={{ color: "#2279B8", fontWeight: "bold", mb: 1 }}>
-          {userProfile?.firstName}
-        </Typography>
-        <Divider sx={{ width: "80%", borderColor: "#DDD" }} />
-
-        <Typography sx={{ fontWeight: "bold", color: "#666", mt: 2, mb: 0.5 }}>
-          Last Name
-        </Typography>
-        <Typography sx={{ color: "#2279B8", fontWeight: "bold", mb: 1 }}>
-          {userProfile?.lastName}
-        </Typography>
-        <Divider sx={{ width: "80%", borderColor: "#DDD" }} />
-
-        <Typography sx={{ fontWeight: "bold", color: "#666", mt: 2, mb: 0.5 }}>
           Role
         </Typography>
-        <Typography sx={{ color: "#2279B8", fontWeight: "bold", mb: 1 }}>
+        <Typography
+          sx={{ fontSize: "0.75rem", color: "#1976d2", fontWeight: 500 }}
+        >
           {userProfile?.role}
         </Typography>
-        <Divider sx={{ width: "80%", borderColor: "#DDD" }} />
       </Box>
 
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: "30px",
-          left: "16px",
-          width: "calc(100% - 32px)",
+      <Button
+        variant="outlined"
+        fullWidth
+        size="small"
+        onClick={() => {
+          handleLogout();
+          navigate("/");
         }}
+        sx={{
+          fontSize: "0.75rem",
+          textTransform: "none",
+          borderRadius: 2,
+          fontWeight: "bold",
+          color: "#1976d2",
+          borderColor: "#1976d2",
+          "&:hover": {
+            backgroundColor: "#f0f0f0",
+            borderColor: "#115293",
+          },
+        }}
+        endIcon={<LogoutIcon fontSize="small" />}
       >
-        <Button
-          variant="outlined"
-          onClick={() => {
-            handleLogout();
-            navigate("/");
-          }}
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "14px 20px",
-            borderRadius: "30px",
-            fontSize: "16px",
-            fontWeight: "bold",
-            borderColor: "#0779B8",
-            color: "#0779B8",
-            "&:hover": { backgroundColor: "#F7F7F7" },
-            width: "70%",
-          }}
-        >
-          Sign Out
-          <LogoutIcon sx={{ fontSize: "20px" }} />
-        </Button>
-      </Box>
-    </Container>
+        Sign Out
+      </Button>
+    </Box>
   );
 };
 

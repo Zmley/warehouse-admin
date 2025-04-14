@@ -5,7 +5,7 @@ import {
   cancelTask as cancelTaskApi,
 } from "../api/taskApi";
 
-export default function useAdminTasks() {
+export default function useTask() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

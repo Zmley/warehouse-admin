@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { Box } from "@mui/material";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import TaskPage from "../components/TaskPage";
-import InventoryPage from "../components/InventoryPage";
+import TaskPage from "../components/task/TaskForm";
+import InventoryPage from "../components/inventory/InventoryForm";
 
-const AdminManagement: React.FC = () => {
+const Management: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<
     "inventory" | "tasks" | "products" | "users"
   >("inventory");
@@ -16,10 +16,7 @@ const AdminManagement: React.FC = () => {
         return <InventoryPage />;
       case "tasks":
         return <TaskPage />;
-      // case "products":
-      //   return <ProductPage />;
-      // case "users":
-      //   return <UserPage />;
+
       default:
         return <div>Select a menu item</div>;
     }
@@ -38,4 +35,4 @@ const AdminManagement: React.FC = () => {
   );
 };
 
-export default AdminManagement;
+export default Management;

@@ -8,7 +8,7 @@ import {
   TextField,
   CircularProgress,
 } from "@mui/material";
-import { updateInventoryItem } from "../api/inventoryApi";
+import { updateInventoryItem } from "../../api/inventoryApi";
 
 interface QuantityEditModalProps {
   open: boolean;

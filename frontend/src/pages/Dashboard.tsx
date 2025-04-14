@@ -1,19 +1,16 @@
 import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import useWarehouses from "../hooks/useWarehouses";
-import { useAuth } from "../hooks/useAuth";
+import useWarehouses from "../hooks/useWarehouse";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { warehouses, loading, error } = useWarehouses();
-  const { userProfile } = useAuth();
 
-  const handleSelectWarehouse = (warehouseID: string) => {
-    if (userProfile.warehouseID === warehouseID) {
-      navigate(`/admin-management/${warehouseID}`);
-    } else {
-      navigate(`/admin-management/${warehouseID}`);
-    }
+  const handleSelectWarehouse = (
+    warehouseID: string,
+    warehouseCode: string
+  ) => {
+    navigate(`/admin-management/${warehouseID}/${warehouseCode}`);
   };
 
   if (loading) {
@@ -65,11 +62,17 @@ const Dashboard: React.FC = () => {
           <Button
             key={warehouse.warehouseID}
             variant="outlined"
-            onClick={() => handleSelectWarehouse(warehouse.warehouseID)}
+            onClick={() =>
+              handleSelectWarehouse(
+                warehouse.warehouseID,
+                warehouse.warehouseCode
+              )
+            }
           >
             {warehouse.warehouseCode}
           </Button>
         ))}
+        ß
       </Box>
     </Box>
   );

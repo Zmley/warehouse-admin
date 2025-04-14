@@ -15,11 +15,11 @@ import {
   TablePagination,
   TextField,
 } from "@mui/material";
-import useAdminTasks from "../hooks/useAdminTasks";
+import useAdminTasks from "../../hooks/useTask";
 import dayjs from "dayjs";
-import AdminCreateTaskForm from "../components/AdminCreateTaskForm";
+import AdminCreateTaskForm from "./CreateTaskForm";
 
-const AdminTaskPage: React.FC = () => {
+const TaskForm: React.FC = () => {
   const { tasks, loading, error, cancelTask, refetch } = useAdminTasks();
   const [filterStatus, setFilterStatus] = useState<
     "ALL" | "PENDING" | "COMPLETED"
@@ -157,7 +157,6 @@ const AdminTaskPage: React.FC = () => {
         </Button>
       </Stack>
 
-      {/* 表格 */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
@@ -227,4 +226,4 @@ const AdminTaskPage: React.FC = () => {
   );
 };
 
-export default AdminTaskPage;
+export default TaskForm;

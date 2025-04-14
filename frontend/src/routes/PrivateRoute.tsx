@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../contexts/auth";
 import Dashboard from "../pages/Dashboard";
-import AdminManagement from "../pages/AdminManagement";
+import AdminManagement from "../pages/Management";
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!;
@@ -14,7 +14,7 @@ const PrivateRoutes: React.FC = () => {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route
-        path="/admin-management/:warehouseId"
+        path="/admin-management/:warehouseID/:warehouseCode"
         element={<AdminManagement />}
       />{" "}
     </Routes>

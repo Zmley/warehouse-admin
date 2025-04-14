@@ -1,8 +1,9 @@
 import apiClient from "./axiosClient.ts";
 
-// ✅ 获取所有库存（InventoryPage 用）
-export const fetchInventory = async () => {
-  const response = await apiClient.get("/inventories/all");
+export const fetchInventory = async (warehouseID: string) => {
+  const response = await apiClient.get(`/inventories`, {
+    params: { warehouseID },
+  });
   return { inventory: response.data.inventories };
 };
 

@@ -7,9 +7,9 @@ import {
   Typography,
   Paper,
 } from "@mui/material";
-import { createTaskAsAdmin } from "../api/taskApi";
-import { useBin } from "../hooks/useBin";
-import { useProduct } from "../hooks/useProduct";
+import { createTaskAsAdmin } from "../../api/taskApi";
+import { useBin } from "../../hooks/useBin";
+import { useProduct } from "../../hooks/useProduct";
 
 interface Props {
   onSuccess?: () => void;
@@ -28,7 +28,6 @@ const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
   useEffect(() => {
     fetchAllBins()
       .then((binsData) => {
-        // 提取 binCode 数组
         const binCodes = binsData.map((bin) => bin.binCode);
         setAllBinCodes(binCodes);
       })
@@ -108,7 +107,7 @@ const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
             },
           }}
         >
-          ➕ Create Task
+          Create Task
         </Button>
       </Stack>
     </Paper>

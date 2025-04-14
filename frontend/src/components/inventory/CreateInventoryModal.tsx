@@ -11,8 +11,8 @@ import {
   Stack,
   Paper,
 } from "@mui/material";
-import { addInventoryItem } from "../api/inventoryApi";
-import { useProduct } from "../hooks/useProduct";
+import { addInventoryItem } from "../../api/inventoryApi";
+import { useProduct } from "../../hooks/useProduct";
 
 interface Props {
   open: boolean;
@@ -22,7 +22,7 @@ interface Props {
   binID: string;
 }
 
-const CreateInventoryItemModal: React.FC<Props> = ({
+const CreateInventoryModal: React.FC<Props> = ({
   open,
   onClose,
   onSuccess,
@@ -101,7 +101,7 @@ const CreateInventoryItemModal: React.FC<Props> = ({
                   fullWidth
                   sx={{
                     "& .MuiInputBase-root": {
-                      height: "50px", // Ensure input height is consistent
+                      height: "50px",
                     },
                   }}
                 />
@@ -115,11 +115,10 @@ const CreateInventoryItemModal: React.FC<Props> = ({
               fullWidth
               sx={{
                 "& .MuiInputBase-root": {
-                  height: "50px", // Consistent height
+                  height: "50px",
                 },
               }}
             />
-            {/* Display success or error message */}
             {message && (
               <Alert severity={messageType} sx={{ mt: 2, fontWeight: "bold" }}>
                 {message}
@@ -160,4 +159,4 @@ const CreateInventoryItemModal: React.FC<Props> = ({
   );
 };
 
-export default CreateInventoryItemModal;
+export default CreateInventoryModal;

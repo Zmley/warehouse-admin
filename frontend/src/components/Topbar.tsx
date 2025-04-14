@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { deepPurple } from "@mui/material/colors";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../contexts/auth";
 import Profile from "../pages/Profile";
 
@@ -19,6 +19,8 @@ const Topbar: React.FC = () => {
   const { userProfile } = useContext(AuthContext)!;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
+
+  const { warehouseCode } = useParams(); // 从 URL 获取 warehouseCode
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -56,9 +58,9 @@ const Topbar: React.FC = () => {
       </Box>
 
       {/* 当前仓库 */}
-      {userProfile.warehouseCode ? (
+      {warehouseCode ? (
         <Chip
-          label={`Warehouse: ${userProfile.warehouseCode}`}
+          label={`Current Warehouse: ${warehouseCode}`}
           color="primary"
           variant="outlined"
           sx={{ fontWeight: 500 }}
@@ -88,8 +90,10 @@ const Topbar: React.FC = () => {
             mt: 1.5,
             borderRadius: 3,
             boxShadow: 4,
-            minWidth: 350,
-            maxHeight: 720,
+            minWidth: 150,
+            maxHeight: 420,
+            transform: "scale(0.8)", // 整体缩小 80%
+            transformOrigin: "top right",
           },
         }}
       >

@@ -1,3 +1,7 @@
+export interface Bin {
+  binCode: string;
+}
+
 export interface InventoryItem {
   inventoryID: string;
   binID: string;
@@ -6,4 +10,5 @@ export interface InventoryItem {
   binCode: string;
   updatedAt: string;
   createdAt: string;
+  Bin: Bin;
 }
