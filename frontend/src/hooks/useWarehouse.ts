@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useCallback } from 'react'
 import { getWarehouses } from '../api/warehouseApi'
 
 interface Warehouse {
@@ -10,21 +10,17 @@ const useWarehouses = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchWarehouses = async () => {
-      try {
-        const data = await getWarehouses()
-        setWarehouses(data)
-      } catch (err) {
-        setError('Error fetching warehouses')
-        console.error(err)
-      }
+  const refetch = useCallback(async () => {
+    try {
+      const data = await getWarehouses()
+      setWarehouses(data)
+    } catch (err) {
+      setError('Error fetching warehouses')
+      console.error(err)
     }
-
-    fetchWarehouses()
   }, [])
 
-  return { warehouses, error }
+  return { warehouses, error, refetch }
 }
 
 export default useWarehouses

@@ -1,33 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Box, Button, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { getWarehouses } from '../api/warehouseApi'
+import useWarehouses from '../hooks/useWarehouse'
 import Topbar from '../components/Topbar'
-
-interface Warehouse {
-  warehouseID: string
-  warehouseCode: string
-}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
 
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const { warehouses, error, refetch } = useWarehouses()
 
   useEffect(() => {
-    const fetchWarehouses = async () => {
-      try {
-        const data = await getWarehouses()
-        setWarehouses(data)
-      } catch (err) {
-        setError('Error fetching warehouses')
-        console.error(err)
-      }
-    }
-
-    fetchWarehouses()
-  }, [])
+    refetch()
+  }, [refetch])
 
   const handleSelectWarehouse = (
     warehouseID: string,
