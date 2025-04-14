@@ -1,20 +1,22 @@
 import apiClient from "./axiosClient.ts";
 
-export const fetchAllTasksAsAdmin = async () => {
-  const response = await apiClient.post("/tasks/getTasks");
+export const fetchTasks = async (warehouseID: string) => {
+  const response = await apiClient.get("/tasks/all", {
+    params: { warehouseID },
+  });
   return response.data;
 };
 
-export const createTaskAsAdmin = async (payload: {
+export const createTask = async (payload: {
   sourceBinCode: string;
   destinationBinCode: string;
   productCode: string;
 }) => {
-  const response = await apiClient.post("/tasks/createAsAdmin", payload);
+  const response = await apiClient.post("/tasks/", payload);
   return response.data;
 };
 
 export const cancelTask = async (taskID: string) => {
-  const response = await apiClient.post(`/tasks/cancelTask/${taskID}`);
+  const response = await apiClient.post(`/tasks/${taskID}`);
   return response.data;
 };

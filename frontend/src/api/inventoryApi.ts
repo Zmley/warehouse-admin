@@ -7,12 +7,12 @@ export const fetchInventory = async (warehouseID: string) => {
   return { inventory: response.data.inventories };
 };
 
-export const deleteInventoryItem = async (inventoryID: string) => {
+export const deleteInventory = async (inventoryID: string) => {
   const response = await apiClient.delete(`/inventories/${inventoryID}`);
   return response.data;
 };
 
-export const addInventoryItem = async (newItem: {
+export const addInventory = async (newItem: {
   productCode: string;
   binID: string;
   quantity: number;
@@ -21,7 +21,7 @@ export const addInventoryItem = async (newItem: {
   return response.data;
 };
 
-export const updateInventoryItem = async (
+export const updateInventory = async (
   inventoryID: string,
   updatedFields: {
     quantity?: number;

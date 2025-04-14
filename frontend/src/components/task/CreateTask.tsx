@@ -7,7 +7,7 @@ import {
   Typography,
   Paper,
 } from "@mui/material";
-import { createTaskAsAdmin } from "../../api/taskApi";
+import { createTask } from "../../api/taskApi";
 import { useBin } from "../../hooks/useBin";
 import { useProduct } from "../../hooks/useProduct";
 
@@ -38,7 +38,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
-      await createTaskAsAdmin({
+      await createTask({
         sourceBinCode,
         destinationBinCode,
         productCode,

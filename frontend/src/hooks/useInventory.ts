@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
   fetchInventory,
-  deleteInventoryItem,
-  updateInventoryItem,
+  deleteInventory,
+  updateInventory,
 } from "../api/inventoryApi";
 import { InventoryItem } from "../types/inventoryTypes";
 import { useParams } from "react-router-dom";
@@ -31,7 +31,7 @@ export const useInventory = () => {
   };
 
   const removeInventoryItem = async (id: string) => {
-    await deleteInventoryItem(id);
+    await deleteInventory(id);
     setInventory((prev) => prev.filter((item) => item.inventoryID !== id));
   };
 
@@ -39,7 +39,7 @@ export const useInventory = () => {
     id: string,
     updatedData: Partial<InventoryItem>
   ) => {
-    await updateInventoryItem(id, updatedData);
+    await updateInventory(id, updatedData);
     setInventory((prev) =>
       prev.map((item) =>
         item.inventoryID === id ? { ...item, ...updatedData } : item

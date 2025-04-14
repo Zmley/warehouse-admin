@@ -11,7 +11,7 @@ import {
   Stack,
   Paper,
 } from "@mui/material";
-import { addInventoryItem } from "../../api/inventoryApi";
+import { addInventory } from "../../api/inventoryApi";
 import { useProduct } from "../../hooks/useProduct";
 
 interface Props {
@@ -46,7 +46,7 @@ const CreateInventory: React.FC<Props> = ({
 
   const handleCreateInventory = async () => {
     try {
-      const response = await addInventoryItem({
+      const response = await addInventory({
         productCode,
         binID,
         quantity,

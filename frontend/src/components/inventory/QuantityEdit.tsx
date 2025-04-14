@@ -8,7 +8,7 @@ import {
   TextField,
   CircularProgress,
 } from "@mui/material";
-import { updateInventoryItem } from "../../api/inventoryApi";
+import { updateInventory } from "../../api/inventoryApi";
 
 interface QuantityEditModalProps {
   open: boolean;
@@ -41,7 +41,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         `🟢 Sending API Request: /api/inventory/${inventoryId} with quantity:`,
         newQuantity
       );
-      await updateInventoryItem(inventoryId, { quantity: newQuantity });
+      await updateInventory(inventoryId, { quantity: newQuantity });
       onQuantityUpdated(newQuantity);
       onClose();
     } catch (err) {

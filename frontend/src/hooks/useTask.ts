@@ -1,19 +1,20 @@
 // hooks/useAdminTasks.ts
 import { useEffect, useState, useCallback } from "react";
-import {
-  fetchAllTasksAsAdmin,
-  cancelTask as cancelTaskApi,
-} from "../api/taskApi";
+import { fetchTasks, cancelTask as cancelTaskApi } from "../api/taskApi";
+import { useParams } from "react-router-dom";
 
 export default function useTask() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { warehouseID } = useParams();
 
   const refetch = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetchAllTasksAsAdmin();
+      if (!warehouseID) throw new Error("No warehouse ID");
+
+      const res = await fetchTasks(warehouseID);
       setTasks(res.tasks);
     } catch (err) {
       console.error("❌ Error fetching admin tasks:", err);
