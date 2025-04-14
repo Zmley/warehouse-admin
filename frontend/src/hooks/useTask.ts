@@ -22,6 +22,7 @@ export default function useTask() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
