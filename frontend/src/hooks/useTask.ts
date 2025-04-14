@@ -1,4 +1,3 @@
-// hooks/useAdminTasks.ts
 import { useEffect, useState, useCallback } from "react";
 import { fetchTasks, cancelTask as cancelTaskApi } from "../api/taskApi";
 import { useParams } from "react-router-dom";
