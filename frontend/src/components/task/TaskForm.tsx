@@ -15,12 +15,12 @@ import {
   TablePagination,
   TextField
 } from '@mui/material'
-import useAdminTasks from '../../hooks/useTask'
+import { useTask } from '../../hooks/useTask'
 import dayjs from 'dayjs'
 import AdminCreateTaskForm from './CreateTask'
 
 const TaskForm: React.FC = () => {
-  const { tasks, loading, error, cancelTask, refetch } = useAdminTasks()
+  const { tasks, loading, error, cancelTask, refetch } = useTask()
   const [filterStatus, setFilterStatus] = useState<
     'ALL' | 'PENDING' | 'COMPLETED'
   >('ALL')

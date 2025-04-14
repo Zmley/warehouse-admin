@@ -12,7 +12,7 @@ interface CreateTaskPayload {
   productCode: string
 }
 
-export default function useTask() {
+export const useTask = () => {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,8 +31,7 @@ export default function useTask() {
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line
-  }, [])
+  }, [warehouseID])
 
   useEffect(() => {
     refetch()

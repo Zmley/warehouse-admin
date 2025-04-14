@@ -9,7 +9,7 @@ import {
 } from '@mui/material'
 import { useBin } from '../../hooks/useBin'
 import { useProduct } from '../../hooks/useProduct'
-import { createTask } from '../../api/taskApi'
+import { useTask } from '../../hooks/useTask'
 
 interface Props {
   onSuccess?: () => void
@@ -25,6 +25,8 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
   const { productCodes, loadProducts } = useProduct()
 
+  const { handleCreateTask } = useTask()
+
   useEffect(() => {
     fetchAllBins()
       .then(binsData => {
@@ -38,7 +40,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
-      await createTask({
+      await handleCreateTask({
         sourceBinCode,
         destinationBinCode,
         productCode
