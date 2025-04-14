@@ -15,7 +15,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
+const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const [sourceBinCode, setSourceBinCode] = useState("");
   const [destinationBinCode, setDestinationBinCode] = useState("");
   const [productCode, setProductCode] = useState("");
@@ -114,4 +114,4 @@ const AdminCreateTaskForm: React.FC<Props> = ({ onSuccess }) => {
   );
 };
 
-export default AdminCreateTaskForm;
+export default CreateTask;

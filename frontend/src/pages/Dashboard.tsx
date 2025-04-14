@@ -72,7 +72,6 @@ const Dashboard: React.FC = () => {
             {warehouse.warehouseCode}
           </Button>
         ))}
-        ß
       </Box>
     </Box>
   );

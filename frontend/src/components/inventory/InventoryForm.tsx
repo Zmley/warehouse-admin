@@ -15,8 +15,8 @@ import {
   TablePagination,
   Stack,
 } from "@mui/material";
-import QuantityEditModal from "./QuantityEditModal";
-import CreateInventoryItemModal from "./CreateInventoryModal";
+import QuantityEditModal from "./QuantityEdit";
+import CreateInventoryItemModal from "./CreateInventory";
 import { InventoryItem } from "../../types/inventoryTypes";
 import useInventory from "../../hooks/useInventory";
 import { useBin } from "../../hooks/useBin";

@@ -22,7 +22,7 @@ interface Props {
   binID: string;
 }
 
-const CreateInventoryModal: React.FC<Props> = ({
+const CreateInventory: React.FC<Props> = ({
   open,
   onClose,
   onSuccess,
@@ -159,4 +159,4 @@ const CreateInventoryModal: React.FC<Props> = ({
   );
 };
 
-export default CreateInventoryModal;
+export default CreateInventory;

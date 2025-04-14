@@ -18,7 +18,7 @@ interface QuantityEditModalProps {
   onQuantityUpdated: (updatedQuantity: number) => void;
 }
 
-const QuantityEditModal: React.FC<QuantityEditModalProps> = ({
+const QuantityEdit: React.FC<QuantityEditModalProps> = ({
   open,
   onClose,
   inventoryId,
@@ -82,4 +82,4 @@ const QuantityEditModal: React.FC<QuantityEditModalProps> = ({
   );
 };
 
-export default QuantityEditModal;
+export default QuantityEdit;

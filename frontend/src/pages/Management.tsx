@@ -8,7 +8,7 @@ import InventoryPage from "../components/inventory/InventoryForm";
 const Management: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<
     "inventory" | "tasks" | "products" | "users"
-  >("inventory");
+  >("tasks");
 
   const renderPage = () => {
     switch (currentPage) {

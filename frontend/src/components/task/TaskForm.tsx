@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import useAdminTasks from "../../hooks/useTask";
 import dayjs from "dayjs";
-import AdminCreateTaskForm from "./CreateTaskForm";
+import AdminCreateTaskForm from "./CreateTask";
 
 const TaskForm: React.FC = () => {
   const { tasks, loading, error, cancelTask, refetch } = useAdminTasks();
