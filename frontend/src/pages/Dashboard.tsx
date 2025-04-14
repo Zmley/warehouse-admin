@@ -7,11 +7,11 @@ import Topbar from '../components/Topbar'
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
 
-  const { warehouses, error, refetch } = useWarehouses()
+  const { warehouses, error, fetchWarehouses } = useWarehouses()
 
   useEffect(() => {
-    refetch()
-  }, [refetch])
+    fetchWarehouses()
+  }, [fetchWarehouses])
 
   const handleSelectWarehouse = (
     warehouseID: string,

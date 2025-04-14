@@ -10,7 +10,7 @@ const useWarehouses = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const refetch = useCallback(async () => {
+  const fetchWarehouses = useCallback(async () => {
     try {
       const data = await getWarehouses()
       setWarehouses(data)
@@ -20,7 +20,7 @@ const useWarehouses = () => {
     }
   }, [])
 
-  return { warehouses, error, refetch }
+  return { warehouses, error, fetchWarehouses }
 }
 
 export default useWarehouses
