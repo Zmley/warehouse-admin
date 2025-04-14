@@ -54,6 +54,7 @@ const InventoryPage: React.FC = () => {
 
   useEffect(() => {
     fetchAllInventory();
+    // eslint-disable-next-line
   }, [warehouseID]);
 
   useEffect(() => {
@@ -191,9 +192,6 @@ const InventoryPage: React.FC = () => {
 
           <Button
             variant="contained"
-            onClick={() => {
-              console.log("导入 Inventory");
-            }}
             sx={{
               height: 36,
               px: 2.5,

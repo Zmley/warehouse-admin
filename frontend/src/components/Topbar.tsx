@@ -20,7 +20,7 @@ const Topbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
-  const { warehouseCode } = useParams(); // 从 URL 获取 warehouseCode
+  const { warehouseCode } = useParams();
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -57,7 +57,6 @@ const Topbar: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* 当前仓库 */}
       {warehouseCode ? (
         <Chip
           label={`Current Warehouse: ${warehouseCode}`}
@@ -92,7 +91,7 @@ const Topbar: React.FC = () => {
             boxShadow: 4,
             minWidth: 150,
             maxHeight: 420,
-            transform: "scale(0.8)", // 整体缩小 80%
+            transform: "scale(0.8)",
             transformOrigin: "top right",
           },
         }}

@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentPage }) => {
       sx={{
         width: 120,
         height: "%100",
-        backgroundColor: "#2f3e4e", // 专业风格深蓝灰色
+        backgroundColor: "#2f3e4e",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentPage }) => {
               cursor: "pointer",
               transition: "all 0.3s ease",
               "&:hover": {
-                color: "#90caf9", // Material UI 的蓝色高亮
+                color: "#90caf9",
                 transform: "scale(1.1)",
               },
             }}

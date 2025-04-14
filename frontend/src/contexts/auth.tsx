@@ -8,7 +8,6 @@ interface UserProfile {
   email: string;
   role: string;
   warehouseID: string;
-  warehouseCode: string;
 }
 
 interface AuthContextType {
@@ -32,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: "",
     role: "",
     warehouseID: "",
-    warehouseCode: "",
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
@@ -47,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       email: account.email,
       role: account.role,
       warehouseID: account.warehouse?.warehouseID || "",
-      warehouseCode: account.warehouse?.warehouseCode || "",
     });
   };
 
