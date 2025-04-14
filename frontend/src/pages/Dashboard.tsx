@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Box, Button, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { getAllWarehouses } from '../api/warehouseApi'
+import { getWarehouses } from '../api/warehouseApi'
 import Topbar from '../components/Topbar'
 
 interface Warehouse {
@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchWarehouses = async () => {
       try {
-        const data = await getAllWarehouses()
+        const data = await getWarehouses()
         setWarehouses(data)
       } catch (err) {
         setError('Error fetching warehouses')

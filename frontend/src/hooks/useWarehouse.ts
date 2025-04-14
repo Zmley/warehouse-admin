@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAllWarehouses } from '../api/warehouseApi'
+import { getWarehouses } from '../api/warehouseApi'
 
 interface Warehouse {
   warehouseID: string
@@ -13,7 +13,7 @@ const useWarehouses = () => {
   useEffect(() => {
     const fetchWarehouses = async () => {
       try {
-        const data = await getAllWarehouses()
+        const data = await getWarehouses()
         setWarehouses(data)
       } catch (err) {
         setError('Error fetching warehouses')
