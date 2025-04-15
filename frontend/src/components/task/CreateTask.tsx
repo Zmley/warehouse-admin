@@ -20,15 +20,15 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
 
-  const { fetchAllBins } = useBin()
+  const { fetchBins } = useBin()
   const [allBinCodes, setAllBinCodes] = useState<string[]>([])
 
   const { productCodes, loadProducts } = useProduct()
 
-  const { handleCreateTask } = useTask()
+  const { createTask } = useTask()
 
   useEffect(() => {
-    fetchAllBins()
+    fetchBins()
       .then(binsData => {
         const binCodes = binsData.map(bin => bin.binCode)
         setAllBinCodes(binCodes)
@@ -36,11 +36,11 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
       .catch(console.error)
 
     loadProducts()
-  }, [fetchAllBins, loadProducts])
+  }, [fetchBins, loadProducts])
 
   const handleSubmit = async () => {
     try {
-      await handleCreateTask({
+      await createTask({
         sourceBinCode,
         destinationBinCode,
         productCode

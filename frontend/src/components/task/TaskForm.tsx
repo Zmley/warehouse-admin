@@ -21,7 +21,7 @@ import AdminCreateTaskForm from './CreateTask'
 import { filterTasks } from '../../utils/filterTasks'
 
 const TaskForm: React.FC = () => {
-  const { tasks, loading, error, cancelTask, refetch } = useTask()
+  const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
   const [filterStatus, setFilterStatus] = useState<
     'ALL' | 'PENDING' | 'COMPLETED'
   >('ALL')
@@ -94,7 +94,7 @@ const TaskForm: React.FC = () => {
           <AdminCreateTaskForm
             onSuccess={() => {
               handleClose()
-              refetch()
+              fetchTasks()
             }}
           />
         </Box>

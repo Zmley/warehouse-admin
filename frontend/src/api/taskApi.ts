@@ -1,8 +1,8 @@
 import apiClient from './axiosClient.ts'
 
 export const fetchTasks = async (warehouseID: string) => {
-  //  using /tasks/all temporaryly due to conflic with other '/tasks'
-  const response = await apiClient.get('/tasks/all', {
+  //  using same route with transportwoker
+  const response = await apiClient.get('/tasks/', {
     params: { warehouseID }
   })
   return response.data
@@ -13,7 +13,6 @@ export const createTask = async (payload: {
   destinationBinCode: string
   productCode: string
 }) => {
-  //  using /tasks/admin temporaryly due to conflic with other '/tasks'
   const response = await apiClient.post('/tasks/admin', payload)
   return response.data
 }

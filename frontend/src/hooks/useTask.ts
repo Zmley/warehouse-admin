@@ -44,7 +44,7 @@ export const useTask = () => {
     }
   }
 
-  const handleCreateTask = async (payload: CreateTaskPayload) => {
+  const createTask = async (payload: CreateTaskPayload) => {
     try {
       setLoading(true)
       const result = await taskApi.createTask(payload)
@@ -64,7 +64,7 @@ export const useTask = () => {
     loading,
     error,
     cancelTask,
-    refetch: fetchTasks,
-    handleCreateTask
+    fetchTasks,
+    createTask
   }
 }
