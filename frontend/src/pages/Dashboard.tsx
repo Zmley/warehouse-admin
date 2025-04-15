@@ -3,6 +3,7 @@ import { Box, Button, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import useWarehouses from '../hooks/useWarehouse'
 import Topbar from '../components/Topbar'
+import { PageValues } from '../constants/pageTypes'
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
@@ -18,7 +19,7 @@ const Dashboard: React.FC = () => {
     warehouseID: string,
     warehouseCode: string
   ) => {
-    navigate(`/${warehouseID}/${warehouseCode}/task`)
+    navigate(`/${warehouseID}/${warehouseCode}/${PageValues.TASK}`)
   }
 
   if (error) {

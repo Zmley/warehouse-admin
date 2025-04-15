@@ -5,8 +5,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
-
-export type PageType = 'inventory' | 'task' | 'product' | 'user'
+import { PageType } from '../constants/pageTypes'
 
 const sidebarItems: {
   label: string

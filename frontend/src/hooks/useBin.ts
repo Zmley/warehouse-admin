@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<{ binID: string; binCode: string }[]>([])
+  const [binCodes, setAllBinCodes] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const { warehouseID } = useParams()
 
@@ -18,6 +19,10 @@ export const useBin = (autoLoad: boolean = false) => {
 
       const binsData = await getBins(warehouseID)
       setBins(binsData)
+
+      const codes = binsData.map(bin => bin.binCode)
+      setAllBinCodes(codes)
+
       setError(null)
       return binsData
     } catch (err) {
@@ -29,6 +34,7 @@ export const useBin = (autoLoad: boolean = false) => {
 
   return {
     bins,
+    binCodes,
     error,
     fetchBins
   }

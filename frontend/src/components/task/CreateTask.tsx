@@ -20,8 +20,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
 
-  const { fetchBins } = useBin()
-  const [allBinCodes, setAllBinCodes] = useState<string[]>([])
+  const { fetchBins, binCodes } = useBin()
 
   const { productCodes, fetchProducts } = useProduct()
 
@@ -29,12 +28,6 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
   useEffect(() => {
     fetchBins()
-      .then(binsData => {
-        const binCodes = binsData.map(bin => bin.binCode)
-        setAllBinCodes(binCodes)
-      })
-      .catch(console.error)
-
     fetchProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -74,7 +67,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
       <Stack spacing={3} mt={2}>
         <Autocomplete
-          options={allBinCodes}
+          options={binCodes}
           value={sourceBinCode}
           onChange={(event, newValue) => setSourceBinCode(newValue || '')}
           renderInput={params => (
@@ -82,7 +75,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
           )}
         />
         <Autocomplete
-          options={allBinCodes}
+          options={binCodes}
           value={destinationBinCode}
           onChange={(event, newValue) => setDestinationBinCode(newValue || '')}
           renderInput={params => (
