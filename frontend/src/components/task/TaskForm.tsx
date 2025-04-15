@@ -65,7 +65,8 @@ const TaskForm: React.FC = () => {
         keyword: keywordParam
       })
     }
-  }, [warehouseID, filterStatus, keywordParam])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, keywordParam])
 
   if (loading) {
     return (
@@ -85,7 +86,6 @@ const TaskForm: React.FC = () => {
 
   return (
     <Box>
-      {/* Top Header */}
       <Box
         sx={{
           display: 'flex',
@@ -111,7 +111,6 @@ const TaskForm: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Dialog for creating task */}
       <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
         <Box sx={{ p: 3 }}>
           <CreateTask
@@ -127,7 +126,6 @@ const TaskForm: React.FC = () => {
         </Box>
       </Dialog>
 
-      {/* Filter Bar */}
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <TextField
           label='Search tasks'
@@ -173,7 +171,6 @@ const TaskForm: React.FC = () => {
         </Tabs>
       </Stack>
 
-      {/* Table */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
