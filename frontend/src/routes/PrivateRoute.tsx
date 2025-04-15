@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { useContext, useEffect } from 'react'
 import { AuthContext } from '../contexts/auth'
 import Dashboard from '../pages/Dashboard'
-import Management from '../pages/Management'
+import Task from '../pages/Task'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
@@ -15,10 +15,7 @@ const PrivateRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path='/' element={<Dashboard />} />
-      <Route
-        path='/:warehouseID/:warehouseCode/:page'
-        element={<Management />}
-      />
+      <Route path='/:warehouseID/:warehouseCode/task' element={<Task />} />
     </Routes>
   )
 }

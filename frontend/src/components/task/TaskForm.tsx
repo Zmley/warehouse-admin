@@ -13,22 +13,25 @@ import {
   Stack,
   Dialog,
   TablePagination,
-  TextField
+  TextField,
+  Tabs,
+  Tab
 } from '@mui/material'
 import { useTask } from '../../hooks/useTask'
 import dayjs from 'dayjs'
 import CreateTask from './CreateTask'
 import { filterTasks } from '../../utils/filterTasks'
+import { TaskStatusFilter } from '../../types/task'
 
 const TaskForm: React.FC = () => {
   const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
-  const [filterStatus, setFilterStatus] = useState<
-    'ALL' | 'PENDING' | 'COMPLETED'
-  >('ALL')
-  const [openDialog, setOpenDialog] = useState(false)
+  const [filterStatus, setFilterStatus] = useState<TaskStatusFilter>(
+    TaskStatusFilter.ALL
+  )
+  const [isDialogOpen, setOpenDialog] = useState(false)
   const [page, setPage] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
-  const rowsPerPage = 10
+  const ROWS_PER_PAGE = 10
 
   const handleOpen = () => setOpenDialog(true)
   const handleClose = () => setOpenDialog(false)
@@ -38,8 +41,8 @@ const TaskForm: React.FC = () => {
   }, [tasks, filterStatus, searchKeyword])
 
   const paginatedTasks = useMemo(() => {
-    const start = page * rowsPerPage
-    return filteredTasks.slice(start, start + rowsPerPage)
+    const start = page * ROWS_PER_PAGE
+    return filteredTasks.slice(start, start + ROWS_PER_PAGE)
   }, [filteredTasks, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -94,7 +97,7 @@ const TaskForm: React.FC = () => {
         </Button>
       </Box>
 
-      <Dialog open={openDialog} onClose={handleClose} maxWidth='sm' fullWidth>
+      <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
         <Box sx={{ p: 3 }}>
           <CreateTask
             onSuccess={() => {
@@ -117,33 +120,33 @@ const TaskForm: React.FC = () => {
           }}
           sx={{ width: 250 }}
         />
-        <Button
-          variant={filterStatus === 'ALL' ? 'contained' : 'outlined'}
-          onClick={() => {
+
+        <Tabs
+          value={filterStatus}
+          onChange={(_, newValue: TaskStatusFilter) => {
+            setFilterStatus(newValue)
             setPage(0)
-            setFilterStatus('ALL')
           }}
+          textColor='primary'
+          indicatorColor='primary'
+          sx={{ minHeight: 36 }}
         >
-          All
-        </Button>
-        <Button
-          variant={filterStatus === 'PENDING' ? 'contained' : 'outlined'}
-          onClick={() => {
-            setPage(0)
-            setFilterStatus('PENDING')
-          }}
-        >
-          Pending
-        </Button>
-        <Button
-          variant={filterStatus === 'COMPLETED' ? 'contained' : 'outlined'}
-          onClick={() => {
-            setPage(0)
-            setFilterStatus('COMPLETED')
-          }}
-        >
-          Completed
-        </Button>
+          <Tab
+            label='All'
+            value={TaskStatusFilter.ALL}
+            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+          />
+          <Tab
+            label='Pending'
+            value={TaskStatusFilter.PENDING}
+            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+          />
+          <Tab
+            label='Completed'
+            value={TaskStatusFilter.COMPLETED}
+            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+          />
+        </Tabs>
       </Stack>
 
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
@@ -231,8 +234,8 @@ const TaskForm: React.FC = () => {
           count={filteredTasks.length}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          rowsPerPageOptions={[rowsPerPage]}
+          rowsPerPage={ROWS_PER_PAGE}
+          rowsPerPageOptions={[ROWS_PER_PAGE]}
         />
       </Paper>
     </Box>
