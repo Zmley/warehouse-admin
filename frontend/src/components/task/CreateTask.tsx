@@ -23,7 +23,7 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const { fetchBins } = useBin()
   const [allBinCodes, setAllBinCodes] = useState<string[]>([])
 
-  const { productCodes, loadProducts } = useProduct()
+  const { productCodes, fetchProducts } = useProduct()
 
   const { createTask } = useTask()
 
@@ -35,8 +35,9 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
       })
       .catch(console.error)
 
-    loadProducts()
-  }, [fetchBins, loadProducts])
+    fetchProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSubmit = async () => {
     try {

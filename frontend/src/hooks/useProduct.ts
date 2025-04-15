@@ -5,7 +5,7 @@ export const useProduct = () => {
   const [productCodes, setProductCodes] = useState<string[]>([])
   const [loading] = useState<boolean>(false)
 
-  const loadProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await getProducts()
       setProductCodes(res.productCodes)
@@ -14,5 +14,5 @@ export const useProduct = () => {
     }
   }, [])
 
-  return { productCodes, loadProducts, loading }
+  return { productCodes, fetchProducts, loading }
 }

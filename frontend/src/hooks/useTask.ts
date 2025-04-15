@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import * as taskApi from '../api/taskApi'
 import { useParams } from 'react-router-dom'
 
@@ -28,10 +28,6 @@ export const useTask = () => {
       setLoading(false)
     }
   }, [warehouseID])
-
-  useEffect(() => {
-    fetchTasks()
-  }, [fetchTasks])
 
   const cancelTask = async (taskID: string) => {
     try {

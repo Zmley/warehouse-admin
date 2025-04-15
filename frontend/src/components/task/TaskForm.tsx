@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Box,
   Paper,
@@ -45,6 +45,11 @@ const TaskForm: React.FC = () => {
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
   }
+
+  useEffect(() => {
+    fetchTasks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (loading) {
     return (
