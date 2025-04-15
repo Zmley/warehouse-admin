@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  fetchInventory,
+  getInventories,
   deleteInventory,
   updateInventory,
   addInventory
@@ -15,7 +15,7 @@ export const useInventory = () => {
   const { warehouseID } = useParams()
   const [totalCount, setTotalCount] = useState(0)
 
-  const fetchAllInventory = async (
+  const fetchInventories = async (
     binID?: string,
     page: number = 1,
     limit: number = 20
@@ -28,7 +28,7 @@ export const useInventory = () => {
         return
       }
 
-      const { inventory, totalCount } = await fetchInventory({
+      const { inventory, totalCount } = await getInventories({
         warehouseID,
         binID: binID === 'All' ? undefined : binID,
         page,
@@ -81,7 +81,7 @@ export const useInventory = () => {
     totalCount,
     removeInventoryItem,
     editInventoryItem,
-    fetchAllInventory,
+    fetchInventories,
     addInventoryItem
   }
 }

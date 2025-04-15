@@ -32,11 +32,11 @@ const InventoryForm: React.FC = () => {
   const {
     inventory,
     totalCount,
-    loading: inventoryLoading,
+    loading,
     error,
     removeInventoryItem,
     editInventoryItem,
-    fetchAllInventory
+    fetchInventories
   } = useInventory()
 
   const { bins, fetchBins } = useBin()
@@ -53,18 +53,19 @@ const InventoryForm: React.FC = () => {
 
   useEffect(() => {
     fetchBins()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (warehouseID) {
-      fetchAllInventory(
+      fetchInventories(
         selectedBin === 'All' ? undefined : selectedBin,
         page + 1,
         rowsPerPage
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBin, warehouseID, page, rowsPerPage])
+  }, [selectedBin, page])
 
   const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
   const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
@@ -112,14 +113,14 @@ const InventoryForm: React.FC = () => {
   }))
 
   const handleSuccess = () => {
-    fetchAllInventory(
+    fetchInventories(
       selectedBin === 'All' ? undefined : selectedBin,
       page + 1,
       rowsPerPage
     )
   }
 
-  if (inventoryLoading) return <Typography>Loading...</Typography>
+  if (loading) return <Typography>Loading...</Typography>
   if (error) return <Typography color='error'>{error}</Typography>
 
   return (
@@ -148,7 +149,7 @@ const InventoryForm: React.FC = () => {
             color='primary'
             onClick={handleCreateInventoryOpen}
           >
-            ➕ Create Inventory
+            Create Inventory
           </Button>
         )}
 

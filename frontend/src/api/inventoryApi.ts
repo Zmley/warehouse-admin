@@ -1,6 +1,6 @@
 import apiClient from './axiosClient.ts'
 
-export const fetchInventory = async (params: {
+export const getInventories = async (params: {
   warehouseID: string
   binID?: string
   page?: number
