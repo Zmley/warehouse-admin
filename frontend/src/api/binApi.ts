@@ -6,5 +6,5 @@ export const getBins = async (
   const response = await apiClient.get('/bins', {
     params: { warehouseID }
   })
-  return response.data.bins
+  return response.data
 }
