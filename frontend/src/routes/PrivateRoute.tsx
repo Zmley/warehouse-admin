@@ -3,6 +3,7 @@ import { useContext, useEffect } from 'react'
 import { AuthContext } from '../contexts/auth'
 import Dashboard from '../pages/Dashboard'
 import Task from '../pages/Task'
+import Inventory from '../pages/Inventory'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
@@ -16,6 +17,10 @@ const PrivateRoutes: React.FC = () => {
     <Routes>
       <Route path='/' element={<Dashboard />} />
       <Route path='/:warehouseID/:warehouseCode/task' element={<Task />} />
+      <Route
+        path='/:warehouseID/:warehouseCode/inventory'
+        element={<Inventory />}
+      />
     </Routes>
   )
 }
