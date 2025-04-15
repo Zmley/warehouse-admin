@@ -3,7 +3,7 @@ name: Deploy to S3
 on:
   push:
     branches:
-      - admin-server
+      - main
 
 jobs:
   deploy:
@@ -21,8 +21,8 @@ jobs:
         run: yarn build
         working-directory: frontend
         env:
-          REACT_APP_SERVER_API_BASE_URL: 'https://api.qte-warehouse.zmley.com'
-          PORT: '4100'
+          REACT_APP_SERVER_API_BASE_URL: "https://api.qte-warehouse.zmley.com"
+          PORT: "4100"
 
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@master
