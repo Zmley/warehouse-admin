@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
     warehouseID: string,
     warehouseCode: string
   ) => {
-    navigate(`/${warehouseID}/${warehouseCode}`)
+    navigate(`/${warehouseID}/${warehouseCode}/task`)
   }
 
   if (error) {
