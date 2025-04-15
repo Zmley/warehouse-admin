@@ -95,7 +95,7 @@ const TaskForm: React.FC = () => {
         }}
       >
         <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#333' }}>
-          All Tasks
+          Tasks
         </Typography>
         <Button
           variant='contained'
