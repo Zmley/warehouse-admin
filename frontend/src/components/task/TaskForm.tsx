@@ -17,7 +17,7 @@ import {
 } from '@mui/material'
 import { useTask } from '../../hooks/useTask'
 import dayjs from 'dayjs'
-import AdminCreateTaskForm from './CreateTask'
+import CreateTask from './CreateTask'
 import { filterTasks } from '../../utils/filterTasks'
 
 const TaskForm: React.FC = () => {
@@ -96,7 +96,7 @@ const TaskForm: React.FC = () => {
 
       <Dialog open={openDialog} onClose={handleClose} maxWidth='sm' fullWidth>
         <Box sx={{ p: 3 }}>
-          <AdminCreateTaskForm
+          <CreateTask
             onSuccess={() => {
               handleClose()
               fetchTasks()
