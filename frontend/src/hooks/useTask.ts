@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import * as taskApi from '../api/taskApi'
-import { useParams } from 'react-router-dom'
+import { TaskStatusFilter } from '../types/task'
 
 interface CreateTaskPayload {
   sourceBinCode: string
@@ -8,32 +8,46 @@ interface CreateTaskPayload {
   productCode: string
 }
 
+interface FetchParams {
+  warehouseID: string
+  status?: string
+  keyword?: string
+}
+
 export const useTask = () => {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { warehouseID } = useParams()
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true)
-      if (!warehouseID) throw new Error('No warehouse ID')
+  const fetchTasks = useCallback(
+    async ({ warehouseID, status, keyword }: FetchParams) => {
+      try {
+        setLoading(true)
 
-      const res = await taskApi.fetchTasks(warehouseID)
-      setTasks(res.tasks)
-    } catch (err) {
-      console.error('❌ Error fetching admin tasks:', err)
-      setError('Failed to fetch tasks')
-    } finally {
-      setLoading(false)
-    }
-  }, [warehouseID])
+        const res = await taskApi.fetchTasks({
+          warehouseID,
+          status,
+          keyword
+        })
+        setTasks(res.tasks)
+      } catch (err) {
+        console.error('❌ Error fetching tasks:', err)
+        setError('Failed to fetch tasks')
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
 
-  const cancelTask = async (taskID: string) => {
+  const cancelTask = async (
+    taskID: string,
+    params: { warehouseID: string; status: TaskStatusFilter; keyword: string }
+  ) => {
     try {
       await taskApi.cancelTask(taskID)
       alert('✅ Task canceled successfully.')
-      fetchTasks()
+      await fetchTasks(params)
     } catch (error) {
       console.error('❌ Failed to cancel task:', error)
       alert('Failed to cancel task.')

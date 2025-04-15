@@ -1,9 +1,11 @@
 import apiClient from './axiosClient.ts'
 
-export const fetchTasks = async (warehouseID: string) => {
-  const response = await apiClient.get('/tasks/', {
-    params: { warehouseID }
-  })
+export const fetchTasks = async (params: {
+  warehouseID: string
+  status?: string
+  keyword?: string
+}) => {
+  const response = await apiClient.get('/tasks', { params })
   return response.data
 }
 

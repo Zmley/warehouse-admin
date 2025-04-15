@@ -1,58 +1,71 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Box,
-  Paper,
-  Typography,
-  CircularProgress,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Button,
-  Stack,
+  CircularProgress,
   Dialog,
-  TablePagination,
-  TextField,
+  Paper,
+  Stack,
+  Tab,
   Tabs,
-  Tab
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography
 } from '@mui/material'
-import { useTask } from '../../hooks/useTask'
 import dayjs from 'dayjs'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { useTask } from '../../hooks/useTask'
 import CreateTask from './CreateTask'
-import { filterTasks } from '../../utils/filterTasks'
 import { TaskStatusFilter } from '../../types/task'
+
+const ROWS_PER_PAGE = 10
 
 const TaskForm: React.FC = () => {
   const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
-  const [filterStatus, setFilterStatus] = useState<TaskStatusFilter>(
-    TaskStatusFilter.ALL
-  )
+  const { warehouseID } = useParams<{ warehouseID: string }>()
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const statusParam =
+    (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
+  const keywordParam = searchParams.get('keyword') || ''
+
+  const [filterStatus, setFilterStatus] =
+    useState<TaskStatusFilter>(statusParam)
+  const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [isDialogOpen, setOpenDialog] = useState(false)
   const [page, setPage] = useState(0)
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const ROWS_PER_PAGE = 10
 
   const handleOpen = () => setOpenDialog(true)
   const handleClose = () => setOpenDialog(false)
 
-  const filteredTasks = useMemo(() => {
-    return filterTasks(tasks, filterStatus, searchKeyword)
-  }, [tasks, filterStatus, searchKeyword])
+  const updateQueryParams = (status: TaskStatusFilter, keyword: string) => {
+    setSearchParams({ status, keyword })
+  }
 
   const paginatedTasks = useMemo(() => {
     const start = page * ROWS_PER_PAGE
-    return filteredTasks.slice(start, start + ROWS_PER_PAGE)
-  }, [filteredTasks, page])
+    return tasks.slice(start, start + ROWS_PER_PAGE)
+  }, [tasks, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
   }
 
   useEffect(() => {
-    fetchTasks()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (warehouseID) {
+      fetchTasks({
+        warehouseID,
+        status: filterStatus,
+        keyword: keywordParam
+      })
+    }
+  }, [warehouseID, filterStatus, keywordParam])
 
   if (loading) {
     return (
@@ -72,6 +85,7 @@ const TaskForm: React.FC = () => {
 
   return (
     <Box>
+      {/* Top Header */}
       <Box
         sx={{
           display: 'flex',
@@ -97,35 +111,45 @@ const TaskForm: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Dialog for creating task */}
       <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
         <Box sx={{ p: 3 }}>
           <CreateTask
             onSuccess={() => {
               handleClose()
-              fetchTasks()
+              fetchTasks({
+                warehouseID: warehouseID!,
+                status: filterStatus,
+                keyword: searchKeyword
+              })
             }}
           />
         </Box>
       </Dialog>
 
+      {/* Filter Bar */}
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <TextField
           label='Search tasks'
           variant='outlined'
           size='small'
           value={searchKeyword}
-          onChange={e => {
-            setSearchKeyword(e.target.value)
-            setPage(0)
+          onChange={e => setSearchKeyword(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && warehouseID) {
+              setPage(0)
+              updateQueryParams(filterStatus, searchKeyword)
+            }
           }}
           sx={{ width: 250 }}
         />
-
         <Tabs
           value={filterStatus}
-          onChange={(_, newValue: TaskStatusFilter) => {
-            setFilterStatus(newValue)
+          onChange={(_, newStatus: TaskStatusFilter) => {
+            setFilterStatus(newStatus)
+            setSearchKeyword('')
             setPage(0)
+            updateQueryParams(newStatus, '')
           }}
           textColor='primary'
           indicatorColor='primary'
@@ -134,49 +158,44 @@ const TaskForm: React.FC = () => {
           <Tab
             label='All'
             value={TaskStatusFilter.ALL}
-            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+            sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
           <Tab
             label='Pending'
             value={TaskStatusFilter.PENDING}
-            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+            sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
           <Tab
             label='Completed'
             value={TaskStatusFilter.COMPLETED}
-            sx={{ minHeight: 36, textTransform: 'none', fontWeight: 'bold' }}
+            sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
         </Tabs>
       </Stack>
 
+      {/* Table */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Task ID
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Product Code
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Source Bins
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Target Bin
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Status
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Created At
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Updated At
-              </TableCell>
-              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                Action
-              </TableCell>
+              {[
+                'Task ID',
+                'Product Code',
+                'Source Bins',
+                'Target Bin',
+                'Status',
+                'Created At',
+                'Updated At',
+                'Action'
+              ].map(header => (
+                <TableCell
+                  key={header}
+                  align='center'
+                  sx={{ border: '1px solid #e0e0e0' }}
+                >
+                  {header}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -216,7 +235,11 @@ const TaskForm: React.FC = () => {
                             'Are you sure you want to cancel this task?'
                           )
                         ) {
-                          cancelTask(task.taskID)
+                          cancelTask(task.taskID, {
+                            warehouseID: warehouseID!,
+                            status: filterStatus,
+                            keyword: searchKeyword
+                          })
                         }
                       }}
                     >
@@ -231,7 +254,7 @@ const TaskForm: React.FC = () => {
 
         <TablePagination
           component='div'
-          count={filteredTasks.length}
+          count={tasks.length}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={ROWS_PER_PAGE}
