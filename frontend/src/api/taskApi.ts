@@ -1,7 +1,6 @@
 import apiClient from './axiosClient.ts'
 
 export const fetchTasks = async (warehouseID: string) => {
-  //  using same route with transportwoker
   const response = await apiClient.get('/tasks/', {
     params: { warehouseID }
   })
