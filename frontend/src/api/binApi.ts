@@ -1,6 +1,6 @@
 import apiClient from './axiosClient.ts'
 
-export const getBinsInWarehouse = async (
+export const getBins = async (
   warehouseID: string
 ): Promise<{ binID: string; binCode: string }[]> => {
   const response = await apiClient.get('/bins', {

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { getBinsInWarehouse } from '../api/binApi'
+import { getBins } from '../api/binApi'
 import { useParams } from 'react-router-dom'
 
 export const useBin = (autoLoad: boolean = false) => {
@@ -16,7 +16,7 @@ export const useBin = (autoLoad: boolean = false) => {
         return []
       }
 
-      const binsData = await getBinsInWarehouse(warehouseID)
+      const binsData = await getBins(warehouseID)
       setBins(binsData)
       setError(null)
       return binsData
