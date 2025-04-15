@@ -28,9 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: '',
     role: ''
   })
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    areTokensValid()
-  )
+  const [isAuthenticated, setIsAuthenticated] =
+    useState<boolean>(areTokensValid())
 
   const getMe = async () => {
     const account = await fetchUserProfile()
