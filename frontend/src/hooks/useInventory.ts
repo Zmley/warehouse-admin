@@ -1,10 +1,5 @@
 import { useState } from 'react'
-import {
-  getInventories,
-  deleteInventory,
-  updateInventory,
-  addInventory
-} from '../api/inventoryApi'
+import * as inventoryApi from '../api/inventoryApi'
 import { InventoryItem } from '../types/inventoryTypes'
 import { useParams } from 'react-router-dom'
 
@@ -29,7 +24,7 @@ export const useInventory = () => {
         return { success: false, message }
       }
 
-      const { inventory, totalCount } = await getInventories({
+      const { inventory, totalCount } = await inventoryApi.getInventories({
         warehouseID,
         binID: binID === 'All' ? undefined : binID,
         page,
@@ -52,7 +47,7 @@ export const useInventory = () => {
 
   const removeInventory = async (id: string) => {
     try {
-      await deleteInventory(id)
+      await inventoryApi.deleteInventory(id)
       setInventory(prev => prev.filter(item => item.inventoryID !== id))
       setError(null)
       return { success: true }
@@ -69,7 +64,7 @@ export const useInventory = () => {
     updatedData: Partial<InventoryItem>
   ) => {
     try {
-      await updateInventory(id, updatedData)
+      await inventoryApi.updateInventory(id, updatedData)
       setInventory(prev =>
         prev.map(item =>
           item.inventoryID === id ? { ...item, ...updatedData } : item
@@ -85,13 +80,13 @@ export const useInventory = () => {
     }
   }
 
-  const addInventoryItem = async (newItem: {
+  const addInventory = async (newProduct: {
     productCode: string
     binID: string
     quantity: number
   }) => {
     try {
-      const response = await addInventory(newItem)
+      const response = await inventoryApi.addInventory(newProduct)
       if (response.inventory) {
         setInventory(prev => [...prev, response.inventory])
         setError(null)
@@ -117,7 +112,7 @@ export const useInventory = () => {
     removeInventory,
     editInventory,
     fetchInventories,
-    addInventoryItem,
+    addInventory,
     setError // optionally exposed if needed externally
   }
 }

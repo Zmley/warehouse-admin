@@ -32,7 +32,7 @@ const CreateInventory: React.FC<Props> = ({
   const defaultQuantity = 1
 
   const { productCodes, fetchProducts, loading: productLoading } = useProduct()
-  const { addInventoryItem, error } = useInventory()
+  const { addInventory, error } = useInventory()
 
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState(defaultQuantity)
@@ -48,7 +48,7 @@ const CreateInventory: React.FC<Props> = ({
   }, [open, fetchProducts])
 
   const handleSubmit = async () => {
-    const result = await addInventoryItem({ productCode, binID, quantity })
+    const result = await addInventory({ productCode, binID, quantity })
 
     if (result.success) {
       setSuccessMessage('✅ Inventory item created successfully!')
