@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import * as inventoryApi from '../api/inventoryApi'
+import {
+  getInventories,
+  deleteInventory,
+  updateInventory,
+  createInventory
+} from '../api/inventoryApi'
 import { InventoryItem } from '../types/inventoryTypes'
 import { useParams } from 'react-router-dom'
 
@@ -24,7 +29,7 @@ export const useInventory = () => {
         return { success: false, message }
       }
 
-      const { inventory, totalCount } = await inventoryApi.getInventories({
+      const { inventory, totalCount } = await getInventories({
         warehouseID,
         binID: binID === 'All' ? undefined : binID,
         page,
@@ -47,7 +52,7 @@ export const useInventory = () => {
 
   const removeInventory = async (id: string) => {
     try {
-      await inventoryApi.deleteInventory(id)
+      await deleteInventory(id)
       setInventory(prev => prev.filter(item => item.inventoryID !== id))
       setError(null)
       return { success: true }
@@ -64,7 +69,7 @@ export const useInventory = () => {
     updatedData: Partial<InventoryItem>
   ) => {
     try {
-      await inventoryApi.updateInventory(id, updatedData)
+      await updateInventory(id, updatedData)
       setInventory(prev =>
         prev.map(item =>
           item.inventoryID === id ? { ...item, ...updatedData } : item
@@ -80,13 +85,13 @@ export const useInventory = () => {
     }
   }
 
-  const addInventory = async (newProduct: {
+  const addInventory = async (newItem: {
     productCode: string
     binID: string
     quantity: number
   }) => {
     try {
-      const response = await inventoryApi.addInventory(newProduct)
+      const response = await createInventory(newItem)
       if (response.inventory) {
         setInventory(prev => [...prev, response.inventory])
         setError(null)

@@ -19,7 +19,7 @@ export const deleteInventory = async (inventoryID: string) => {
   return response.data
 }
 
-export const addInventory = async (newProduct: {
+export const createInventory = async (newProduct: {
   productCode: string
   binID: string
   quantity: number
