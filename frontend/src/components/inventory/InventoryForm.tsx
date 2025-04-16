@@ -47,7 +47,7 @@ const InventoryForm: React.FC = () => {
   const [createInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage] = useState(10)
 
   const selectedBinData = bins.find(bin => bin.binID === selectedBin)
 
@@ -100,12 +100,6 @@ const InventoryForm: React.FC = () => {
   }
 
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage)
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(+event.target.value)
-    setPage(0)
-  }
 
   const binOptions = bins.map(bin => ({
     binID: bin.binID,
@@ -250,15 +244,14 @@ const InventoryForm: React.FC = () => {
             ))}
           </TableBody>
         </Table>
-
         <TablePagination
           component='div'
           count={totalCount}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 20, 50]}
+          rowsPerPage={10}
+          rowsPerPageOptions={[]}
+          labelRowsPerPage=''
         />
       </Paper>
 
