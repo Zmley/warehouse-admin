@@ -45,12 +45,12 @@ export const useInventory = () => {
     }
   }
 
-  const removeInventoryItem = async (id: string) => {
+  const removeInventory = async (id: string) => {
     await deleteInventory(id)
     setInventory(prev => prev.filter(item => item.inventoryID !== id))
   }
 
-  const editInventoryItem = async (
+  const editInventory = async (
     id: string,
     updatedData: Partial<InventoryItem>
   ) => {
@@ -79,8 +79,8 @@ export const useInventory = () => {
     loading,
     error,
     totalCount,
-    removeInventoryItem,
-    editInventoryItem,
+    removeInventory,
+    editInventory,
     fetchInventories,
     addInventoryItem
   }

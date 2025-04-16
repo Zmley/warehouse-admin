@@ -20,38 +20,35 @@ import CreateInventoryItemModal from './CreateInventory'
 import { InventoryItem } from '../../types/inventoryTypes'
 import { useInventory } from '../../hooks/useInventory'
 import { useBin } from '../../hooks/useBin'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 
 const InventoryForm: React.FC = () => {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const initialBinID = searchParams.get('binID') || 'All'
   const { warehouseID } = useParams<{ warehouseID: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialBinID = searchParams.get('binID') || 'All'
+  const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
+
+  const [selectedBin, setSelectedBin] = useState<string>(initialBinID)
+  const [page, setPage] = useState(initialPage)
+  const [rowsPerPage] = useState(10)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [createInventoryModalOpen, setCreateInventoryModalOpen] =
+    useState(false)
 
   const {
     inventory,
     totalCount,
     loading,
     error,
-    removeInventoryItem,
-    editInventoryItem,
+    removeInventory,
+    editInventory,
     fetchInventories
   } = useInventory()
 
   const { bins, fetchBins } = useBin()
-
-  const [selectedBin, setSelectedBin] = useState<string>(initialBinID)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
-  const [createInventoryModalOpen, setCreateInventoryModalOpen] =
-    useState(false)
-  // const [page, setPage] = useState(0)
-  const [rowsPerPage] = useState(10)
-
-  const initialPageParam = parseInt(searchParams.get('page') || '1', 10)
-  const [page, setPage] = useState(initialPageParam - 1) // 注意：分页从0开始
-
   const selectedBinData = bins.find(bin => bin.binID === selectedBin)
 
   useEffect(() => {
@@ -68,7 +65,26 @@ const InventoryForm: React.FC = () => {
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBin, page])
+  }, [selectedBin, page, warehouseID])
+
+  const handleChangeBin = (newValue: { binID: string } | null) => {
+    const newBinID = newValue ? newValue.binID : 'All'
+    setSelectedBin(newBinID)
+    setPage(0)
+    const newParams = new URLSearchParams(searchParams)
+    newBinID === 'All'
+      ? newParams.delete('binID')
+      : newParams.set('binID', newBinID)
+    newParams.set('page', '1')
+    setSearchParams(newParams)
+  }
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage)
+    const newParams = new URLSearchParams(searchParams)
+    newParams.set('page', (newPage + 1).toString())
+    setSearchParams(newParams)
+  }
 
   const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
   const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
@@ -82,33 +98,11 @@ const InventoryForm: React.FC = () => {
   }
   const handleSaveQuantity = async (newQuantity: number) => {
     if (!selectedItem) return
-    await editInventoryItem(selectedItem.inventoryID, { quantity: newQuantity })
+    await editInventory(selectedItem.inventoryID, { quantity: newQuantity })
     handleCloseModal()
   }
   const handleDelete = async (id: string) => {
-    await removeInventoryItem(id)
-  }
-
-  const handleChangeBin = (newValue: { binID: string } | null) => {
-    const newBinID = newValue ? newValue.binID : 'All'
-    setSelectedBin(newBinID)
-    setPage(0)
-
-    const url = new URL(window.location.href)
-    if (newBinID === 'All') {
-      url.searchParams.delete('binID')
-    } else {
-      url.searchParams.set('binID', newBinID)
-    }
-    url.searchParams.set('page', '1')
-    navigate(`${url.pathname}${url.search}`, { replace: true })
-  }
-
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage)
-    const url = new URL(window.location.href)
-    url.searchParams.set('page', (newPage + 1).toString())
-    navigate(`${url.pathname}${url.search}`, { replace: true })
+    await removeInventory(id)
   }
 
   const binOptions = bins.map(bin => ({
@@ -159,13 +153,13 @@ const InventoryForm: React.FC = () => {
 
         <Stack direction='row' spacing={2} alignItems='center'>
           <Button variant='contained' color='info'>
-            🔄 Transfer From other Warehouse
+            🔄 Transfer
           </Button>
           <Button
             variant='contained'
             sx={{ backgroundColor: '#4CAF50', color: '#fff' }}
           >
-            ⬆ Import Inventory
+            ⬆ Import
           </Button>
         </Stack>
       </Box>
@@ -192,7 +186,6 @@ const InventoryForm: React.FC = () => {
               ))}
             </TableRow>
           </TableHead>
-
           <TableBody>
             {inventory.map(item => (
               <TableRow key={item.inventoryID}>
@@ -224,14 +217,7 @@ const InventoryForm: React.FC = () => {
                 </TableCell>
                 <TableCell
                   align='center'
-                  sx={{
-                    border: '1px solid #e0e0e0',
-                    height: 28,
-                    fontSize: '0.75rem',
-                    py: 0,
-                    px: 1.5,
-                    minWidth: 'auto'
-                  }}
+                  sx={{ border: '1px solid #e0e0e0', py: 0 }}
                 >
                   <Button
                     variant='contained'
@@ -254,6 +240,7 @@ const InventoryForm: React.FC = () => {
             ))}
           </TableBody>
         </Table>
+
         <TablePagination
           component='div'
           count={totalCount}

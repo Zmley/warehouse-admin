@@ -28,7 +28,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
   const [newQuantity, setNewQuantity] = useState<number>(initialQuantity)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const { editInventoryItem } = useInventory()
+  const { editInventory } = useInventory()
 
   const handleSave = async () => {
     if (!inventoryId) {
@@ -42,7 +42,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         `🟢 Sending API Request: /api/inventory/${inventoryId} with quantity:`,
         newQuantity
       )
-      await editInventoryItem(inventoryId, { quantity: newQuantity })
+      await editInventory(inventoryId, { quantity: newQuantity })
       onQuantityUpdated(newQuantity)
       onClose()
     } catch (err) {
