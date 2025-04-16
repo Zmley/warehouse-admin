@@ -46,8 +46,11 @@ const InventoryForm: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [createInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
-  const [page, setPage] = useState(0)
+  // const [page, setPage] = useState(0)
   const [rowsPerPage] = useState(10)
+
+  const initialPageParam = parseInt(searchParams.get('page') || '1', 10)
+  const [page, setPage] = useState(initialPageParam - 1) // 注意：分页从0开始
 
   const selectedBinData = bins.find(bin => bin.binID === selectedBin)
 
@@ -90,16 +93,23 @@ const InventoryForm: React.FC = () => {
     const newBinID = newValue ? newValue.binID : 'All'
     setSelectedBin(newBinID)
     setPage(0)
+
     const url = new URL(window.location.href)
     if (newBinID === 'All') {
       url.searchParams.delete('binID')
     } else {
       url.searchParams.set('binID', newBinID)
     }
+    url.searchParams.set('page', '1')
     navigate(`${url.pathname}${url.search}`, { replace: true })
   }
 
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage)
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage)
+    const url = new URL(window.location.href)
+    url.searchParams.set('page', (newPage + 1).toString())
+    navigate(`${url.pathname}${url.search}`, { replace: true })
+  }
 
   const binOptions = bins.map(bin => ({
     binID: bin.binID,
