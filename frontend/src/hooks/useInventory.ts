@@ -12,7 +12,7 @@ export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [totalCount, setTotalCount] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const { warehouseID } = useParams()
 
   const fetchInventories = useCallback(
@@ -34,7 +34,7 @@ export const useInventory = () => {
         })
 
         setInventory(inventory)
-        setTotalCount(totalCount)
+        setTotalPages(totalCount)
         setError(null)
         return { success: true }
       } catch (err: any) {
@@ -115,7 +115,7 @@ export const useInventory = () => {
     inventory,
     loading,
     error,
-    totalCount,
+    totalPages,
     fetchInventories,
     removeInventory,
     editInventory,

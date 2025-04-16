@@ -39,7 +39,7 @@ const InventoryForm: React.FC = () => {
 
   const {
     inventory,
-    totalCount,
+    totalPages,
     loading,
     error,
     removeInventory,
@@ -238,7 +238,7 @@ const InventoryForm: React.FC = () => {
 
         <TablePagination
           component='div'
-          count={totalCount}
+          count={totalPages}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={10}
