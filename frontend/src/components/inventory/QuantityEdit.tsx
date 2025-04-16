@@ -6,7 +6,8 @@ import {
   DialogActions,
   Button,
   TextField,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from '@mui/material'
 import { useInventory } from '../../hooks/useInventory'
 
@@ -27,34 +28,24 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
 }) => {
   const [newQuantity, setNewQuantity] = useState<number>(initialQuantity)
   const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const { editInventory } = useInventory()
+
+  const { editInventory, error } = useInventory()
 
   const handleSave = async () => {
-    if (!inventoryId) {
-      setError('❌ Missing inventory ID')
-      return
-    }
-
+    if (!inventoryId) return
     try {
       setLoading(true)
-      console.log(
-        `🟢 Sending API Request: /api/inventory/${inventoryId} with quantity:`,
-        newQuantity
-      )
       await editInventory(inventoryId, { quantity: newQuantity })
       onQuantityUpdated(newQuantity)
       onClose()
-    } catch (err) {
-      setError('❌ Failed to update quantity')
-      console.error('❌ Error updating inventory:', err)
     } finally {
       setLoading(false)
     }
   }
+
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>🔄 Update Quantity</DialogTitle>
+      <DialogTitle> Update Quantity</DialogTitle>
       <DialogContent>
         <TextField
           type='number'
@@ -62,9 +53,13 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
           onChange={e => setNewQuantity(Number(e.target.value))}
           fullWidth
           sx={{ mt: 2 }}
-          error={!!error}
-          helperText={error}
         />
+
+        {error && (
+          <Alert severity='error' sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color='secondary' disabled={loading}>

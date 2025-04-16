@@ -32,8 +32,7 @@ const InventoryForm: React.FC = () => {
 
   const [selectedBin, setSelectedBin] = useState<string>(initialBinID)
   const [page, setPage] = useState(initialPage)
-  const [rowsPerPage] = useState(10)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [isModalOpen, setModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [createInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
@@ -60,8 +59,8 @@ const InventoryForm: React.FC = () => {
     if (warehouseID) {
       fetchInventories(
         selectedBin === 'All' ? undefined : selectedBin,
-        page + 1,
-        rowsPerPage
+        page + 1
+        // rowsPerPage
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,11 +110,7 @@ const InventoryForm: React.FC = () => {
   }))
 
   const handleSuccess = () => {
-    fetchInventories(
-      selectedBin === 'All' ? undefined : selectedBin,
-      page + 1,
-      rowsPerPage
-    )
+    fetchInventories(selectedBin === 'All' ? undefined : selectedBin, page + 1)
   }
 
   if (loading) return <Typography>Loading...</Typography>
@@ -254,7 +249,7 @@ const InventoryForm: React.FC = () => {
 
       {selectedItem && (
         <QuantityEditModal
-          open={modalOpen}
+          open={isModalOpen}
           onClose={handleCloseModal}
           inventoryId={selectedItem.inventoryID}
           initialQuantity={selectedItem.quantity}

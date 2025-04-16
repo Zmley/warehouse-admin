@@ -29,129 +29,97 @@ const CreateInventory: React.FC<Props> = ({
   binCode,
   binID
 }) => {
+  const defaultQuantity = 1
+
   const { productCodes, fetchProducts, loading: productLoading } = useProduct()
+  const { addInventoryItem, error } = useInventory()
 
-  const [productCode, setProductCode] = useState<string>('')
-  const [quantity, setQuantity] = useState<number>(1)
-  const [message, setMessage] = useState<string>('')
-  const [messageType, setMessageType] = useState<
-    'success' | 'error' | undefined
-  >(undefined)
-
-  const { addInventoryItem } = useInventory()
+  const [productCode, setProductCode] = useState('')
+  const [quantity, setQuantity] = useState(defaultQuantity)
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     if (open) {
       fetchProducts()
+      setProductCode('')
+      setQuantity(defaultQuantity)
+      setSuccessMessage('')
     }
   }, [open, fetchProducts])
 
-  const handleCreateInventory = async () => {
-    try {
-      const response = await addInventoryItem({
-        productCode,
-        binID,
-        quantity
-      })
+  const handleSubmit = async () => {
+    const result = await addInventoryItem({ productCode, binID, quantity })
 
-      if (response.success) {
-        setMessage('✅ Inventory item created successfully!')
-        setMessageType('success')
-        onClose()
-        onSuccess()
-      } else {
-        setMessage(response.message || 'Failed to create inventory.')
-        setMessageType('error')
-      }
-    } catch (err: any) {
-      console.error('❌ Error creating inventory:', err)
-      setMessage('Failed to create inventory.')
-      setMessageType('error')
+    if (result.success) {
+      setSuccessMessage('✅ Inventory item created successfully!')
+      onClose()
+      onSuccess()
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      sx={{ padding: '20px', minWidth: '500px' }}
-    >
-      <DialogTitle
-        sx={{ fontWeight: 'bold', fontSize: '1.25rem', textAlign: 'center' }}
-      >
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
+      <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>
         Create Inventory Item for {binCode}
       </DialogTitle>
-      <DialogContent sx={{ paddingBottom: '20px' }}>
+
+      <DialogContent sx={{ pb: 2 }}>
         <Paper
           elevation={4}
-          sx={{
-            padding: 4,
-            borderRadius: 4,
-            backgroundColor: '#fdfdfd'
-          }}
+          sx={{ p: 4, borderRadius: 3, backgroundColor: '#fdfdfd' }}
         >
           <Stack spacing={3}>
             <Autocomplete
               options={productCodes}
               value={productCode}
-              onChange={(event, newValue) => setProductCode(newValue || '')}
+              onChange={(_, newValue) => setProductCode(newValue || '')}
               loading={productLoading}
               renderInput={params => (
-                <TextField
-                  {...params}
-                  label='Product Code'
-                  fullWidth
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      height: '50px'
-                    }
-                  }}
-                />
+                <TextField {...params} label='Product Code' fullWidth />
               )}
             />
+
             <TextField
               label='Quantity'
+              type='number'
               value={quantity}
               onChange={e => setQuantity(Number(e.target.value))}
-              type='number'
               fullWidth
-              sx={{
-                '& .MuiInputBase-root': {
-                  height: '50px'
-                }
-              }}
+              inputProps={{ min: 1 }}
             />
-            {message && (
-              <Alert severity={messageType} sx={{ mt: 2, fontWeight: 'bold' }}>
-                {message}
+
+            {error && (
+              <Alert severity='error' sx={{ fontWeight: 'bold' }}>
+                {error}
+              </Alert>
+            )}
+
+            {successMessage && (
+              <Alert severity='success' sx={{ fontWeight: 'bold' }}>
+                {successMessage}
               </Alert>
             )}
           </Stack>
         </Paper>
       </DialogContent>
 
-      <DialogActions sx={{ padding: '20px' }}>
+      <DialogActions sx={{ p: 3 }}>
         <Button
           onClick={onClose}
-          sx={{
-            width: '100px',
-            height: '50px',
-            backgroundColor: '#e0e0e0',
-            '&:hover': { backgroundColor: '#d5d5d5' },
-            fontWeight: 'bold'
-          }}
+          variant='outlined'
+          sx={{ width: 100, height: 45, fontWeight: 'bold' }}
         >
           Cancel
         </Button>
         <Button
-          onClick={handleCreateInventory}
-          color='primary'
+          onClick={handleSubmit}
+          variant='contained'
           sx={{
-            width: '100px',
-            height: '50px',
-            backgroundColor: '#e0e0e0',
-            '&:hover': { backgroundColor: '#d5d5d5' },
-            fontWeight: 'bold'
+            width: 100,
+            height: 45,
+            fontWeight: 'bold',
+            backgroundColor: '#3f51b5',
+            '&:hover': { backgroundColor: '#303f9f' }
           }}
         >
           Create

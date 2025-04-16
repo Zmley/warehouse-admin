@@ -12,20 +12,21 @@ export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const { warehouseID } = useParams()
   const [totalCount, setTotalCount] = useState(0)
+  const { warehouseID } = useParams()
 
   const fetchInventories = async (
     binID?: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 10
   ) => {
     try {
       setLoading(true)
 
       if (!warehouseID) {
-        setError('❌ No warehouse selected.')
-        return
+        const message = '❌ No warehouse selected.'
+        setError(message)
+        return { success: false, message }
       }
 
       const { inventory, totalCount } = await getInventories({
@@ -38,28 +39,50 @@ export const useInventory = () => {
       setInventory(inventory)
       setTotalCount(totalCount)
       setError(null)
-    } catch (err) {
-      setError('❌ Failed to fetch inventory data')
+      return { success: true }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || '❌ Failed to fetch inventory data'
+      setError(message)
+      return { success: false, message }
     } finally {
       setLoading(false)
     }
   }
 
   const removeInventory = async (id: string) => {
-    await deleteInventory(id)
-    setInventory(prev => prev.filter(item => item.inventoryID !== id))
+    try {
+      await deleteInventory(id)
+      setInventory(prev => prev.filter(item => item.inventoryID !== id))
+      setError(null)
+      return { success: true }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || '❌ Failed to delete inventory item'
+      setError(message)
+      return { success: false, message }
+    }
   }
 
   const editInventory = async (
     id: string,
     updatedData: Partial<InventoryItem>
   ) => {
-    await updateInventory(id, updatedData)
-    setInventory(prev =>
-      prev.map(item =>
-        item.inventoryID === id ? { ...item, ...updatedData } : item
+    try {
+      await updateInventory(id, updatedData)
+      setInventory(prev =>
+        prev.map(item =>
+          item.inventoryID === id ? { ...item, ...updatedData } : item
+        )
       )
-    )
+      setError(null)
+      return { success: true }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || '❌ Failed to update inventory item'
+      setError(message)
+      return { success: false, message }
+    }
   }
 
   const addInventoryItem = async (newItem: {
@@ -67,11 +90,23 @@ export const useInventory = () => {
     binID: string
     quantity: number
   }) => {
-    const response = await addInventory(newItem)
-    if (response.inventory) {
-      setInventory(prev => [...prev, response.inventory])
+    try {
+      const response = await addInventory(newItem)
+      if (response.inventory) {
+        setInventory(prev => [...prev, response.inventory])
+        setError(null)
+        return { success: true, inventory: response.inventory }
+      } else {
+        const message = response.message || '❌ Failed to add inventory item'
+        setError(message)
+        return { success: false, message }
+      }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || '❌ Error adding inventory item'
+      setError(message)
+      return { success: false, message }
     }
-    return response
   }
 
   return {
@@ -82,6 +117,7 @@ export const useInventory = () => {
     removeInventory,
     editInventory,
     fetchInventories,
-    addInventoryItem
+    addInventoryItem,
+    setError // optionally exposed if needed externally
   }
 }
