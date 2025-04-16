@@ -31,7 +31,7 @@ const CreateInventory: React.FC<Props> = ({
 }) => {
   const defaultQuantity = 1
 
-  const { productCodes, fetchProducts, loading: productLoading } = useProduct()
+  const { productCodes, fetchProducts, loading } = useProduct()
   const { addInventory, error } = useInventory()
 
   const [productCode, setProductCode] = useState('')
@@ -73,7 +73,7 @@ const CreateInventory: React.FC<Props> = ({
               options={productCodes}
               value={productCode}
               onChange={(_, newValue) => setProductCode(newValue || '')}
-              loading={productLoading}
+              loading={loading}
               renderInput={params => (
                 <TextField {...params} label='Product Code' fullWidth />
               )}

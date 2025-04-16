@@ -113,6 +113,6 @@ export const useInventory = () => {
     editInventory,
     fetchInventories,
     addInventory,
-    setError // optionally exposed if needed externally
+    setError
   }
 }
