@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getInventories,
   deleteInventory,
@@ -15,42 +15,41 @@ export const useInventory = () => {
   const [totalCount, setTotalCount] = useState(0)
   const { warehouseID } = useParams()
 
-  const fetchInventories = async (
-    binID?: string,
-    page: number = 1,
-    limit: number = 10
-  ) => {
-    try {
-      setLoading(true)
+  const fetchInventories = useCallback(
+    async (binID?: string, page: number = 1, limit: number = 10) => {
+      try {
+        setLoading(true)
 
-      if (!warehouseID) {
-        const message = '❌ No warehouse selected.'
+        if (!warehouseID) {
+          const message = '❌ No warehouse selected.'
+          setError(message)
+          return { success: false, message }
+        }
+
+        const { inventory, totalCount } = await getInventories({
+          warehouseID,
+          binID: binID === 'All' ? undefined : binID,
+          page,
+          limit
+        })
+
+        setInventory(inventory)
+        setTotalCount(totalCount)
+        setError(null)
+        return { success: true }
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message || '❌ Failed to fetch inventory data'
         setError(message)
         return { success: false, message }
+      } finally {
+        setLoading(false)
       }
+    },
+    [warehouseID]
+  )
 
-      const { inventory, totalCount } = await getInventories({
-        warehouseID,
-        binID: binID === 'All' ? undefined : binID,
-        page,
-        limit
-      })
-
-      setInventory(inventory)
-      setTotalCount(totalCount)
-      setError(null)
-      return { success: true }
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || '❌ Failed to fetch inventory data'
-      setError(message)
-      return { success: false, message }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const removeInventory = async (id: string) => {
+  const removeInventory = useCallback(async (id: string) => {
     try {
       await deleteInventory(id)
       setInventory(prev => prev.filter(item => item.inventoryID !== id))
@@ -62,61 +61,64 @@ export const useInventory = () => {
       setError(message)
       return { success: false, message }
     }
-  }
+  }, [])
 
-  const editInventory = async (
-    id: string,
-    updatedData: Partial<InventoryItem>
-  ) => {
-    try {
-      await updateInventory(id, updatedData)
-      setInventory(prev =>
-        prev.map(item =>
-          item.inventoryID === id ? { ...item, ...updatedData } : item
+  const editInventory = useCallback(
+    async (id: string, updatedData: Partial<InventoryItem>) => {
+      try {
+        await updateInventory(id, updatedData)
+        setInventory(prev =>
+          prev.map(item =>
+            item.inventoryID === id ? { ...item, ...updatedData } : item
+          )
         )
-      )
-      setError(null)
-      return { success: true }
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || '❌ Failed to update inventory item'
-      setError(message)
-      return { success: false, message }
-    }
-  }
-
-  const addInventory = async (newItem: {
-    productCode: string
-    binID: string
-    quantity: number
-  }) => {
-    try {
-      const response = await createInventory(newItem)
-      if (response.inventory) {
-        setInventory(prev => [...prev, response.inventory])
         setError(null)
-        return { success: true, inventory: response.inventory }
-      } else {
-        const message = response.message || '❌ Failed to add inventory item'
+        return { success: true }
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message || '❌ Failed to update inventory item'
         setError(message)
         return { success: false, message }
       }
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || '❌ Error adding inventory item'
-      setError(message)
-      return { success: false, message }
-    }
-  }
+    },
+    []
+  )
+
+  const addInventory = useCallback(
+    async (newItem: {
+      productCode: string
+      binID: string
+      quantity: number
+    }) => {
+      try {
+        const response = await createInventory(newItem)
+        if (response.inventory) {
+          setInventory(prev => [...prev, response.inventory])
+          setError(null)
+          return { success: true, inventory: response.inventory }
+        } else {
+          const message = response.message || '❌ Failed to add inventory item'
+          setError(message)
+          return { success: false, message }
+        }
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message || '❌ Error adding inventory item'
+        setError(message)
+        return { success: false, message }
+      }
+    },
+    []
+  )
 
   return {
     inventory,
     loading,
     error,
     totalCount,
+    fetchInventories,
     removeInventory,
     editInventory,
-    fetchInventories,
     addInventory,
     setError
   }
