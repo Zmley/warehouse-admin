@@ -14,7 +14,8 @@ import { useInventory } from '../../hooks/useInventory'
 interface QuantityEditModalProps {
   open: boolean
   onClose: () => void
-  inventoryId: string
+  onSuccess: () => void
+  inventoryID: string
   initialQuantity: number
   onQuantityUpdated: (updatedQuantity: number) => void
 }
@@ -22,30 +23,38 @@ interface QuantityEditModalProps {
 const QuantityEdit: React.FC<QuantityEditModalProps> = ({
   open,
   onClose,
-  inventoryId,
+  inventoryID,
   initialQuantity,
-  onQuantityUpdated
+  onSuccess
 }) => {
   const [newQuantity, setNewQuantity] = useState<number>(initialQuantity)
-  const [loading, setLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const { editInventory, error } = useInventory()
 
-  const handleSave = async () => {
-    if (!inventoryId) return
+  const handleUpdateQuantity = async () => {
+    if (!inventoryID) return
+
     try {
-      setLoading(true)
-      await editInventory(inventoryId, { quantity: newQuantity })
-      onQuantityUpdated(newQuantity)
-      onClose()
+      setIsLoading(true)
+
+      const result = await editInventory(inventoryID, { quantity: newQuantity })
+
+      if (result.success) {
+        onClose()
+        onSuccess()
+        alert('✅ Quantity updated successfully!')
+      } else {
+        alert(error || '❌ Failed to update quantity')
+      }
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle> Update Quantity</DialogTitle>
+      <DialogTitle>Update Quantity</DialogTitle>
       <DialogContent>
         <TextField
           type='number'
@@ -62,16 +71,16 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color='secondary' disabled={loading}>
+        <Button onClick={onClose} color='secondary' disabled={isLoading}>
           Cancel
         </Button>
         <Button
-          onClick={handleSave}
+          onClick={handleUpdateQuantity}
           color='primary'
           variant='contained'
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? <CircularProgress size={24} /> : 'Save'}
+          {isLoading ? <CircularProgress size={24} /> : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

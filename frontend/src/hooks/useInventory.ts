@@ -9,8 +9,8 @@ import { InventoryItem } from '../types/inventoryTypes'
 import { useParams } from 'react-router-dom'
 
 export const useInventory = () => {
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [inventories, setInventories] = useState<InventoryItem[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(0)
   const { warehouseID } = useParams()
@@ -18,7 +18,7 @@ export const useInventory = () => {
   const fetchInventories = useCallback(
     async (binID?: string, page: number = 1, limit: number = 10) => {
       try {
-        setLoading(true)
+        setIsLoading(true)
 
         if (!warehouseID) {
           const message = '❌ No warehouse selected.'
@@ -33,7 +33,7 @@ export const useInventory = () => {
           limit
         })
 
-        setInventory(inventory)
+        setInventories(inventory)
         setTotalPages(totalCount)
         setError(null)
         return { success: true }
@@ -43,7 +43,7 @@ export const useInventory = () => {
         setError(message)
         return { success: false, message }
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     },
     [warehouseID]
@@ -51,34 +51,42 @@ export const useInventory = () => {
 
   const removeInventory = useCallback(async (id: string) => {
     try {
-      await deleteInventory(id)
-      setInventory(prev => prev.filter(item => item.inventoryID !== id))
-      setError(null)
-      return { success: true }
+      const result = await deleteInventory(id)
+
+      if (result.success) {
+        setInventories(prev => prev.filter(item => item.inventoryID !== id))
+        setError(null)
+        return result
+      } else {
+        setError(result.message || '❌ Failed to delete inventory item')
+      }
     } catch (err: any) {
       const message =
         err?.response?.data?.message || '❌ Failed to delete inventory item'
       setError(message)
-      return { success: false, message }
     }
   }, [])
 
   const editInventory = useCallback(
     async (id: string, updatedData: Partial<InventoryItem>) => {
       try {
-        await updateInventory(id, updatedData)
-        setInventory(prev =>
-          prev.map(item =>
-            item.inventoryID === id ? { ...item, ...updatedData } : item
+        const result = await updateInventory(id, updatedData)
+
+        if (result.success) {
+          setInventories(prev =>
+            prev.map(item =>
+              item.inventoryID === id ? { ...item, ...updatedData } : item
+            )
           )
-        )
-        setError(null)
-        return { success: true }
+          setError(null)
+          return result
+        } else {
+          throw new Error('Failed to update inventory item')
+        }
       } catch (err: any) {
         const message =
           err?.response?.data?.message || '❌ Failed to update inventory item'
         setError(message)
-        return { success: false, message }
       }
     },
     []
@@ -91,29 +99,27 @@ export const useInventory = () => {
       quantity: number
     }) => {
       try {
-        const response = await createInventory(newItem)
-        if (response.inventory) {
-          setInventory(prev => [...prev, response.inventory])
+        const result = await createInventory(newItem)
+        if (result.success) {
+          setInventories(prev => [...prev, result.inventory])
           setError(null)
-          return { success: true, inventory: response.inventory }
+          return result
         } else {
-          const message = response.message || '❌ Failed to add inventory item'
+          const message = result.message || '❌ Failed to add inventory item'
           setError(message)
-          return { success: false, message }
         }
       } catch (err: any) {
         const message =
           err?.response?.data?.message || '❌ Error adding inventory item'
         setError(message)
-        return { success: false, message }
       }
     },
     []
   )
 
   return {
-    inventory,
-    loading,
+    inventory: inventories,
+    loading: isLoading,
     error,
     totalPages,
     fetchInventories,

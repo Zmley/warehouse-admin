@@ -29,31 +29,36 @@ const CreateInventory: React.FC<Props> = ({
   binCode,
   binID
 }) => {
-  const defaultQuantity = 1
-
   const { productCodes, fetchProducts, loading } = useProduct()
   const { addInventory, error } = useInventory()
 
   const [productCode, setProductCode] = useState('')
-  const [quantity, setQuantity] = useState(defaultQuantity)
+  const [quantity, setQuantity] = useState(1)
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     if (open) {
       fetchProducts()
       setProductCode('')
-      setQuantity(defaultQuantity)
+      setQuantity(1)
       setSuccessMessage('')
     }
   }, [open, fetchProducts])
 
   const handleSubmit = async () => {
-    const result = await addInventory({ productCode, binID, quantity })
+    try {
+      const result = await addInventory({ productCode, binID, quantity })
 
-    if (result.success) {
-      setSuccessMessage('✅ Inventory item created successfully!')
-      onClose()
-      onSuccess()
+      if (result.success) {
+        alert('✅ Inventory item created successfully!')
+        onClose()
+        onSuccess()
+      } else {
+        alert(error)
+      }
+    } catch (err) {
+      console.error('❌ Error creating inventory item:', err)
+      alert('❌ An error occurred while creating inventory item.')
     }
   }
 

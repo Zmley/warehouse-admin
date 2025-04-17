@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import * as taskApi from '../api/taskApi'
-import { TaskStatusFilter } from '../types/task'
+import { TaskStatusFilter } from '../types/TaskStatusFilter'
 
 interface CreateTaskPayload {
   sourceBinCode: string
