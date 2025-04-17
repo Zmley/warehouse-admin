@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Button,
   TextField,
   Autocomplete,
   Alert,
   Stack,
-  Paper
+  Paper,
+  Typography
 } from '@mui/material'
 import { useInventory } from '../../hooks/useInventory'
 import { useProduct } from '../../hooks/useProduct'
@@ -63,74 +60,73 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
-      <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+    <Paper
+      elevation={4}
+      sx={{ p: 4, borderRadius: 3, backgroundColor: '#fdfdfd', minWidth: 400 }}
+    >
+      <Typography
+        variant='h6'
+        sx={{ fontWeight: 'bold', textAlign: 'center', mb: 2 }}
+      >
         Create Inventory Item for {binCode}
-      </DialogTitle>
+      </Typography>
 
-      <DialogContent sx={{ pb: 2 }}>
-        <Paper
-          elevation={4}
-          sx={{ p: 4, borderRadius: 3, backgroundColor: '#fdfdfd' }}
-        >
-          <Stack spacing={3}>
-            <Autocomplete
-              options={productCodes}
-              value={productCode}
-              onChange={(_, newValue) => setProductCode(newValue || '')}
-              loading={loading}
-              renderInput={params => (
-                <TextField {...params} label='Product Code' fullWidth />
-              )}
-            />
+      <Stack spacing={3}>
+        <Autocomplete
+          options={productCodes}
+          value={productCode}
+          onChange={(_, newValue) => setProductCode(newValue || '')}
+          loading={loading}
+          renderInput={params => (
+            <TextField {...params} label='Product Code' fullWidth />
+          )}
+        />
 
-            <TextField
-              label='Quantity'
-              type='number'
-              value={quantity}
-              onChange={e => setQuantity(Number(e.target.value))}
-              fullWidth
-              inputProps={{ min: 1 }}
-            />
+        <TextField
+          label='Quantity'
+          type='number'
+          value={quantity}
+          onChange={e => setQuantity(Number(e.target.value))}
+          fullWidth
+          inputProps={{ min: 1 }}
+        />
 
-            {error && (
-              <Alert severity='error' sx={{ fontWeight: 'bold' }}>
-                {error}
-              </Alert>
-            )}
+        {error && (
+          <Alert severity='error' sx={{ fontWeight: 'bold' }}>
+            {error}
+          </Alert>
+        )}
 
-            {successMessage && (
-              <Alert severity='success' sx={{ fontWeight: 'bold' }}>
-                {successMessage}
-              </Alert>
-            )}
-          </Stack>
-        </Paper>
-      </DialogContent>
+        {successMessage && (
+          <Alert severity='success' sx={{ fontWeight: 'bold' }}>
+            {successMessage}
+          </Alert>
+        )}
 
-      <DialogActions sx={{ p: 3 }}>
-        <Button
-          onClick={onClose}
-          variant='outlined'
-          sx={{ width: 100, height: 45, fontWeight: 'bold' }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant='contained'
-          sx={{
-            width: 100,
-            height: 45,
-            fontWeight: 'bold',
-            backgroundColor: '#3f51b5',
-            '&:hover': { backgroundColor: '#303f9f' }
-          }}
-        >
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <Stack direction='row' spacing={2} justifyContent='flex-end'>
+          <Button
+            onClick={onClose}
+            variant='outlined'
+            sx={{ width: 100, height: 45, fontWeight: 'bold' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant='contained'
+            sx={{
+              width: 100,
+              height: 45,
+              fontWeight: 'bold',
+              backgroundColor: '#3f51b5',
+              '&:hover': { backgroundColor: '#303f9f' }
+            }}
+          >
+            Create
+          </Button>
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
