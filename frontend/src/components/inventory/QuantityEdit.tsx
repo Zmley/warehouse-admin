@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import { useInventory } from '../../hooks/useInventory'
 
-interface QuantityEditModalProps {
+interface QuantityEditProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
@@ -20,7 +20,7 @@ interface QuantityEditModalProps {
   onQuantityUpdated: (updatedQuantity: number) => void
 }
 
-const QuantityEdit: React.FC<QuantityEditModalProps> = ({
+const QuantityEdit: React.FC<QuantityEditProps> = ({
   open,
   onClose,
   inventoryID,

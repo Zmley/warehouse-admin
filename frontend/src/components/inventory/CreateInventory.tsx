@@ -14,7 +14,7 @@ import {
 import { useInventory } from '../../hooks/useInventory'
 import { useProduct } from '../../hooks/useProduct'
 
-interface Props {
+interface CreateInventoryProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
@@ -22,7 +22,7 @@ interface Props {
   binID: string
 }
 
-const CreateInventory: React.FC<Props> = ({
+const CreateInventory: React.FC<CreateInventoryProps> = ({
   open,
   onClose,
   onSuccess,
