@@ -11,7 +11,6 @@ import {
   TableRow,
   Button,
   Paper,
-  Dialog,
   Autocomplete,
   TextField,
   TablePagination,
@@ -290,20 +289,15 @@ const Inventory: React.FC = () => {
         />
       )}
 
-      <Dialog
-        open={isCreateInventoryModalOpen}
-        onClose={handleCreateInventoryClose}
-      >
-        <Box sx={{ p: 3 }}>
-          <CreateInventory
-            open={isCreateInventoryModalOpen}
-            onClose={handleCreateInventoryClose}
-            onSuccess={handleSuccess}
-            binCode={selectedBinData?.binCode || ''}
-            binID={selectedBinData?.binID || ''}
-          />
-        </Box>
-      </Dialog>
+      <Box sx={{ p: 3 }}>
+        <CreateInventory
+          open={isCreateInventoryModalOpen}
+          onClose={handleCreateInventoryClose}
+          onSuccess={handleSuccess}
+          binCode={selectedBinData?.binCode || ''}
+          binID={selectedBinData?.binID || ''}
+        />
+      </Box>
     </Box>
   )
 }
