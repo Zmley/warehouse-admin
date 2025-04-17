@@ -21,7 +21,7 @@ import {
 } from '@mui/material'
 import QuantityEdit from '../components/inventory/QuantityEdit'
 import CreateInventory from '../components/inventory/CreateInventory'
-import { InventoryItem as InventoryTypes } from '../types/inventoryTypes'
+import { InventoryItem } from '../types/InventoryItem'
 import { useInventory } from '../hooks/useInventory'
 import { useBin } from '../hooks/useBin'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -38,7 +38,7 @@ const Inventory: React.FC = () => {
   const [page, setPage] = useState(initialPage)
 
   const [isQuantityModalOpen, setQuantityModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<InventoryTypes | null>(null)
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [isCreateInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
 
@@ -91,7 +91,7 @@ const Inventory: React.FC = () => {
 
   const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
   const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
-  const handleOpenModal = (item: InventoryTypes) => {
+  const handleOpenModal = (item: InventoryItem) => {
     setSelectedItem(item)
     setQuantityModalOpen(true)
   }
