@@ -45,7 +45,7 @@ const QuantityEdit: React.FC<QuantityEditModalProps> = ({
         onSuccess()
         alert('✅ Quantity updated successfully!')
       } else {
-        alert(error || '❌ Failed to update quantity')
+        alert(error)
       }
     } finally {
       setIsLoading(false)
