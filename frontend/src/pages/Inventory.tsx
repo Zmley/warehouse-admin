@@ -45,7 +45,7 @@ const Inventory: React.FC = () => {
   const {
     inventory,
     totalPages,
-    loading,
+    isLoading,
     error,
     removeInventory,
     editInventory,
@@ -130,7 +130,7 @@ const Inventory: React.FC = () => {
     fetchInventories(selectedBin === 'All' ? undefined : selectedBin, page + 1)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <Box

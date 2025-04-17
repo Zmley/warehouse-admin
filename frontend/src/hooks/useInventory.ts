@@ -119,7 +119,7 @@ export const useInventory = () => {
 
   return {
     inventory: inventories,
-    loading: isLoading,
+    isLoading,
     error,
     totalPages,
     fetchInventories,
