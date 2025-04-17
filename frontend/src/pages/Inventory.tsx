@@ -1,5 +1,4 @@
 import React from 'react'
-import Layout from '../components/Layout'
 
 import { useState, useEffect } from 'react'
 import {
@@ -132,201 +131,180 @@ const Inventory: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Layout>
-        <Box
-          sx={{
-            p: 3,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%'
-          }}
-        >
-          <CircularProgress size={50} sx={{ marginRight: 2 }} />
-          <Typography variant='h6'>Loading...</Typography>
-        </Box>
-      </Layout>
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%'
+        }}
+      >
+        <CircularProgress size={50} sx={{ marginRight: 2 }} />
+        <Typography variant='h6'>Loading...</Typography>
+      </Box>
     )
   }
 
   if (error) return <Typography color='error'>{error}</Typography>
 
   return (
-    <Layout>
-      <Box sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Autocomplete
-            options={binOptions}
-            getOptionLabel={option => option.binCode}
-            value={selectedBinData || null}
-            onChange={(_, newValue) => handleChangeBin(newValue)}
-            renderInput={params => (
-              <TextField
-                {...params}
-                label='Bin Code'
-                variant='outlined'
-                size='small'
-              />
-            )}
-            isOptionEqualToValue={(option, value) =>
-              option.binID === value.binID
-            }
-            sx={{ width: '100%', maxWidth: '200px', ml: 0 }}
-          />
-
-          {selectedBin !== 'All' && (
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={handleCreateInventoryOpen}
-            >
-              Create Inventory
-            </Button>
+    <Box sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+        <Autocomplete
+          options={binOptions}
+          getOptionLabel={option => option.binCode}
+          value={selectedBinData || null}
+          onChange={(_, newValue) => handleChangeBin(newValue)}
+          renderInput={params => (
+            <TextField
+              {...params}
+              label='Bin Code'
+              variant='outlined'
+              size='small'
+            />
           )}
+          isOptionEqualToValue={(option, value) => option.binID === value.binID}
+          sx={{ width: '100%', maxWidth: '200px', ml: 0 }}
+        />
 
-          <Stack direction='row' spacing={2} alignItems='center'>
-            <Button variant='contained' color='info'>
-              🔄 Transfer
-            </Button>
-            <Button
-              variant='contained'
-              sx={{ backgroundColor: '#4CAF50', color: '#fff' }}
-            >
-              ⬆ Import
-            </Button>
-          </Stack>
-        </Box>
-
-        <Paper elevation={3} sx={{ borderRadius: 3 }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
-                {[
-                  'Inventory ID',
-                  'Bin Code',
-                  'Product Code',
-                  'Quantity',
-                  'Updated At',
-                  'Action'
-                ].map(header => (
-                  <TableCell
-                    key={header}
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {header}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {inventory.map(item => (
-                <TableRow key={item.inventoryID}>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {item.inventoryID}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {item.Bin?.binCode || '--'}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    <Typography
-                      component='a'
-                      href={`/product/${item.productCode}`}
-                      sx={{ textDecoration: 'underline', color: '#1976d2' }}
-                    >
-                      {item.productCode}
-                    </Typography>
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    <Typography
-                      sx={{ cursor: 'pointer', fontWeight: 500 }}
-                      onClick={() => handleOpenModal(item)}
-                    >
-                      {item.quantity}
-                    </Typography>
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0', py: 0 }}
-                  >
-                    <Button
-                      variant='contained'
-                      color='error'
-                      size='small'
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Are you sure you want to delete this item?'
-                          )
-                        ) {
-                          handleDelete(item.inventoryID)
-                        }
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <TablePagination
-            component='div'
-            count={totalPages}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={10}
-            rowsPerPageOptions={[]}
-            labelRowsPerPage=''
-          />
-        </Paper>
-
-        {selectedItem && (
-          <QuantityEdit
-            open={isQuantityModalOpen}
-            onClose={handleCloseModal}
-            inventoryID={selectedItem.inventoryID}
-            initialQuantity={selectedItem.quantity}
-            onSuccess={handleSuccess}
-            onQuantityUpdated={handleSaveQuantity}
-          />
+        {selectedBin !== 'All' && (
+          <Button
+            variant='contained'
+            color='primary'
+            onClick={handleCreateInventoryOpen}
+          >
+            Create Inventory
+          </Button>
         )}
 
-        <Dialog
-          open={isCreateInventoryModalOpen}
-          onClose={handleCreateInventoryClose}
-        >
-          <Box sx={{ p: 3 }}>
-            <CreateInventory
-              open={isCreateInventoryModalOpen}
-              onClose={handleCreateInventoryClose}
-              onSuccess={handleSuccess}
-              binCode={selectedBinData?.binCode || ''}
-              binID={selectedBinData?.binID || ''}
-            />
-          </Box>
-        </Dialog>
+        <Stack direction='row' spacing={2} alignItems='center'>
+          <Button variant='contained' color='info'>
+            🔄 Transfer
+          </Button>
+          <Button
+            variant='contained'
+            sx={{ backgroundColor: '#4CAF50', color: '#fff' }}
+          >
+            ⬆ Import
+          </Button>
+        </Stack>
       </Box>
-    </Layout>
+
+      <Paper elevation={3} sx={{ borderRadius: 3 }}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
+              {[
+                'Inventory ID',
+                'Bin Code',
+                'Product Code',
+                'Quantity',
+                'Updated At',
+                'Action'
+              ].map(header => (
+                <TableCell
+                  key={header}
+                  align='center'
+                  sx={{ border: '1px solid #e0e0e0' }}
+                >
+                  {header}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {inventory.map(item => (
+              <TableRow key={item.inventoryID}>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  {item.inventoryID}
+                </TableCell>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  {item.bin?.binCode || '--'}
+                </TableCell>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  <Typography
+                    component='a'
+                    href={`/product/${item.productCode}`}
+                    sx={{ textDecoration: 'underline', color: '#1976d2' }}
+                  >
+                    {item.productCode}
+                  </Typography>
+                </TableCell>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  <Typography
+                    sx={{ cursor: 'pointer', fontWeight: 500 }}
+                    onClick={() => handleOpenModal(item)}
+                  >
+                    {item.quantity}
+                  </Typography>
+                </TableCell>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                </TableCell>
+                <TableCell
+                  align='center'
+                  sx={{ border: '1px solid #e0e0e0', py: 0 }}
+                >
+                  <Button
+                    variant='contained'
+                    color='error'
+                    size='small'
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Are you sure you want to delete this item?'
+                        )
+                      ) {
+                        handleDelete(item.inventoryID)
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <TablePagination
+          component='div'
+          count={totalPages}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={10}
+          rowsPerPageOptions={[]}
+          labelRowsPerPage=''
+        />
+      </Paper>
+
+      {selectedItem && (
+        <QuantityEdit
+          open={isQuantityModalOpen}
+          onClose={handleCloseModal}
+          inventoryID={selectedItem.inventoryID}
+          initialQuantity={selectedItem.quantity}
+          onSuccess={handleSuccess}
+          onQuantityUpdated={handleSaveQuantity}
+        />
+      )}
+
+      <Dialog
+        open={isCreateInventoryModalOpen}
+        onClose={handleCreateInventoryClose}
+      >
+        <Box sx={{ p: 3 }}>
+          <CreateInventory
+            open={isCreateInventoryModalOpen}
+            onClose={handleCreateInventoryClose}
+            onSuccess={handleSuccess}
+            binCode={selectedBinData?.binCode || ''}
+            binID={selectedBinData?.binID || ''}
+          />
+        </Box>
+      </Dialog>
+    </Box>
   )
 }
 
