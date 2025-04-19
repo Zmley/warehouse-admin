@@ -41,7 +41,7 @@ const Inventory: React.FC = () => {
     useState(false)
 
   const {
-    inventory,
+    inventories,
     totalPages,
     isLoading,
     error,
@@ -213,7 +213,7 @@ const Inventory: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {inventory.map(item => (
+            {inventories.map(item => (
               <TableRow key={item.inventoryID}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {item.inventoryID}

@@ -118,7 +118,7 @@ export const useInventory = () => {
   )
 
   return {
-    inventory: inventories,
+    inventories,
     isLoading,
     error,
     totalPages,
