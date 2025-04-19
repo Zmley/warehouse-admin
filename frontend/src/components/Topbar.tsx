@@ -38,6 +38,7 @@ const Topbar: React.FC = () => {
     <Box
       sx={{
         height: 72,
+        flexShrink: 0,
         background: 'linear-gradient(to right, #f4f6f9, #dfe9f3)',
         display: 'flex',
         alignItems: 'center',
