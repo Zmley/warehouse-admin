@@ -17,7 +17,7 @@ import { useProduct } from '../hooks/useProduct'
 
 const ROWS_PER_PAGE = 10
 
-const ProductTable: React.FC = () => {
+const Product: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const keywordParam = searchParams.get('keyword') || ''
@@ -147,4 +147,4 @@ const ProductTable: React.FC = () => {
   )
 }
 
-export default ProductTable
+export default Product
