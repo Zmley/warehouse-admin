@@ -92,7 +92,7 @@ const Task: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ pt: 0 }}>
       <Box
         sx={{
           display: 'flex',

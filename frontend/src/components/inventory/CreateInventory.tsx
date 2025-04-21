@@ -29,7 +29,7 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
   binCode,
   binID
 }) => {
-  const { productCodes, fetchProducts, loading } = useProduct()
+  const { productCodes, fetchProductCodes, isLoading } = useProduct()
   const { addInventory, error } = useInventory()
 
   const [productCode, setProductCode] = useState('')
@@ -38,12 +38,12 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
 
   useEffect(() => {
     if (open) {
-      fetchProducts()
+      fetchProductCodes()
       setProductCode('')
       setQuantity(1)
       setSuccessMessage('')
     }
-  }, [open, fetchProducts])
+  }, [open, fetchProductCodes])
 
   const handleSubmit = async () => {
     try {
@@ -78,7 +78,7 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               options={productCodes}
               value={productCode}
               onChange={(_, newValue) => setProductCode(newValue || '')}
-              loading={loading}
+              loading={isLoading}
               renderInput={params => (
                 <TextField {...params} label='Product Code' fullWidth />
               )}

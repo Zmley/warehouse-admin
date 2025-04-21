@@ -132,11 +132,7 @@ const Inventory: React.FC = () => {
     return (
       <Box
         sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
+          pt: 0
         }}
       >
         <CircularProgress size={50} sx={{ marginRight: 2 }} />

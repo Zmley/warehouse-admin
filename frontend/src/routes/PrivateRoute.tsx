@@ -5,6 +5,7 @@ import Dashboard from '../pages/Dashboard'
 import Task from '../pages/Task'
 import Inventory from '../pages/Inventory'
 import ManagementLayout from '../components/ManagementLayout'
+import Product from '../pages/Product'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
@@ -21,6 +22,7 @@ const PrivateRoutes: React.FC = () => {
       <Route path='/:warehouseID/:warehouseCode' element={<ManagementLayout />}>
         <Route path='task' element={<Task />} />
         <Route path='inventory' element={<Inventory />} />
+        <Route path='product' element={<Product />} />
       </Route>
     </Routes>
   )
