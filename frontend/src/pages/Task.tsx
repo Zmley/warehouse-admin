@@ -213,7 +213,7 @@ const Task: React.FC = () => {
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.sourceBins
-                    ?.map((s: any) => s.Bin?.binCode)
+                    ?.map((s: any) => s.bin?.binCode)
                     .join(' / ') || '--'}
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
