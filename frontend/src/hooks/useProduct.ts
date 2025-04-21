@@ -12,7 +12,7 @@ export interface FetchParams {
 export const useProduct = () => {
   const [productCodes, setProductCodes] = useState<string[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [totalProducts, setTotalProducts] = useState<number>(0)
+  const [totalProductsCount, setTotalProductsCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,7 +42,7 @@ export const useProduct = () => {
         const res = await getProducts({ warehouseID, ...params })
         if (res.success && Array.isArray(res.products)) {
           setProducts(res.products)
-          setTotalProducts(res.total || res.products.length)
+          setTotalProductsCount(res.total || res.products.length)
         } else {
           throw new Error('Invalid response')
         }
@@ -59,7 +59,7 @@ export const useProduct = () => {
   return {
     productCodes,
     products,
-    totalProducts,
+    totalProductsCount,
     fetchProductCodes,
     fetchProducts,
     isLoading,

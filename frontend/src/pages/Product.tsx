@@ -25,7 +25,7 @@ const Product: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
 
-  const { products, isLoading, error, fetchProducts, totalProducts } =
+  const { products, isLoading, error, fetchProducts, totalProductsCount } =
     useProduct()
 
   const updateQueryParams = (keyword: string, page: number) => {
@@ -136,7 +136,7 @@ const Product: React.FC = () => {
 
         <TablePagination
           component='div'
-          count={totalProducts}
+          count={totalProductsCount}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={ROWS_PER_PAGE}
