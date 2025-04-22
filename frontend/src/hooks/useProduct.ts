@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react'
 import { addProducts, getProductCodes, getProducts } from '../api/productApi'
 import { Product } from '../types/product'
 import { useParams } from 'react-router-dom'
-import { ProductUploadInput } from '../types/productUpload'
-// import { ProductUploadInput } from '../components/product/ProductUploadModal'
+import { ProductsUploadType } from '../types/ProductsUploadType'
 
 export interface FetchParams {
   keyword?: string
@@ -42,7 +41,7 @@ export const useProduct = () => {
         setError(null)
 
         const res = await getProducts({ warehouseID, ...params })
-        if (res.success && Array.isArray(res.products)) {
+        if (res.success) {
           setProducts(res.products)
           setTotalProductsCount(res.total || res.products.length)
         } else {
@@ -57,7 +56,7 @@ export const useProduct = () => {
     },
     [warehouseID]
   )
-  const uploadProductList = useCallback(async (list: ProductUploadInput[]) => {
+  const uploadProductList = useCallback(async (list: ProductsUploadType[]) => {
     try {
       const res = await addProducts(list)
       return res

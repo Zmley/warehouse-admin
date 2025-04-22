@@ -11,7 +11,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import useWarehouses from '../hooks/useWarehouse'
 import Topbar from '../components/Topbar'
-import ProductUploadModal from '../components/product/ProductUploadModal'
+import UploadProductModal from '../components/product/UploadProductModal'
 import { PageValues } from '../constants/pageTypes'
 
 const Dashboard: React.FC = () => {
@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
         </Grid>
       </Box>
 
-      <ProductUploadModal
+      <UploadProductModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
       />

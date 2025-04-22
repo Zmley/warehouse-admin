@@ -1,6 +1,5 @@
-import { ProductUploadInput } from '../types/productUpload.js'
+import { ProductsUploadType } from '../types/ProductsUploadType'
 import apiClient from './axiosClient.ts'
-// import { ProductUploadInput } from '../components/product/ProductUploadModal.js'
 
 export const getProductCodes = async (): Promise<{
   productCodes: string[]
@@ -20,9 +19,7 @@ export const getProducts = async (params: {
   return response.data
 }
 
-export const addProducts = async (list: ProductUploadInput[]) => {
-  const response = await apiClient.post('/products/add', list, {
-    headers: { 'Content-Type': 'application/json' }
-  })
+export const addProducts = async (list: ProductsUploadType[]) => {
+  const response = await apiClient.post('/products/add', list, {})
   return response.data
 }

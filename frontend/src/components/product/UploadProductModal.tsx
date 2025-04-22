@@ -18,7 +18,7 @@ import {
 import * as XLSX from 'xlsx'
 import { useProduct } from '../../hooks/useProduct'
 import { extractBoxTypeFromString } from '../../utils/boxTypeHelper'
-import { ProductUploadInput } from '../../types/productUpload'
+import { ProductsUploadType } from '../../types/ProductsUploadType'
 
 interface Props {
   open: boolean
@@ -27,8 +27,8 @@ interface Props {
 
 const ROWS_PER_PAGE = 10
 
-const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
-  const [products, setProducts] = useState<ProductUploadInput[]>([])
+const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
+  const [products, setProducts] = useState<ProductsUploadType[]>([])
   const [page, setPage] = useState(0)
   const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
@@ -57,7 +57,7 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
 
-      const parsed: ProductUploadInput[] = raw
+      const parsed: ProductsUploadType[] = raw
         .slice(1)
         .filter(row => row[0])
         .map(row => ({
@@ -191,4 +191,4 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
   )
 }
 
-export default ProductUploadModal
+export default UploadProductModal
