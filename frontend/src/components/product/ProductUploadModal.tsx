@@ -68,6 +68,7 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
         .map(row => ({
           productCode: row[0]?.toString().trim() || '',
           barCode: row[1]?.toString().trim() || '',
+          //please keep this comment for future reference
           //   boxType: row[2]?.toString().trim() || ''
           boxType: extractBoxTypeFromString(row[2]?.toString().trim() || '')
         }))
@@ -85,7 +86,7 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
     try {
       const res = await uploadProductList(products)
       if (res.success) {
-        setProducts([]) // 👈 清空产品列表
+        setProducts([])
         setSuccessMessage(
           `✅ Uploaded ${res.insertedCount} product(s). Skipped ${res.skippedCount}.`
         )

@@ -6,7 +6,7 @@ import {
 } from '../api/productApi'
 import { Product } from '../types/product'
 import { useParams } from 'react-router-dom'
-import { ProductUploadInput } from '../components/product/ProductExcelUploader'
+import { ProductUploadInput } from '../components/product/ProductUploadModal'
 
 export interface FetchParams {
   keyword?: string

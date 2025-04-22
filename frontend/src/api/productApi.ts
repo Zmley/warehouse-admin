@@ -1,5 +1,5 @@
 import apiClient from './axiosClient.ts'
-import { ProductUploadInput } from '../components/product/ProductExcelUploader.js'
+import { ProductUploadInput } from '../components/product/ProductUploadModal.js'
 
 export const getProductCodes = async (): Promise<{
   productCodes: string[]
