@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react'
-import { getProductCodes, getProducts } from '../api/productApi'
+import {
+  bulkInsertProducts,
+  getProductCodes,
+  getProducts
+} from '../api/productApi'
 import { Product } from '../types/product'
 import { useParams } from 'react-router-dom'
+import { ProductUploadInput } from '../components/product/ProductExcelUploader'
 
 export interface FetchParams {
   keyword?: string
@@ -55,8 +60,18 @@ export const useProduct = () => {
     },
     [warehouseID]
   )
+  const uploadProductList = useCallback(async (list: ProductUploadInput[]) => {
+    try {
+      const res = await bulkInsertProducts(list)
+      return res
+    } catch (error) {
+      console.error('❌ Upload failed', error)
+      throw error
+    }
+  }, [])
 
   return {
+    uploadProductList,
     productCodes,
     products,
     totalProductsCount,

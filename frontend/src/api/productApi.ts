@@ -1,4 +1,5 @@
 import apiClient from './axiosClient.ts'
+import { ProductUploadInput } from '../components/product/ProductExcelUploader.js'
 
 export const getProductCodes = async (): Promise<{
   productCodes: string[]
@@ -15,5 +16,12 @@ export const getProducts = async (params: {
   limit?: number
 }) => {
   const response = await apiClient.get('/products', { params })
+  return response.data
+}
+
+export const bulkInsertProducts = async (list: ProductUploadInput[]) => {
+  const response = await apiClient.post('/products/upload', list, {
+    headers: { 'Content-Type': 'application/json' }
+  })
   return response.data
 }

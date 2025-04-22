@@ -1,14 +1,24 @@
-import { useEffect } from 'react'
-import { Box, Button, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
+import {
+  Box,
+  Button,
+  Typography,
+  Card,
+  CardActionArea,
+  CardContent,
+  Grid
+} from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import useWarehouses from '../hooks/useWarehouse'
 import Topbar from '../components/Topbar'
+import ProductUploadModal from '../components/product/ProductExcelUploader'
 import { PageValues } from '../constants/pageTypes'
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
-
   const { warehouses, error, fetchWarehouses } = useWarehouses()
+
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   useEffect(() => {
     fetchWarehouses()
@@ -29,7 +39,8 @@ const Dashboard: React.FC = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          height: '100vh'
+          height: '100vh',
+          backgroundColor: '#f5f5f5'
         }}
       >
         <Typography variant='h6' color='error'>
@@ -45,32 +56,57 @@ const Dashboard: React.FC = () => {
       <Box
         sx={{
           flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
+          backgroundColor: '#f9fafc',
+          p: 4
         }}
       >
-        <Typography variant='h4' gutterBottom>
+        <Box display='flex' justifyContent='flex-end' mb={2}>
+          <Button variant='contained' onClick={() => setUploadOpen(true)}>
+            ➕ Upload Products
+          </Button>
+        </Box>
+
+        <Typography variant='h4' align='center' gutterBottom fontWeight='bold'>
           Select a Warehouse
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+
+        <Grid container spacing={3} justifyContent='center' alignItems='center'>
           {warehouses.map(warehouse => (
-            <Button
-              key={warehouse.warehouseID}
-              variant='outlined'
-              onClick={() =>
-                handleSelectWarehouse(
-                  warehouse.warehouseID,
-                  warehouse.warehouseCode
-                )
-              }
-            >
-              {warehouse.warehouseCode}
-            </Button>
+            <Grid item key={warehouse.warehouseID} xs={12} sm={6} md={4} lg={3}>
+              <Card
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 3,
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)'
+                  }
+                }}
+              >
+                <CardActionArea
+                  onClick={() =>
+                    handleSelectWarehouse(
+                      warehouse.warehouseID,
+                      warehouse.warehouseCode
+                    )
+                  }
+                >
+                  <CardContent>
+                    <Typography variant='h6' align='center'>
+                      {warehouse.warehouseCode}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       </Box>
+
+      <ProductUploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
     </Box>
   )
 }
