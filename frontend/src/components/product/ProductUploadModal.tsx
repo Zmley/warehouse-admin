@@ -18,12 +18,7 @@ import {
 import * as XLSX from 'xlsx'
 import { useProduct } from '../../hooks/useProduct'
 import { extractBoxTypeFromString } from '../../utils/boxTypeHelper'
-
-export interface ProductUploadInput {
-  productCode: string
-  barCode: string
-  boxType: string
-}
+import { ProductUploadInput } from '../../types/productUpload'
 
 interface Props {
   open: boolean
@@ -88,7 +83,7 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
       if (res.success) {
         setProducts([])
         setSuccessMessage(
-          `✅ Uploaded ${res.insertedCount} product(s). Skipped ${res.skippedCount}.`
+          `✅ Uploaded ${res.insertedCount} product(s). Skipped ${res.skippedCount} products due to existing in database.`
         )
         setSkippedCodes(res.duplicatedProductCodes || [])
         setUploadFinished(true)
@@ -108,11 +103,11 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth='md'>
       {' '}
-      <DialogTitle>Upload Product Excel</DialogTitle>
+      <DialogTitle>Upload Products Comfirmation</DialogTitle>
       <DialogContent>
         {!uploadFinished && (
           <Button component='label' variant='contained' sx={{ mb: 2 }}>
-            Upload Excel
+            Upload Excel File
             <input
               hidden
               type='file'
@@ -167,7 +162,7 @@ const ProductUploadModal: React.FC<Props> = ({ open, onClose }) => {
         {skippedCodes.length > 0 && (
           <Box mt={3}>
             <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
-              ⚠️ Skipped Products (Already Exist):
+              ⚠️ Skipped Products (Already Exist in Database):
             </Typography>
             <ul>
               {skippedCodes.map((code, idx) => (
