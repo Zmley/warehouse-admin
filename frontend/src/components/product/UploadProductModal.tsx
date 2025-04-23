@@ -17,7 +17,6 @@ import {
 } from '@mui/material'
 import * as XLSX from 'xlsx'
 import { useProduct } from '../../hooks/useProduct'
-import { extractBoxTypeFromString } from '../../utils/boxTypeHelper'
 import { ProductsUploadType } from '../../types/ProductsUploadType'
 
 interface Props {
@@ -63,9 +62,7 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
         .map(row => ({
           productCode: row[0]?.toString().trim() || '',
           barCode: row[1]?.toString().trim() || '',
-          //please keep this comment for future reference
-          //   boxType: row[2]?.toString().trim() || ''
-          boxType: extractBoxTypeFromString(row[2]?.toString().trim() || '')
+          boxType: row[2]?.toString().trim() || ''
         }))
 
       setProducts(parsed)
