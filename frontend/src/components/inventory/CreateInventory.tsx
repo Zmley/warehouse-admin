@@ -11,8 +11,8 @@ import {
   Stack,
   Paper
 } from '@mui/material'
-import { useInventory } from '../../hooks/useInventory'
-import { useProduct } from '../../hooks/useProduct'
+import { useInventory } from 'hooks/useInventory'
+import { useProduct } from 'hooks/useProduct'
 
 interface CreateInventoryProps {
   open: boolean

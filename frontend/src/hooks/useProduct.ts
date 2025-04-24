@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
 import { addProducts, getProductCodes, getProducts } from '../api/productApi'
-import { Product } from '../types/product'
+import { Product } from 'types/product'
 import { useParams } from 'react-router-dom'
-import { ProductsUploadType } from '../types/ProductsUploadType'
+import { ProductsUploadType } from 'types/ProductsUploadType'
 
 export interface FetchParams {
   keyword?: string
@@ -36,10 +36,10 @@ export const useProduct = () => {
     async (params?: FetchParams) => {
       if (!warehouseID) return
 
-      try {
-        setIsLoading(true)
-        setError(null)
+      setIsLoading(true)
+      setError(null)
 
+      try {
         const res = await getProducts({ warehouseID, ...params })
         if (res.success) {
           setProducts(res.products)

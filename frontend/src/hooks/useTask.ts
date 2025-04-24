@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import * as taskApi from '../api/taskApi'
-import { TaskStatusFilter } from '../types/TaskStatusFilter'
+import * as taskApi from 'api/taskApi'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import { useParams } from 'react-router-dom'
 
 interface CreateTaskPayload {

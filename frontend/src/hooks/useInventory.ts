@@ -4,8 +4,8 @@ import {
   deleteInventory,
   updateInventory,
   createInventory
-} from '../api/inventoryApi'
-import { InventoryItem } from '../types/InventoryItem'
+} from 'api/inventoryApi'
+import { InventoryItem } from 'types/InventoryItem'
 import { useParams } from 'react-router-dom'
 
 export const useInventory = () => {

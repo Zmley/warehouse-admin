@@ -16,8 +16,8 @@ import {
   Box
 } from '@mui/material'
 import * as XLSX from 'xlsx'
-import { useProduct } from '../../hooks/useProduct'
-import { ProductsUploadType } from '../../types/ProductsUploadType'
+import { useProduct } from 'hooks/useProduct'
+import { ProductsUploadType } from 'types/ProductsUploadType'
 
 interface Props {
   open: boolean

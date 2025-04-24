@@ -19,9 +19,9 @@ import {
 } from '@mui/material'
 import dayjs from 'dayjs'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { useTask } from '../hooks/useTask'
-import CreateTask from '../components/task/CreateTask'
-import { TaskStatusFilter } from '../types/TaskStatusFilter'
+import { useTask } from 'hooks/useTask'
+import CreateTask from 'components/task/CreateTask'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
 
 const ROWS_PER_PAGE = 10
 
@@ -63,7 +63,6 @@ const Task: React.FC = () => {
         keyword: keywordParam
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, keywordParam])
 
   if (loading) {

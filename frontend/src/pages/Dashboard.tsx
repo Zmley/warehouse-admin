@@ -9,10 +9,10 @@ import {
   Grid
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import useWarehouses from '../hooks/useWarehouse'
-import Topbar from '../components/Topbar'
-import UploadProductModal from '../components/product/UploadProductModal'
-import { PageValues } from '../constants/pageTypes'
+import useWarehouses from 'hooks/useWarehouse'
+import Topbar from 'components/Topbar'
+import UploadProductModal from 'components/product/UploadProductModal'
+import { PageValues } from 'constants/pageTypes'
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
@@ -22,7 +22,6 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchWarehouses()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSelectWarehouse = (

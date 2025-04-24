@@ -1,11 +1,11 @@
 import { Routes, Route } from 'react-router-dom'
 import { useContext, useEffect } from 'react'
-import { AuthContext } from '../contexts/auth'
-import Dashboard from '../pages/Dashboard'
-import Task from '../pages/Task'
-import Inventory from '../pages/Inventory'
-import ManagementLayout from '../components/ManagementLayout'
-import Product from '../pages/Product'
+import { AuthContext } from 'contexts/auth'
+import Dashboard from 'pages/Dashboard'
+import Task from 'pages/Task'
+import Inventory from 'pages/Inventory'
+import ManagementLayout from 'components/ManagementLayout'
+import Product from 'pages/Product'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!

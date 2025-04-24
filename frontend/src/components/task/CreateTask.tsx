@@ -7,9 +7,9 @@ import {
   Typography,
   Paper
 } from '@mui/material'
-import { useBin } from '../../hooks/useBin'
-import { useProduct } from '../../hooks/useProduct'
-import { useTask } from '../../hooks/useTask'
+import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
+import { useTask } from 'hooks/useTask'
 
 interface Props {
   onSuccess?: () => void

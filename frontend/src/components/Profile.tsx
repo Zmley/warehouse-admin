@@ -2,7 +2,7 @@ import React from 'react'
 import { Typography, Box, Avatar, Divider, Button } from '@mui/material'
 import { Logout as LogoutIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from 'hooks/useAuth'
 
 const Profile: React.FC = () => {
   const navigate = useNavigate()

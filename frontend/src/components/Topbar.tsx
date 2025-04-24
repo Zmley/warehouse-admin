@@ -12,7 +12,7 @@ import {
 import { ArrowBack } from '@mui/icons-material'
 import { deepPurple } from '@mui/material/colors'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AuthContext } from '../contexts/auth'
+import { AuthContext } from 'contexts/auth'
 import Profile from './Profile'
 
 const Topbar: React.FC = () => {

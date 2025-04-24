@@ -13,7 +13,7 @@ import {
   Typography
 } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
-import { useProduct } from '../hooks/useProduct'
+import { useProduct } from 'hooks/useProduct'
 
 const ROWS_PER_PAGE = 10
 
@@ -38,7 +38,6 @@ const Product: React.FC = () => {
       page: page + 1,
       limit: ROWS_PER_PAGE
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keywordParam, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -46,32 +45,24 @@ const Product: React.FC = () => {
     updateQueryParams(searchKeyword, newPage)
   }
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
-  return (
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
     <Box sx={{ pt: 0 }}>
       <TextField
         label='Search Products'
