@@ -7,9 +7,9 @@ import {
   Typography,
   Paper
 } from '@mui/material'
-import { useBin } from '../../hooks/useBin'
-import { useProduct } from '../../hooks/useProduct'
-import { useTask } from '../../hooks/useTask'
+import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
+import { useTask } from 'hooks/useTask'
 
 interface Props {
   onSuccess?: () => void
@@ -22,13 +22,13 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
 
   const { fetchBins, binCodes } = useBin()
 
-  const { productCodes, fetchProducts } = useProduct()
+  const { productCodes, fetchProductCodes } = useProduct()
 
   const { createTask } = useTask()
 
   useEffect(() => {
     fetchBins()
-    fetchProducts()
+    fetchProductCodes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -19,9 +19,9 @@ import {
 } from '@mui/material'
 import dayjs from 'dayjs'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { useTask } from '../hooks/useTask'
-import CreateTask from '../components/task/CreateTask'
-import { TaskStatusFilter } from '../types/TaskStatusFilter'
+import { useTask } from 'hooks/useTask'
+import CreateTask from 'components/task/CreateTask'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
 
 const ROWS_PER_PAGE = 10
 
@@ -63,7 +63,6 @@ const Task: React.FC = () => {
         keyword: keywordParam
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, keywordParam])
 
   if (loading) {
@@ -92,7 +91,7 @@ const Task: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ pt: 0 }}>
       <Box
         sx={{
           display: 'flex',
@@ -213,7 +212,7 @@ const Task: React.FC = () => {
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.sourceBins
-                    ?.map((s: any) => s.Bin?.binCode)
+                    ?.map((s: any) => s.bin?.binCode)
                     .join(' / ') || '--'}
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>

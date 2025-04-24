@@ -19,9 +19,9 @@ import {
 } from '@mui/material'
 import dayjs from 'dayjs'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { useTask } from '../../hooks/useTask'
+import { useTask } from 'hooks/useTask'
 import CreateTask from './CreateTask'
-import { TaskStatusFilter } from '../../types/TaskStatusFilter'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
 
 const ROWS_PER_PAGE = 10
 

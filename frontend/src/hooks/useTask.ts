@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
-import * as taskApi from '../api/taskApi'
-import { TaskStatusFilter } from '../types/TaskStatusFilter'
+import * as taskApi from 'api/taskApi'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import { useParams } from 'react-router-dom'
 
 interface CreateTaskPayload {
   sourceBinCode: string
@@ -18,6 +19,8 @@ export const useTask = () => {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const { warehouseID } = useParams()
 
   const fetchTasks = useCallback(
     async ({ warehouseID, status, keyword }: FetchParams) => {
@@ -57,7 +60,10 @@ export const useTask = () => {
   const createTask = async (payload: CreateTaskPayload) => {
     try {
       setLoading(true)
-      const result = await taskApi.createTask(payload)
+      const result = await taskApi.createTask({
+        ...payload,
+        warehouseID
+      })
       setError(null)
       return result
     } catch (err: any) {

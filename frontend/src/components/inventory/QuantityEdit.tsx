@@ -9,7 +9,7 @@ import {
   CircularProgress,
   Alert
 } from '@mui/material'
-import { useInventory } from '../../hooks/useInventory'
+import { useInventory } from 'hooks/useInventory'
 
 interface QuantityEditProps {
   open: boolean

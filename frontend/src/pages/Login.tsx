@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Typography, Button, TextField, Box, Alert } from '@mui/material'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from 'hooks/useAuth'
 
 const LoginPage: React.FC = () => {
   const { handleLogin, error } = useAuth()

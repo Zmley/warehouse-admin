@@ -17,11 +17,11 @@ import {
   Stack,
   CircularProgress
 } from '@mui/material'
-import QuantityEdit from '../components/inventory/QuantityEdit'
-import CreateInventory from '../components/inventory/CreateInventory'
-import { InventoryItem } from '../types/InventoryItem'
-import { useInventory } from '../hooks/useInventory'
-import { useBin } from '../hooks/useBin'
+import QuantityEdit from 'components/inventory/QuantityEdit'
+import CreateInventory from 'components/inventory/CreateInventory'
+import { InventoryItem } from 'types/InventoryItem'
+import { useInventory } from 'hooks/useInventory'
+import { useBin } from 'hooks/useBin'
 import { useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 
@@ -55,12 +55,10 @@ const Inventory: React.FC = () => {
 
   useEffect(() => {
     fetchBins()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     fetchInventories(selectedBin === 'All' ? undefined : selectedBin, page + 1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBin, page, warehouseID])
 
   const handleChangeBin = (newValue: { binID: string } | null) => {
@@ -132,11 +130,7 @@ const Inventory: React.FC = () => {
     return (
       <Box
         sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
+          pt: 0
         }}
       >
         <CircularProgress size={50} sx={{ marginRight: 2 }} />

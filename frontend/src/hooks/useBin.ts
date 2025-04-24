@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { getBins } from '../api/binApi'
+import { getBins } from 'api/binApi'
 import { useParams } from 'react-router-dom'
 
 export const useBin = (autoLoad: boolean = false) => {
