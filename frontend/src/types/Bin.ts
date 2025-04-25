@@ -1,6 +1,8 @@
+import { BinType } from 'constants/binTypes'
+
 export interface Bin {
   binID: string
   binCode: string
-  type: 'INVENTORY' | 'PICK_UP' | 'CART'
+  type: BinType
   defaultProductCodes: string | null
 }
