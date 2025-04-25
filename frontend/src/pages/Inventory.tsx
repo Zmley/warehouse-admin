@@ -50,11 +50,11 @@ const Inventory: React.FC = () => {
     fetchInventories
   } = useInventory()
 
-  const { bins, fetchBins } = useBin()
+  const { bins, fetchBinCodes } = useBin()
   const selectedBinData = bins.find(bin => bin.binID === selectedBin)
 
   useEffect(() => {
-    fetchBins()
+    fetchBinCodes()
   }, [])
 
   useEffect(() => {
