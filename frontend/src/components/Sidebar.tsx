@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
+import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
 import { PageType } from 'constants/pageTypes'
 
 const sidebarItems: {
@@ -15,7 +15,7 @@ const sidebarItems: {
   { label: 'Task', page: 'task', icon: <AssignmentIcon /> },
   { label: 'Inventory', page: 'inventory', icon: <InventoryIcon /> },
   { label: 'Product', page: 'product', icon: <CategoryIcon /> },
-  { label: 'User', page: 'user', icon: <PeopleAltIcon /> }
+  { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> }
 ]
 
 const Sidebar: React.FC = () => {

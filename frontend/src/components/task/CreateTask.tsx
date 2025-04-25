@@ -20,14 +20,14 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
 
-  const { fetchBins, binCodes } = useBin()
+  const { fetchBinCodes, binCodes } = useBin()
 
   const { productCodes, fetchProductCodes } = useProduct()
 
   const { createTask } = useTask()
 
   useEffect(() => {
-    fetchBins()
+    fetchBinCodes()
     fetchProductCodes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -1,41 +1,129 @@
 import { useCallback, useState } from 'react'
-import { getBins } from 'api/binApi'
-import { useParams } from 'react-router-dom'
+import { addBins, getBinCodes, getBins } from 'api/binApi'
+import { useLocation, useParams } from 'react-router-dom'
+import { Bin } from 'types/Bin'
+import { BinUploadType } from 'types/BinUploadType'
+
+export interface FetchParams {
+  warehouseID: string
+  type?: string
+  keyword?: string
+  page?: number
+  limit?: number
+}
+
+export interface BasicBin {
+  binID: string
+  binCode: string
+}
 
 export const useBin = (autoLoad: boolean = false) => {
-  const [bins, setBins] = useState<{ binID: string; binCode: string }[]>([])
+  const [bins, setBins] = useState<Bin[]>([])
   const [binCodes, setAllBinCodes] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const { warehouseID } = useParams()
 
-  const fetchBins = useCallback(async (): Promise<
-    { binID: string; binCode: string }[]
-  > => {
+  const location = useLocation()
+
+  const searchParams = new URLSearchParams(location.search)
+  const type = searchParams.get('type')
+
+  const fetchBinCodes = useCallback(async () => {
     try {
       if (!warehouseID) {
         setError('❌ Warehouse ID is missing')
         return []
       }
 
-      const binsData = await getBins(warehouseID)
-      setBins(binsData)
+      const res = await getBinCodes(warehouseID)
 
-      const codes = binsData.map(bin => bin.binCode)
+      if (!res.success) {
+        setError(res.error || '❌ Failed to fetch bins')
+        return []
+      }
+
+      const codes = res.bins.map((bin: any) => bin.binCode)
       setAllBinCodes(codes)
 
       setError(null)
-      return binsData
+      return res.bins
     } catch (err) {
       setError('❌ Failed to fetch bins')
       return []
     }
-    // eslint-disable-next-line
-  }, [])
+  }, [warehouseID])
+
+  const fetchBins = useCallback(
+    async ({ type, keyword, page = 1, limit = 10 }: FetchParams) => {
+      setIsLoading(true)
+
+      if (!warehouseID) {
+        setError('❌ Warehouse ID is missing')
+        return []
+      }
+
+      try {
+        const res = await getBins({
+          warehouseID,
+          type,
+          keyword,
+          page,
+          limit
+        })
+        setBins(res.data)
+        setTotalPages(res.total)
+      } catch (err) {
+        console.error('❌ Error fetching bins:', err)
+        setError('Failed to fetch bins')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [warehouseID]
+  )
+
+  const uploadBinList = useCallback(
+    async (list: BinUploadType[]) => {
+      if (!warehouseID) {
+        const errorMsg = '❌ Missing warehouseID'
+        console.error(errorMsg)
+        return { error: errorMsg }
+      }
+
+      const payload = list.map(bin => ({
+        ...bin,
+        warehouseID,
+        type
+      }))
+
+      try {
+        const res = await addBins(payload)
+        if (!res.success) {
+          console.error('❌ Upload failed:', res.error)
+          return { success: false, error: res.error || '❌ Upload failed' }
+        }
+
+        return res
+      } catch (err: any) {
+        setError(err?.message || '❌ Upload exception occurred')
+        return {
+          error: err?.message || '❌ Upload exception occurred'
+        }
+      }
+    },
+    [warehouseID, type]
+  )
 
   return {
+    uploadBinList,
+    totalPages,
+    fetchBins,
+    isLoading,
     bins,
     binCodes,
     error,
-    fetchBins
+    fetchBinCodes
   }
 }
