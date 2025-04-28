@@ -1,6 +1,4 @@
-import React from 'react'
-
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -11,34 +9,38 @@ import {
   TableRow,
   Button,
   Paper,
-  Autocomplete,
-  TextField,
   TablePagination,
-  Stack,
   CircularProgress
 } from '@mui/material'
 import QuantityEdit from 'components/inventory/QuantityEdit'
 import CreateInventory from 'components/inventory/CreateInventory'
 import { InventoryItem } from 'types/InventoryItem'
 import { useInventory } from 'hooks/useInventory'
-import { useBin } from 'hooks/useBin'
 import { useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import UploadInventoryModal from 'components/inventory/UploadInventoryModal'
+import { useBin } from 'hooks/useBin'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
 
 const Inventory: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const initialBinID = searchParams.get('binID') || 'All'
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
+  const initialKeyword = searchParams.get('keyword') || ''
 
-  const [selectedBin, setSelectedBin] = useState<string>(initialBinID)
   const [page, setPage] = useState(initialPage)
+  const [keyword, setKeyword] = useState(initialKeyword)
 
   const [isQuantityModalOpen, setQuantityModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [isCreateInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
+  const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
+
+  const [suggestions, setSuggestions] = useState<string[]>([])
+
+  const { binCodes, fetchBinCodes } = useBin()
 
   const {
     inventories,
@@ -50,47 +52,26 @@ const Inventory: React.FC = () => {
     fetchInventories
   } = useInventory()
 
-  const { bins, fetchBinCodes } = useBin()
-  const selectedBinData = bins.find(bin => bin.binID === selectedBin)
-
   useEffect(() => {
+    fetchInventories(undefined, page + 1, 10, keyword || undefined)
     fetchBinCodes()
-  }, [])
-
-  useEffect(() => {
-    fetchInventories(selectedBin === 'All' ? undefined : selectedBin, page + 1)
-  }, [selectedBin, page, warehouseID])
-
-  const handleChangeBin = (newValue: { binID: string } | null) => {
-    const newBinID = newValue ? newValue.binID : 'All'
-    setSelectedBin(newBinID)
-    setPage(0)
-
-    const newParams = new URLSearchParams(searchParams)
-
-    if (newBinID === 'All') {
-      newParams.delete('binID')
-    } else {
-      newParams.set('binID', newBinID)
-    }
-
-    newParams.set('page', '1')
-    setSearchParams(newParams)
-  }
+  }, [warehouseID, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
     const newParams = new URLSearchParams(searchParams)
     newParams.set('page', (newPage + 1).toString())
+    if (keyword) {
+      newParams.set('keyword', keyword)
+    }
     setSearchParams(newParams)
   }
 
-  const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
-  const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
   const handleOpenModal = (item: InventoryItem) => {
     setSelectedItem(item)
     setQuantityModalOpen(true)
   }
+
   const handleCloseModal = () => {
     setQuantityModalOpen(false)
     setSelectedItem(null)
@@ -98,15 +79,9 @@ const Inventory: React.FC = () => {
 
   const handleSaveQuantity = async (newQuantity: number) => {
     if (!selectedItem) return
-
     try {
       await editInventory(selectedItem.inventoryID, { quantity: newQuantity })
-
-      fetchInventories(
-        selectedBin === 'All' ? undefined : selectedBin,
-        page + 1
-      )
-
+      fetchInventories(undefined, page + 1, 10, keyword || undefined)
       handleCloseModal()
     } catch (error) {
       console.error('Error saving quantity:', error)
@@ -117,71 +92,71 @@ const Inventory: React.FC = () => {
     await removeInventory(id)
   }
 
-  const binOptions = bins.map(bin => ({
-    binID: bin.binID,
-    binCode: bin.binCode
-  }))
-
   const handleSuccess = () => {
-    fetchInventories(selectedBin === 'All' ? undefined : selectedBin, page + 1)
+    fetchInventories(undefined, page + 1, 10, keyword || undefined)
+  }
+
+  const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
+  const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
+
+  const handleKeywordSubmit = () => {
+    const newParams = new URLSearchParams(searchParams)
+    if (keyword) {
+      newParams.set('keyword', keyword)
+    } else {
+      newParams.delete('keyword')
+    }
+    newParams.set('page', '1')
+    setSearchParams(newParams)
+    setPage(0)
+    fetchInventories(undefined, 1, 10, keyword || undefined)
   }
 
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          pt: 0
-        }}
-      >
+      <Box sx={{ pt: 0 }}>
         <CircularProgress size={50} sx={{ marginRight: 2 }} />
         <Typography variant='h6'>Loading...</Typography>
       </Box>
     )
   }
 
-  if (error) return <Typography color='error'>{error}</Typography>
+  if (error) {
+    return <Typography color='error'>{error}</Typography>
+  }
 
   return (
     <Box sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-        <Autocomplete
-          options={binOptions}
-          getOptionLabel={option => option.binCode}
-          value={selectedBinData || null}
-          onChange={(_, newValue) => handleChangeBin(newValue)}
-          renderInput={params => (
-            <TextField
-              {...params}
-              label='Bin Code'
-              variant='outlined'
-              size='small'
-            />
-          )}
-          isOptionEqualToValue={(option, value) => option.binID === value.binID}
-          sx={{ width: '100%', maxWidth: '200px', ml: 0 }}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <AutocompleteTextField
+          label='Search binCode / productCode'
+          value={keyword}
+          onChange={setKeyword}
+          onSubmit={handleKeywordSubmit}
+          options={binCodes}
+          sx={{ width: 250 }}
         />
 
-        {selectedBin !== 'All' && (
-          <Button
-            variant='contained'
-            color='primary'
-            onClick={handleCreateInventoryOpen}
-          >
-            Create Inventory
-          </Button>
-        )}
+        <Button
+          variant='contained'
+          sx={{ backgroundColor: '#4CAF50', color: '#fff' }}
+          onClick={() => setUploadInventoryOpen(true)}
+        >
+          ⬆ Import
+        </Button>
 
-        <Stack direction='row' spacing={2} alignItems='center'>
-          <Button variant='contained' color='info'>
-            🔄 Transfer
-          </Button>
-          <Button
-            variant='contained'
-            sx={{ backgroundColor: '#4CAF50', color: '#fff' }}
-          >
-            ⬆ Import
-          </Button>
-        </Stack>
+        <UploadInventoryModal
+          open={isUploadInventoryOpen}
+          onClose={() => setUploadInventoryOpen(false)}
+        />
+
+        <Button
+          variant='contained'
+          color='primary'
+          onClick={handleCreateInventoryOpen}
+        >
+          Create Inventory
+        </Button>
       </Box>
 
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
@@ -235,10 +210,7 @@ const Inventory: React.FC = () => {
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                 </TableCell>
-                <TableCell
-                  align='center'
-                  sx={{ border: '1px solid #e0e0e0', py: 0 }}
-                >
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   <Button
                     variant='contained'
                     color='error'
@@ -288,8 +260,8 @@ const Inventory: React.FC = () => {
           open={isCreateInventoryModalOpen}
           onClose={handleCreateInventoryClose}
           onSuccess={handleSuccess}
-          binCode={selectedBinData?.binCode || ''}
-          binID={selectedBinData?.binID || ''}
+          binCode={selectedItem?.bin?.binCode || ''}
+          binID={selectedItem?.bin?.binID || ''}
         />
       </Box>
     </Box>

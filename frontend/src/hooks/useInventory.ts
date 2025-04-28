@@ -3,10 +3,12 @@ import {
   getInventories,
   deleteInventory,
   updateInventory,
-  createInventory
+  createInventory,
+  uploadInventories
 } from 'api/inventoryApi'
 import { InventoryItem } from 'types/InventoryItem'
 import { useParams } from 'react-router-dom'
+import { InventoryUploadType } from 'types/InventoryUploadType'
 
 export const useInventory = () => {
   const [inventories, setInventories] = useState<InventoryItem[]>([])
@@ -16,30 +18,30 @@ export const useInventory = () => {
   const { warehouseID } = useParams()
 
   const fetchInventories = useCallback(
-    async (binID?: string, page: number = 1, limit: number = 10) => {
+    async (
+      binID?: string,
+      page: number = 1,
+      limit: number = 10,
+      keyword?: string
+    ) => {
       try {
         setIsLoading(true)
-
-        if (!warehouseID) {
-          const message = '❌ No warehouse selected.'
-          setError(message)
-          return { success: false, message }
-        }
+        setError(null)
 
         const { inventory, totalCount } = await getInventories({
-          warehouseID,
+          warehouseID: warehouseID || '',
           binID: binID === 'All' ? undefined : binID,
           page,
-          limit
+          limit,
+          keyword
         })
 
         setInventories(inventory)
         setTotalPages(totalCount)
-        setError(null)
         return { success: true }
       } catch (err: any) {
         const message =
-          err?.response?.data?.message || '❌ Failed to fetch inventory data'
+          err?.response?.data?.message || '❌ Failed to fetch inventories.'
         setError(message)
         return { success: false, message }
       } finally {
@@ -117,7 +119,18 @@ export const useInventory = () => {
     []
   )
 
+  const uploadInventoryList = async (inventories: InventoryUploadType[]) => {
+    try {
+      const result = await uploadInventories(inventories)
+      return result
+    } catch (error) {
+      console.error('❌ Error uploading inventory:', error)
+      throw error
+    }
+  }
+
   return {
+    uploadInventoryList,
     inventories,
     isLoading,
     error,

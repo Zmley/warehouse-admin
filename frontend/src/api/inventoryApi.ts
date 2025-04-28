@@ -1,3 +1,4 @@
+import { InventoryUploadType } from 'types/InventoryUploadType.js'
 import apiClient from './axiosClient.ts'
 
 export const getInventories = async (params: {
@@ -5,6 +6,7 @@ export const getInventories = async (params: {
   binID?: string
   page?: number
   limit?: number
+  keyword?: string
 }) => {
   const response = await apiClient.get('/inventories', { params })
 
@@ -40,5 +42,10 @@ export const updateInventory = async (
     `/inventories/${inventoryID}`,
     updatedFields
   )
+  return response.data
+}
+
+export const uploadInventories = async (inventories: InventoryUploadType[]) => {
+  const response = await apiClient.post('/inventories/add', inventories)
   return response.data
 }
