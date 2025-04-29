@@ -24,7 +24,7 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
   return (
     <Autocomplete
       freeSolo
-      options={filteredOptions} // <--- 注意这里是动态过滤出来的
+      options={filteredOptions}
       inputValue={value}
       onInputChange={(_, newInputValue) => onChange(newInputValue)}
       onKeyDown={e => {

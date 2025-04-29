@@ -14,7 +14,6 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TextField,
   Typography
 } from '@mui/material'
 import dayjs from 'dayjs'
@@ -22,6 +21,9 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
 import CreateTask from 'components/task/CreateTask'
 import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
 
 const ROWS_PER_PAGE = 10
 
@@ -33,6 +35,7 @@ const Task: React.FC = () => {
   const statusParam =
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
   const keywordParam = searchParams.get('keyword') || ''
+
   const [filterStatus, setFilterStatus] =
     useState<TaskStatusFilter>(statusParam)
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
@@ -55,6 +58,23 @@ const Task: React.FC = () => {
     setPage(newPage)
   }
 
+  const suggestionOptions = useMemo(() => {
+    const ids = tasks.map(task => task.taskID)
+    const productCodes = tasks.map(task => task.productCode)
+    return [...ids, ...productCodes]
+  }, [tasks])
+
+  const handleKeywordSubmit = () => {
+    if (warehouseID) {
+      setPage(0)
+      updateQueryParams(filterStatus, searchKeyword)
+    }
+  }
+
+  const { binCodes, fetchBinCodes } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
+  const combinedOptions = [...binCodes, ...productCodes]
+
   useEffect(() => {
     if (warehouseID) {
       fetchTasks({
@@ -62,6 +82,9 @@ const Task: React.FC = () => {
         status: filterStatus,
         keyword: keywordParam
       })
+
+      fetchBinCodes()
+      fetchProductCodes()
     }
   }, [filterStatus, keywordParam])
 
@@ -103,6 +126,7 @@ const Task: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#333' }}>
           Tasks
         </Typography>
+
         <Button
           variant='contained'
           onClick={handleOpen}
@@ -133,20 +157,15 @@ const Task: React.FC = () => {
       </Dialog>
 
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
-        <TextField
-          label='Search tasks'
-          variant='outlined'
-          size='small'
+        <AutocompleteTextField
+          label='Search taskID / productCode'
           value={searchKeyword}
-          onChange={e => setSearchKeyword(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && warehouseID) {
-              setPage(0)
-              updateQueryParams(filterStatus, searchKeyword)
-            }
-          }}
+          onChange={setSearchKeyword}
+          onSubmit={handleKeywordSubmit}
+          options={combinedOptions}
           sx={{ width: 250 }}
         />
+
         <Tabs
           value={filterStatus}
           onChange={(_, newStatus: TaskStatusFilter) => {

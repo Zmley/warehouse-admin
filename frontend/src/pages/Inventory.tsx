@@ -20,6 +20,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import UploadInventoryModal from 'components/inventory/UploadInventoryModal'
 import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 
 const Inventory: React.FC = () => {
@@ -38,9 +39,9 @@ const Inventory: React.FC = () => {
     useState(false)
   const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
 
-  const [suggestions, setSuggestions] = useState<string[]>([])
-
   const { binCodes, fetchBinCodes } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
+  const combinedOptions = [...binCodes, ...productCodes]
 
   const {
     inventories,
@@ -55,6 +56,7 @@ const Inventory: React.FC = () => {
   useEffect(() => {
     fetchInventories(undefined, page + 1, 10, keyword || undefined)
     fetchBinCodes()
+    fetchProductCodes()
   }, [warehouseID, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -133,7 +135,7 @@ const Inventory: React.FC = () => {
           value={keyword}
           onChange={setKeyword}
           onSubmit={handleKeywordSubmit}
-          options={binCodes}
+          options={combinedOptions}
           sx={{ width: 250 }}
         />
 

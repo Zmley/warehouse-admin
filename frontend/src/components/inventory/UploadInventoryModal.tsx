@@ -13,7 +13,8 @@ import {
   TablePagination,
   Alert,
   Typography,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material'
 import * as XLSX from 'xlsx'
 import { useInventory } from 'hooks/useInventory'
@@ -31,8 +32,10 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
   const [page, setPage] = useState(0)
   const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
-  const [skippedItems, setSkippedItems] = useState<string[]>([])
+  const [skippedItems, setSkippedItems] = useState<InventoryUploadType[]>([])
   const [uploadFinished, setUploadFinished] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
   const { uploadInventoryList } = useInventory()
 
   const handleClose = () => {
@@ -42,6 +45,7 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
     setError('')
     setSkippedItems([])
     setUploadFinished(false)
+    setIsUploading(false)
     onClose()
   }
 
@@ -61,20 +65,14 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       const parsed: InventoryUploadType[] = []
 
       raw.forEach(row => {
-        let lastBinCode = ''
-
         for (let i = 0; i < row.length; i += 4) {
           const binRaw = row[i]?.toString().trim()
           const productRaw = row[i + 1]?.toString().trim()
           const quantityRaw = row[i + 2]?.toString().trim()
 
-          // binCode 为空就复用上一次的
-          const binCode = binRaw || lastBinCode
-          if (binRaw) lastBinCode = binRaw
-
-          if (!binCode || !productRaw || !quantityRaw) continue
+          if (!binRaw || !productRaw || !quantityRaw) continue
           if (
-            hasChinese(binCode) ||
+            hasChinese(binRaw) ||
             hasChinese(productRaw) ||
             hasChinese(quantityRaw)
           )
@@ -83,7 +81,7 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
           const quantity = parseInt(quantityRaw)
           if (!isNaN(quantity)) {
             parsed.push({
-              binCode,
+              binCode: binRaw,
               productCode: productRaw,
               quantity
             })
@@ -102,20 +100,23 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
   }
 
   const handleConfirmUpload = async () => {
+    setIsUploading(true)
     try {
       const res = await uploadInventoryList(inventories)
       if (res.success) {
         setInventories([])
         setSuccessMessage(
-          `✅ Uploaded ${res.insertedCount} inventory item(s). Skipped ${res.skippedCount} items due to duplicates.`
+          `✅ Uploaded ${res.result.insertedCount} inventory item(s). Skipped ${res.result.skippedCount} items due to duplicates.`
         )
-        setSkippedItems(res.duplicatedItems || [])
+        setSkippedItems(res.result.skipped || [])
         setUploadFinished(true)
       } else {
         setError(res.message || '❌ Upload failed.')
       }
     } catch (err: any) {
       setError('❌ Upload failed. Please try again.')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -128,73 +129,91 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth='md'>
       <DialogTitle>Upload Inventories Confirmation</DialogTitle>
       <DialogContent>
-        {!uploadFinished && (
-          <Button component='label' variant='contained' sx={{ mb: 2 }}>
-            Upload Excel File
-            <input
-              hidden
-              type='file'
-              accept='.xlsx, .xls'
-              onChange={handleFileUpload}
-            />
-          </Button>
-        )}
-
-        {successMessage && (
-          <Alert severity='success' sx={{ mb: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity='error' sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {inventories.length > 0 && (
-          <>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Bin Code</TableCell>
-                  <TableCell>Product Code</TableCell>
-                  <TableCell>Quantity</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginated.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.binCode}</TableCell>
-                    <TableCell>{item.productCode}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component='div'
-              count={inventories.length}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={ROWS_PER_PAGE}
-              rowsPerPageOptions={[ROWS_PER_PAGE]}
-            />
-          </>
-        )}
-
-        {skippedItems.length > 0 && (
-          <Box mt={3}>
-            <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
-              ⚠️ Skipped Inventories (Already Exist in Database):
-            </Typography>
-            <ul>
-              {skippedItems.map((code, idx) => (
-                <li key={idx}>
-                  <code>{code}</code>
-                </li>
-              ))}
-            </ul>
+        {isUploading ? (
+          <Box
+            sx={{
+              height: 300,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+          >
+            <CircularProgress size={50} />
           </Box>
+        ) : (
+          <>
+            {!uploadFinished && (
+              <Button component='label' variant='contained' sx={{ mb: 2 }}>
+                Upload Excel File
+                <input
+                  hidden
+                  type='file'
+                  accept='.xlsx, .xls'
+                  onChange={handleFileUpload}
+                />
+              </Button>
+            )}
+
+            {successMessage && (
+              <Alert severity='success' sx={{ mb: 2 }}>
+                {successMessage}
+              </Alert>
+            )}
+            {error && (
+              <Alert severity='error' sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {inventories.length > 0 && (
+              <>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Bin Code</TableCell>
+                      <TableCell>Product Code</TableCell>
+                      <TableCell>Quantity</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginated.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{item.binCode}</TableCell>
+                        <TableCell>{item.productCode}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  component='div'
+                  count={inventories.length}
+                  page={page}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  rowsPerPage={ROWS_PER_PAGE}
+                  rowsPerPageOptions={[ROWS_PER_PAGE]}
+                />
+              </>
+            )}
+
+            {skippedItems.length > 0 && (
+              <Box mt={3}>
+                <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
+                  ⚠️ Skipped Inventories (Already Exist in Database):
+                </Typography>
+                <ul>
+                  {skippedItems.map((item, idx) => (
+                    <li key={idx}>
+                      <code>
+                        BinCode: {item.binCode}, ProductCode: {item.productCode}
+                        , Quantity: {item.quantity}
+                      </code>
+                    </li>
+                  ))}
+                </ul>
+              </Box>
+            )}
+          </>
         )}
       </DialogContent>
       <DialogActions>
@@ -204,9 +223,9 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
             variant='contained'
             color='success'
             onClick={handleConfirmUpload}
-            disabled={inventories.length === 0}
+            disabled={inventories.length === 0 || isUploading}
           >
-            Confirm Upload
+            {isUploading ? 'Uploading...' : 'Confirm Upload'}
           </Button>
         )}
       </DialogActions>

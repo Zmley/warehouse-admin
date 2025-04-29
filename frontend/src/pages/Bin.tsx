@@ -12,21 +12,30 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TextField,
   Typography,
   Button
 } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import UploadBinModal from 'components/bin/UploadBinModal'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
+import { useProduct } from 'hooks/useProduct'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
 
 const Bin: React.FC = () => {
-  const { bins, error, fetchBins, isLoading, totalPages } = useBin()
+  const {
+    bins,
+    binCodes,
+    error,
+    fetchBins,
+    isLoading,
+    totalPages,
+    fetchBinCodes
+  } = useBin()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -37,8 +46,9 @@ const Bin: React.FC = () => {
   const [binType, setBinType] = useState<string>(typeParam)
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
-
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+
+  const { fetchProductCodes, productCodes } = useProduct()
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
     setSearchParams({
@@ -51,6 +61,10 @@ const Bin: React.FC = () => {
 
   const handleChangePage = (_: unknown, newPage: number) => {
     updateQueryParams(binType, searchKeyword, newPage)
+  }
+
+  const handleKeywordSubmit = () => {
+    updateQueryParams(binType, searchKeyword, 0)
   }
 
   useEffect(() => {
@@ -66,30 +80,42 @@ const Bin: React.FC = () => {
     fetchBins({
       warehouseID,
       type: binType === 'ALL' ? undefined : binType,
-      keyword: searchKeyword || undefined,
+      keyword: keywordParam || undefined,
       page: page + 1,
       limit: ROWS_PER_PAGE
     })
-  }, [warehouseID, binType, searchKeyword, page])
+    fetchBinCodes()
+    fetchProductCodes()
+  }, [warehouseID, binType, keywordParam, page])
 
-  return isLoading ? (
-    <Box
-      sx={{
-        p: 3,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%'
-      }}
-    >
-      <CircularProgress size={50} sx={{ marginRight: 2 }} />
-      <Typography variant='h6'>Loading...</Typography>
-    </Box>
-  ) : error ? (
-    <Typography color='error' align='center' sx={{ mt: 10 }}>
-      {error}
-    </Typography>
-  ) : (
+  const combinedOptions = [...binCodes, ...productCodes]
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%'
+        }}
+      >
+        <CircularProgress size={50} sx={{ marginRight: 2 }} />
+        <Typography variant='h6'>Loading...</Typography>
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Typography color='error' align='center' sx={{ mt: 10 }}>
+        {error}
+      </Typography>
+    )
+  }
+
+  return (
     <Box sx={{ pt: 0 }}>
       <Box
         sx={{
@@ -98,44 +124,19 @@ const Bin: React.FC = () => {
           alignItems: 'center',
           mb: 3
         }}
-      >
-        <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#333' }}>
-          Bins
-        </Typography>
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3
-          }}
-        >
-          <Button
-            variant='contained'
-            startIcon={<AddIcon />}
-            onClick={() => setIsUploadOpen(true)}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Upload Bins
-          </Button>
-        </Box>
-      </Box>
+      ></Box>
 
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
-        <TextField
-          label='Search bins'
-          variant='outlined'
-          size='small'
+        <AutocompleteTextField
+          label='Search binCode'
           value={searchKeyword}
-          onChange={e => setSearchKeyword(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && warehouseID) {
-              updateQueryParams(binType, searchKeyword, 0)
-            }
-          }}
+          onChange={setSearchKeyword}
+          onSubmit={handleKeywordSubmit}
+          options={combinedOptions}
           sx={{ width: 250 }}
         />
+
+        {/* Bin Type Tabs */}
         <Tabs
           value={binType}
           onChange={(_, newType: string) => {
@@ -156,6 +157,15 @@ const Bin: React.FC = () => {
             />
           ))}
         </Tabs>
+
+        <Button
+          variant='contained'
+          startIcon={<AddIcon />}
+          onClick={() => setIsUploadOpen(true)}
+          sx={{ fontWeight: 'bold' }}
+        >
+          Upload Bins By Excel
+        </Button>
       </Stack>
 
       <Paper elevation={3} sx={{ borderRadius: 3 }}>

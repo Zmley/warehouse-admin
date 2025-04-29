@@ -13,7 +13,8 @@ import {
   TablePagination,
   Alert,
   Typography,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material'
 import * as XLSX from 'xlsx'
 import { useProduct } from 'hooks/useProduct'
@@ -33,6 +34,8 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
   const [error, setError] = useState('')
   const [skippedCodes, setSkippedCodes] = useState<string[]>([])
   const [uploadFinished, setUploadFinished] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
   const { uploadProductList } = useProduct()
 
   const handleClose = () => {
@@ -42,6 +45,7 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
     setError('')
     setSkippedCodes([])
     setUploadFinished(false)
+    setIsUploading(false)
     onClose()
   }
 
@@ -54,15 +58,30 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer)
       const workbook = XLSX.read(data, { type: 'array' })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as (
+        | string
+        | undefined
+      )[][]
 
       const parsed: ProductsUploadType[] = raw
         .slice(1)
-        .filter(row => row[0])
+        .filter(row => {
+          const productCode = row[0]?.toString().trim()
+          const barCode = row[1]?.toString().trim()
+          const boxType = row[2]?.toString().trim()
+          return (
+            productCode &&
+            barCode &&
+            boxType &&
+            productCode !== '#N/A' &&
+            barCode !== '#N/A' &&
+            boxType !== '#N/A'
+          )
+        })
         .map(row => ({
-          productCode: row[0]?.toString().trim() || '',
-          barCode: row[1]?.toString().trim() || '',
-          boxType: row[2]?.toString().trim() || ''
+          productCode: row[0]!.toString().trim(),
+          barCode: row[1]!.toString().trim(),
+          boxType: row[2]!.toString().trim()
         }))
 
       setProducts(parsed)
@@ -75,20 +94,23 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
   }
 
   const handleConfirmUpload = async () => {
+    setIsUploading(true)
     try {
       const res = await uploadProductList(products)
       if (res.success) {
         setProducts([])
         setSuccessMessage(
-          `✅ Uploaded ${res.insertedCount} product(s). Skipped ${res.skippedCount} products due to existing in database.`
+          `✅ Uploaded ${res.result.insertedCount} product(s). Skipped ${res.result.skippedCount} products due to duplicates.`
         )
-        setSkippedCodes(res.duplicatedProductCodes || [])
+        setSkippedCodes(res.result.duplicatedProductCodes || [])
         setUploadFinished(true)
       } else {
         setError(res.message || '❌ Upload failed.')
       }
     } catch (err: any) {
       setError('❌ Upload failed. Please try again.')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -99,88 +121,105 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth='md'>
-      {' '}
-      <DialogTitle>Upload Products Comfirmation</DialogTitle>
+      <DialogTitle>Upload Products Confirmation</DialogTitle>
       <DialogContent>
-        {!uploadFinished && (
-          <Button component='label' variant='contained' sx={{ mb: 2 }}>
-            Upload Excel File
-            <input
-              hidden
-              type='file'
-              accept='.xlsx, .xls'
-              onChange={handleFileUpload}
-            />
-          </Button>
-        )}
-
-        {successMessage && (
-          <Alert severity='success' sx={{ mb: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity='error' sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {products.length > 0 && (
-          <>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product Code</TableCell>
-                  <TableCell>Bar Code</TableCell>
-                  <TableCell>Box Type</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginated.map((product, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{product.productCode}</TableCell>
-                    <TableCell>{product.barCode}</TableCell>
-                    <TableCell>{product.boxType}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component='div'
-              count={products.length}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={ROWS_PER_PAGE}
-              rowsPerPageOptions={[ROWS_PER_PAGE]}
-            />
-          </>
-        )}
-
-        {skippedCodes.length > 0 && (
-          <Box mt={3}>
-            <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
-              ⚠️ Skipped Products (Already Exist in Database):
+        {isUploading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: 300
+            }}
+          >
+            <CircularProgress size={50} />
+            <Typography sx={{ mt: 2, ml: 2 }}>
+              Uploading products, please wait...
             </Typography>
-            <ul>
-              {skippedCodes.map((code, idx) => (
-                <li key={idx}>
-                  <code>{code}</code>
-                </li>
-              ))}
-            </ul>
           </Box>
+        ) : (
+          <>
+            {!uploadFinished && (
+              <Button component='label' variant='contained' sx={{ mb: 2 }}>
+                Upload Excel File
+                <input
+                  hidden
+                  type='file'
+                  accept='.xlsx, .xls'
+                  onChange={handleFileUpload}
+                />
+              </Button>
+            )}
+
+            {successMessage && (
+              <Alert severity='success' sx={{ mb: 2 }}>
+                {successMessage}
+              </Alert>
+            )}
+            {error && (
+              <Alert severity='error' sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {products.length > 0 && (
+              <>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Product Code</TableCell>
+                      <TableCell>Bar Code</TableCell>
+                      <TableCell>Box Type</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginated.map((product, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{product.productCode}</TableCell>
+                        <TableCell>{product.barCode}</TableCell>
+                        <TableCell>{product.boxType}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  component='div'
+                  count={products.length}
+                  page={page}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  rowsPerPage={ROWS_PER_PAGE}
+                  rowsPerPageOptions={[ROWS_PER_PAGE]}
+                />
+              </>
+            )}
+
+            {skippedCodes.length > 0 && (
+              <Box mt={3}>
+                <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
+                  ⚠️ Skipped Products (Already Exist in Database):
+                </Typography>
+                <ul>
+                  {skippedCodes.map((code, idx) => (
+                    <li key={idx}>
+                      <code>{code}</code>
+                    </li>
+                  ))}
+                </ul>
+              </Box>
+            )}
+          </>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>{' '}
+        <Button onClick={handleClose}>Close</Button>
         {!uploadFinished && (
           <Button
             variant='contained'
             color='success'
             onClick={handleConfirmUpload}
-            disabled={products.length === 0}
+            disabled={products.length === 0 || isUploading}
           >
-            Confirm Upload
+            {isUploading ? 'Uploading...' : 'Confirm Upload'}
           </Button>
         )}
       </DialogActions>

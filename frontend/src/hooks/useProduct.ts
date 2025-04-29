@@ -59,10 +59,22 @@ export const useProduct = () => {
   const uploadProductList = useCallback(async (list: ProductsUploadType[]) => {
     try {
       const res = await addProducts(list)
+
+      if (!res.success) {
+        return {
+          success: false,
+          message: 'No new products inserted. All may already exist.',
+          result: res.result
+        }
+      }
+
       return res
     } catch (error) {
       console.error('❌ Upload failed', error)
-      throw error
+      return {
+        success: false,
+        message: 'Upload failed due to network or server error.'
+      }
     }
   }, [])
 
