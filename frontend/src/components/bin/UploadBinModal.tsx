@@ -19,6 +19,8 @@ import * as XLSX from 'xlsx'
 import { useBin } from 'hooks/useBin'
 import { BinUploadType } from 'types/BinUploadType'
 import { CircularProgress } from '@mui/material'
+import { useParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 interface Props {
   open: boolean
@@ -37,6 +39,10 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
   const [isUploading, setIsUploading] = useState(false)
 
   const { uploadBinList } = useBin()
+
+  const location = useLocation()
+  const queryParams = new URLSearchParams(location.search)
+  const type = queryParams.get('type')
 
   const handleClose = () => {
     setBins([])
@@ -68,58 +74,84 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
         return
       }
 
-      const headers = raw[0]
+      const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
 
-      const binCodeIndex = headers.findIndex(
-        col => col && String(col).toLowerCase().includes('bincode')
-      )
-      const defaultCodeIndex = headers.findIndex(
-        col => col && String(col).toLowerCase().includes('default')
-      )
+      if (type === 'INVENTORY') {
+        const parsed: { binCode: string }[] = []
 
-      if (binCodeIndex === -1) {
-        setError("❌ 'binCode' column not found in the file")
-        return
+        raw.forEach(row => {
+          for (let i = 0; i < row.length; i += 4) {
+            const binRaw = row[i]
+            const binCode =
+              typeof binRaw === 'string'
+                ? binRaw.trim()
+                : binRaw?.toString().trim()
+
+            if (!binCode) continue
+            if (hasChinese(binCode)) continue
+
+            parsed.push({ binCode })
+          }
+        })
+
+        setBins(parsed as any)
+      } else {
+        const headers = raw[0]
+
+        const binCodeIndex = headers.findIndex(
+          col => col && String(col).toLowerCase().includes('bincode')
+        )
+        const defaultCodeIndex = headers.findIndex(
+          col => col && String(col).toLowerCase().includes('default')
+        )
+
+        if (binCodeIndex === -1) {
+          setError("❌ 'binCode' column not found in the file")
+          return
+        }
+
+        const map = new Map<string, string[]>()
+
+        raw.slice(1).forEach(row => {
+          const binRaw = row[binCodeIndex]
+          const defaultRaw =
+            defaultCodeIndex !== -1 ? row[defaultCodeIndex] : undefined
+
+          const binCode =
+            typeof binRaw === 'string'
+              ? binRaw.trim()
+              : binRaw?.toString().trim()
+          const defaultCode =
+            typeof defaultRaw === 'string'
+              ? defaultRaw.trim()
+              : defaultRaw?.toString().trim()
+
+          if (!binCode) return
+
+          if (!map.has(binCode)) {
+            map.set(binCode, [])
+          }
+          if (defaultCode) {
+            map.get(binCode)!.push(defaultCode)
+          }
+        })
+
+        const parsed = Array.from(map.entries()).map(
+          ([binCode, defaultProductCodes]) => ({
+            binCode,
+            defaultProductCodes
+          })
+        )
+
+        setBins(parsed)
       }
 
-      const map = new Map<string, string[]>()
-
-      raw.slice(1).forEach(row => {
-        const binRaw = row[binCodeIndex]
-        const defaultRaw =
-          defaultCodeIndex !== -1 ? row[defaultCodeIndex] : undefined
-
-        const binCode =
-          typeof binRaw === 'string' ? binRaw.trim() : binRaw?.toString().trim()
-
-        const defaultCode =
-          typeof defaultRaw === 'string'
-            ? defaultRaw.trim()
-            : defaultRaw?.toString().trim()
-
-        if (!binCode) return
-
-        if (!map.has(binCode)) {
-          map.set(binCode, [])
-        }
-        if (defaultCode) {
-          map.get(binCode)!.push(defaultCode)
-        }
-      })
-
-      const parsed: BinUploadType[] = Array.from(map.entries()).map(
-        ([binCode, defaultProductCodes]) => ({
-          binCode,
-          defaultProductCodes
-        })
-      )
-
-      setBins(parsed)
       setPage(0)
       setSuccessMessage('')
       setError('')
       setUploadFinished(false)
     }
+
     reader.readAsArrayBuffer(file)
   }
 

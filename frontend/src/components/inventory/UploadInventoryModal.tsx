@@ -61,27 +61,37 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
 
       const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
-
       const parsed: InventoryUploadType[] = []
 
-      raw.forEach(row => {
-        for (let i = 0; i < row.length; i += 4) {
-          const binRaw = row[i]?.toString().trim()
-          const productRaw = row[i + 1]?.toString().trim()
-          const quantityRaw = row[i + 2]?.toString().trim()
+      let lastBinCodes: string[] = new Array(27).fill('') // 27列（每4列一个组合）
 
-          if (!binRaw || !productRaw || !quantityRaw) continue
+      raw.forEach(row => {
+        for (let col = 0; col < 112; col += 4) {
+          const binRaw = row[col]?.toString().trim()
+          const productRaw = row[col + 1]?.toString().trim()
+          const quantityRaw = row[col + 2]?.toString().trim()
+
+          const colIndex = col / 4
+
+          if (binRaw) lastBinCodes[colIndex] = binRaw
+          const binCode = lastBinCodes[colIndex]
+
+          if (!binCode || !productRaw || !quantityRaw) continue
+
           if (
-            hasChinese(binRaw) ||
+            hasChinese(binCode) ||
             hasChinese(productRaw) ||
             hasChinese(quantityRaw)
           )
             continue
 
+          //   if (/^[A-Za-z]$/.test(binCode)) continue
+          //   if (/^\d[A-Za-z]$/.test(binCode)) continue
+
           const quantity = parseInt(quantityRaw)
           if (!isNaN(quantity)) {
             parsed.push({
-              binCode: binRaw,
+              binCode,
               productCode: productRaw,
               quantity
             })
