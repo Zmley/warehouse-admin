@@ -75,7 +75,8 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
           col => col && String(col).toLowerCase().includes('bincode')
         )
         const defaultCodeIndex = headers.findIndex(
-          col => col && String(col).toLowerCase().includes('default')
+          col =>
+            col && String(col).toLowerCase().includes('defaultproductcodes')
         )
 
         if (binCodeIndex === -1)

@@ -45,13 +45,31 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
 
+      if (!raw.length) {
+        setError('❌ Empty Excel file')
+        return
+      }
+
+      const headers = raw[0].map(cell => cell?.toString().toLowerCase().trim())
+
+      const binCodeIdx = headers.findIndex(h => h?.includes('bincode'))
+      const productCodeIdx = headers.findIndex(h => h?.includes('productcode'))
+      const quantityIdx = headers.findIndex(h => h?.includes('quantity'))
+
+      if (binCodeIdx === -1 || productCodeIdx === -1 || quantityIdx === -1) {
+        setError(
+          '❌ Missing required columns: binCode, productCode, or quantity.'
+        )
+        return
+      }
+
       const parsed: InventoryUploadType[] = []
       let lastBinCode = ''
 
       raw.slice(1).forEach(row => {
-        const binRaw = row[0]?.toString().trim()
-        const productRaw = row[1]?.toString().trim()
-        const quantityRaw = row[2]?.toString().trim()
+        const binRaw = row[binCodeIdx]?.toString().trim()
+        const productRaw = row[productCodeIdx]?.toString().trim()
+        const quantityRaw = row[quantityIdx]?.toString().trim()
 
         const binCode = binRaw || lastBinCode
         if (binRaw) lastBinCode = binRaw
