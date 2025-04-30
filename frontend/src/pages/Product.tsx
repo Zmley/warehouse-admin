@@ -108,11 +108,7 @@ const Product: React.FC = () => {
                 'Box Type',
                 'Created At'
               ].map(header => (
-                <TableCell
-                  key={header}
-                  align='center'
-                  // sx={{ border: '1px solid #e0e0e0' }}
-                >
+                <TableCell key={header} align='center'>
                   {header}
                 </TableCell>
               ))}

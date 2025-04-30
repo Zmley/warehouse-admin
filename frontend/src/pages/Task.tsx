@@ -33,13 +33,10 @@ const Task: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const statusParam =
+  const [status, setStatus] = useState<TaskStatusFilter>(
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
-  const keywordParam = searchParams.get('keyword') || ''
-
-  const [filterStatus, setFilterStatus] =
-    useState<TaskStatusFilter>(statusParam)
-  const [searchKeyword, setSearchKeyword] = useState(keywordParam)
+  )
+  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [isDialogOpen, setOpenDialog] = useState(false)
   const [page, setPage] = useState(0)
 
@@ -62,7 +59,7 @@ const Task: React.FC = () => {
   const handleKeywordSubmit = () => {
     if (warehouseID) {
       setPage(0)
-      updateQueryParams(filterStatus, searchKeyword)
+      updateQueryParams(status, keyword)
     }
   }
 
@@ -74,14 +71,14 @@ const Task: React.FC = () => {
     if (warehouseID) {
       fetchTasks({
         warehouseID,
-        status: filterStatus,
-        keyword: keywordParam
+        status,
+        keyword
       })
 
       fetchBinCodes()
       fetchProductCodes()
     }
-  }, [filterStatus, keywordParam])
+  }, [status, keyword])
 
   return isLoading ? (
     <Box
@@ -135,8 +132,8 @@ const Task: React.FC = () => {
               handleClose()
               fetchTasks({
                 warehouseID: warehouseID!,
-                status: filterStatus,
-                keyword: searchKeyword
+                status: status,
+                keyword: keyword
               })
             }}
           />
@@ -146,18 +143,18 @@ const Task: React.FC = () => {
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <AutocompleteTextField
           label='Search taskID / productCode'
-          value={searchKeyword}
-          onChange={setSearchKeyword}
+          value={keyword}
+          onChange={setKeyword}
           onSubmit={handleKeywordSubmit}
           options={combinedOptions}
           sx={{ width: 250 }}
         />
 
         <Tabs
-          value={filterStatus}
+          value={status}
           onChange={(_, newStatus: TaskStatusFilter) => {
-            setFilterStatus(newStatus)
-            setSearchKeyword('')
+            setStatus(newStatus)
+            setKeyword('')
             setPage(0)
             updateQueryParams(newStatus, '')
           }}
@@ -246,8 +243,8 @@ const Task: React.FC = () => {
                         ) {
                           cancelTask(task.taskID, {
                             warehouseID: warehouseID!,
-                            status: filterStatus,
-                            keyword: searchKeyword
+                            status: status,
+                            keyword: keyword
                           })
                         }
                       }}
