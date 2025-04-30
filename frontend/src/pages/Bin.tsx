@@ -22,6 +22,7 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
+import { compactRowSx } from 'styles/tableStyles'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
@@ -90,41 +91,30 @@ const Bin: React.FC = () => {
 
   const combinedOptions = [...binCodes, ...productCodes]
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
-  return (
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
     <Box sx={{ pt: 0 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3
-        }}
-      ></Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          Bin Management
+        </Typography>
+      </Box>
 
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <AutocompleteTextField
@@ -185,7 +175,7 @@ const Bin: React.FC = () => {
           </TableHead>
           <TableBody>
             {bins.map(bin => (
-              <TableRow key={bin.binID}>
+              <TableRow key={bin.binID} sx={compactRowSx}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {bin.binCode}
                 </TableCell>

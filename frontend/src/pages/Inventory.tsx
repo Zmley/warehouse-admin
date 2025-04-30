@@ -10,7 +10,8 @@ import {
   Button,
   Paper,
   TablePagination,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material'
 import QuantityEdit from 'components/inventory/QuantityEdit'
 import CreateInventory from 'components/inventory/CreateInventory'
@@ -22,6 +23,8 @@ import UploadInventoryModal from 'components/inventory/UploadInventoryModal'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
+import DeleteIcon from '@mui/icons-material/Delete'
+import { compactRowSx } from 'styles/tableStyles'
 
 const Inventory: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
@@ -114,21 +117,30 @@ const Inventory: React.FC = () => {
     fetchInventories(undefined, 1, 10, keyword || undefined)
   }
 
-  if (isLoading) {
-    return (
-      <Box sx={{ pt: 0 }}>
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
+    <Box sx={{ height: '100%', overflowY: 'auto' }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          Inventory Management
+        </Typography>
       </Box>
-    )
-  }
-
-  if (error) {
-    return <Typography color='error'>{error}</Typography>
-  }
-
-  return (
-    <Box sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <AutocompleteTextField
           label='Search binCode / productCode'
@@ -183,9 +195,10 @@ const Inventory: React.FC = () => {
               ))}
             </TableRow>
           </TableHead>
+
           <TableBody>
             {inventories.map(item => (
-              <TableRow key={item.inventoryID}>
+              <TableRow key={item.inventoryID} sx={compactRowSx}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {item.inventoryID}
                 </TableCell>
@@ -213,8 +226,7 @@ const Inventory: React.FC = () => {
                   {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  <Button
-                    variant='contained'
+                  <IconButton
                     color='error'
                     size='small'
                     onClick={() => {
@@ -227,8 +239,8 @@ const Inventory: React.FC = () => {
                       }
                     }}
                   >
-                    Delete
-                  </Button>
+                    <DeleteIcon fontSize='small' />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}

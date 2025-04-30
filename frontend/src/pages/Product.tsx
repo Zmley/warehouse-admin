@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   CircularProgress,
@@ -14,6 +14,7 @@ import {
 import { useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { compactRowSx } from 'styles/tableStyles'
 
 const ROWS_PER_PAGE = 10
 
@@ -61,35 +62,30 @@ const Product: React.FC = () => {
     updateQueryParams(searchKeyword, newPage)
   }
 
-  const suggestionOptions = useMemo(() => productCodes || [], [productCodes])
-
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
-  return (
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
     <Box sx={{ pt: 0 }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          Product Management
+        </Typography>
+      </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <AutocompleteTextField
           label='Search productCode'
@@ -115,7 +111,7 @@ const Product: React.FC = () => {
                 <TableCell
                   key={header}
                   align='center'
-                  sx={{ border: '1px solid #e0e0e0' }}
+                  // sx={{ border: '1px solid #e0e0e0' }}
                 >
                   {header}
                 </TableCell>
@@ -124,7 +120,7 @@ const Product: React.FC = () => {
           </TableHead>
           <TableBody>
             {products.map(product => (
-              <TableRow key={product.productID}>
+              <TableRow key={product.productID} sx={compactRowSx}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {product.productCode}
                 </TableCell>

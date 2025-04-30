@@ -19,7 +19,6 @@ import * as XLSX from 'xlsx'
 import { useBin } from 'hooks/useBin'
 import { BinUploadType } from 'types/BinUploadType'
 import { CircularProgress } from '@mui/material'
-import { useParams } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 
 interface Props {

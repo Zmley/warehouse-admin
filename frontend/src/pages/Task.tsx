@@ -24,11 +24,12 @@ import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
+import { compactRowSx } from 'styles/tableStyles'
 
 const ROWS_PER_PAGE = 10
 
 const Task: React.FC = () => {
-  const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
+  const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -58,11 +59,11 @@ const Task: React.FC = () => {
     setPage(newPage)
   }
 
-  const suggestionOptions = useMemo(() => {
-    const ids = tasks.map(task => task.taskID)
-    const productCodes = tasks.map(task => task.productCode)
-    return [...ids, ...productCodes]
-  }, [tasks])
+  // const suggestionOptions = useMemo(() => {
+  //   const ids = tasks.map(task => task.taskID)
+  //   const productCodes = tasks.map(task => task.productCode)
+  //   return [...ids, ...productCodes]
+  // }, [tasks])
 
   const handleKeywordSubmit = () => {
     if (warehouseID) {
@@ -88,32 +89,24 @@ const Task: React.FC = () => {
     }
   }, [filterStatus, keywordParam])
 
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
-  return (
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
     <Box sx={{ pt: 0 }}>
       <Box
         sx={{
@@ -222,7 +215,7 @@ const Task: React.FC = () => {
           </TableHead>
           <TableBody>
             {paginatedTasks.map(task => (
-              <TableRow key={task.taskID}>
+              <TableRow key={task.taskID} sx={compactRowSx}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.taskID}
                 </TableCell>
