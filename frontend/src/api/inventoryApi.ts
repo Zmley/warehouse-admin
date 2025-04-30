@@ -23,7 +23,7 @@ export const deleteInventory = async (inventoryID: string) => {
 
 export const createInventory = async (newProduct: {
   productCode: string
-  binID: string
+  binCode: string
   quantity: number
 }) => {
   const response = await apiClient.post('/inventories', newProduct)

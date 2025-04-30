@@ -17,7 +17,7 @@ import QuantityEdit from 'components/inventory/QuantityEdit'
 import CreateInventory from 'components/inventory/CreateInventory'
 import { InventoryItem } from 'types/InventoryItem'
 import { useInventory } from 'hooks/useInventory'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import UploadInventoryModal from 'components/inventory/UploadInventoryModal'
 import { useBin } from 'hooks/useBin'
@@ -27,7 +27,10 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { compactRowSx } from 'styles/tableStyles'
 
 const Inventory: React.FC = () => {
-  const { warehouseID } = useParams<{ warehouseID: string }>()
+  const { warehouseID, warehouseCode } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
@@ -45,6 +48,8 @@ const Inventory: React.FC = () => {
   const { binCodes, fetchBinCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const combinedOptions = [...binCodes, ...productCodes]
+
+  const navigate = useNavigate()
 
   const {
     inventories,
@@ -207,9 +212,16 @@ const Inventory: React.FC = () => {
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   <Typography
-                    component='a'
-                    href={`/product/${item.productCode}`}
-                    sx={{ textDecoration: 'underline', color: '#1976d2' }}
+                    sx={{
+                      textDecoration: 'underline',
+                      color: '#1976d2',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() =>
+                      navigate(
+                        `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
+                      )
+                    }
                   >
                     {item.productCode}
                   </Typography>
@@ -275,7 +287,6 @@ const Inventory: React.FC = () => {
           onClose={handleCreateInventoryClose}
           onSuccess={handleSuccess}
           binCode={selectedItem?.bin?.binCode || ''}
-          binID={selectedItem?.bin?.binID || ''}
         />
       </Box>
     </Box>

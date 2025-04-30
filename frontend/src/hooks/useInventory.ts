@@ -97,7 +97,7 @@ export const useInventory = () => {
   const addInventory = useCallback(
     async (newItem: {
       productCode: string
-      binID: string
+      binCode: string
       quantity: number
     }) => {
       try {

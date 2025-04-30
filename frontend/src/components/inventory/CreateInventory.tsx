@@ -6,49 +6,54 @@ import {
   DialogTitle,
   Button,
   TextField,
-  Autocomplete,
   Alert,
   Stack,
   Paper
 } from '@mui/material'
 import { useInventory } from 'hooks/useInventory'
 import { useProduct } from 'hooks/useProduct'
+import { useBin } from 'hooks/useBin'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
 
 interface CreateInventoryProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
   binCode: string
-  binID: string
 }
 
 const CreateInventory: React.FC<CreateInventoryProps> = ({
   open,
   onClose,
-  onSuccess,
-  binCode,
-  binID
+  onSuccess
 }) => {
-  const { productCodes, fetchProductCodes, isLoading } = useProduct()
+  const { productCodes, fetchProductCodes } = useProduct()
+  const { binCodes, fetchBinCodes } = useBin()
   const { addInventory, error } = useInventory()
 
-  const [productCode, setProductCode] = useState('')
+  const [selectedProductCode, setProductCode] = useState('')
+  const [selectedBinCode, setSelectedBinCode] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     if (open) {
       fetchProductCodes()
+      fetchBinCodes()
       setProductCode('')
+      setSelectedBinCode('')
       setQuantity(1)
       setSuccessMessage('')
     }
-  }, [open, fetchProductCodes])
+  }, [open, fetchProductCodes, fetchBinCodes])
 
   const handleSubmit = async () => {
     try {
-      const result = await addInventory({ productCode, binID, quantity })
-
+      const result = await addInventory({
+        productCode: selectedProductCode,
+        binCode: selectedBinCode,
+        quantity
+      })
       if (result.success) {
         alert('✅ Inventory item created successfully!')
         onClose()
@@ -65,7 +70,7 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
       <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-        Create Inventory Item for {binCode}
+        Create Inventory Item
       </DialogTitle>
 
       <DialogContent sx={{ pb: 2 }}>
@@ -74,14 +79,20 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
           sx={{ p: 4, borderRadius: 3, backgroundColor: '#fdfdfd' }}
         >
           <Stack spacing={3}>
-            <Autocomplete
+            <AutocompleteTextField
+              label='Bin Code'
+              value={selectedBinCode}
+              onChange={setSelectedBinCode}
+              onSubmit={() => {}}
+              options={binCodes}
+            />
+
+            <AutocompleteTextField
+              label='Product Code'
+              value={selectedProductCode}
+              onChange={setProductCode}
+              onSubmit={() => {}}
               options={productCodes}
-              value={productCode}
-              onChange={(_, newValue) => setProductCode(newValue || '')}
-              loading={isLoading}
-              renderInput={params => (
-                <TextField {...params} label='Product Code' fullWidth />
-              )}
             />
 
             <TextField
