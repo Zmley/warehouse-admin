@@ -100,12 +100,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               inputProps={{ min: 1 }}
             />
 
-            {/* {error && (
-              <Alert severity='error' sx={{ fontWeight: 'bold' }}>
-                {error}
-              </Alert>
-            )} */}
-
             {successMessage && (
               <Alert severity='success' sx={{ fontWeight: 'bold' }}>
                 {successMessage}

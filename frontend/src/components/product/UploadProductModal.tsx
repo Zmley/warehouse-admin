@@ -39,12 +39,41 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
         | undefined
       )[][]
 
+      if (!raw.length) {
+        setError('❌ Excel file is empty')
+        return
+      }
+
+      const headers = raw[0]
+
+      const productCodeIndex = headers.findIndex(
+        col =>
+          typeof col === 'string' && col.toLowerCase().includes('productcode')
+      )
+      const barCodeIndex = headers.findIndex(
+        col => typeof col === 'string' && col.toLowerCase().includes('barcode')
+      )
+      const boxTypeIndex = headers.findIndex(
+        col => typeof col === 'string' && col.toLowerCase().includes('boxtype')
+      )
+
+      if (
+        productCodeIndex === -1 ||
+        barCodeIndex === -1 ||
+        boxTypeIndex === -1
+      ) {
+        setError(
+          '❌ Missing required columns: productCode, barCode, or boxType'
+        )
+        return
+      }
+
       const parsed: ProductsUploadType[] = raw
         .slice(1)
         .filter(row => {
-          const productCode = row[0]?.toString().trim()
-          const barCode = row[1]?.toString().trim()
-          const boxType = row[2]?.toString().trim()
+          const productCode = row[productCodeIndex]?.toString().trim()
+          const barCode = row[barCodeIndex]?.toString().trim()
+          const boxType = row[boxTypeIndex]?.toString().trim()
           return (
             productCode &&
             barCode &&
@@ -55,15 +84,16 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
           )
         })
         .map(row => ({
-          productCode: row[0]!.toString().trim(),
-          barCode: row[1]!.toString().trim(),
-          boxType: row[2]!.toString().trim()
+          productCode: row[productCodeIndex]!.toString().trim(),
+          barCode: row[barCodeIndex]!.toString().trim(),
+          boxType: row[boxTypeIndex]!.toString().trim()
         }))
 
       setProducts(parsed)
       setSuccessMessage('')
       setError('')
     }
+
     reader.readAsArrayBuffer(file)
   }
 

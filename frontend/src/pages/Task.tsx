@@ -56,7 +56,7 @@ const Task: React.FC = () => {
     setPage(newPage)
   }
 
-  const handleKeywordSubmit = () => {
+  const handleSearchSubmit = () => {
     if (warehouseID) {
       setPage(0)
       updateQueryParams(status, keyword)
@@ -145,7 +145,7 @@ const Task: React.FC = () => {
           label='Search taskID / productCode'
           value={keyword}
           onChange={setKeyword}
-          onSubmit={handleKeywordSubmit}
+          onSubmit={handleSearchSubmit}
           options={combinedOptions}
           sx={{ width: 250 }}
         />
