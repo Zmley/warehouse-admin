@@ -24,7 +24,7 @@ import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
-import { compactRowSx } from 'styles/tableStyles'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const ROWS_PER_PAGE = 10
 
@@ -209,7 +209,7 @@ const Task: React.FC = () => {
           </TableHead>
           <TableBody>
             {paginatedTasks.map(task => (
-              <TableRow key={task.taskID} sx={compactRowSx}>
+              <TableRow key={task.taskID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.taskID}
                 </TableCell>

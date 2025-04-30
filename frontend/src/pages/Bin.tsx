@@ -22,7 +22,7 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
-import { compactRowSx } from 'styles/tableStyles'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
@@ -175,7 +175,7 @@ const Bin: React.FC = () => {
           </TableHead>
           <TableBody>
             {bins.map(bin => (
-              <TableRow key={bin.binID} sx={compactRowSx}>
+              <TableRow key={bin.binID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {bin.binCode}
                 </TableCell>

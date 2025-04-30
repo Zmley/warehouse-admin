@@ -14,7 +14,7 @@ import {
 import { useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
-import { compactRowSx } from 'styles/tableStyles'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const ROWS_PER_PAGE = 10
 
@@ -120,7 +120,7 @@ const Product: React.FC = () => {
           </TableHead>
           <TableBody>
             {products.map(product => (
-              <TableRow key={product.productID} sx={compactRowSx}>
+              <TableRow key={product.productID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {product.productCode}
                 </TableCell>

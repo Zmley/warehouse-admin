@@ -24,7 +24,7 @@ import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { compactRowSx } from 'styles/tableStyles'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const Inventory: React.FC = () => {
   const { warehouseID, warehouseCode } = useParams<{
@@ -203,7 +203,7 @@ const Inventory: React.FC = () => {
 
           <TableBody>
             {inventories.map(item => (
-              <TableRow key={item.inventoryID} sx={compactRowSx}>
+              <TableRow key={item.inventoryID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {item.inventoryID}
                 </TableCell>
