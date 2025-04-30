@@ -11,7 +11,7 @@ interface Props {
 }
 
 const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
-  const [bins, setBins] = useState<(BinUploadType & { type: string })[]>([])
+  const [bins, setBins] = useState<BinUploadType[]>([])
   const [skippedCodes, setSkippedCodes] = useState<string[]>([])
   const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
