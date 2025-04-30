@@ -63,39 +63,31 @@ const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
       const parsed: InventoryUploadType[] = []
 
-      let lastBinCodes: string[] = new Array(27).fill('') // 27列（每4列一个组合）
+      let lastBinCode = ''
 
-      raw.forEach(row => {
-        for (let col = 0; col < 112; col += 4) {
-          const binRaw = row[col]?.toString().trim()
-          const productRaw = row[col + 1]?.toString().trim()
-          const quantityRaw = row[col + 2]?.toString().trim()
+      raw.slice(1).forEach(row => {
+        const binRaw = row[0]?.toString().trim()
+        const productRaw = row[1]?.toString().trim()
+        const quantityRaw = row[2]?.toString().trim()
 
-          const colIndex = col / 4
+        const binCode = binRaw || lastBinCode
+        if (binRaw) lastBinCode = binRaw
 
-          if (binRaw) lastBinCodes[colIndex] = binRaw
-          const binCode = lastBinCodes[colIndex]
+        if (!binCode || !productRaw || !quantityRaw) return
+        if (
+          hasChinese(binCode) ||
+          hasChinese(productRaw) ||
+          hasChinese(quantityRaw)
+        )
+          return
 
-          if (!binCode || !productRaw || !quantityRaw) continue
-
-          if (
-            hasChinese(binCode) ||
-            hasChinese(productRaw) ||
-            hasChinese(quantityRaw)
-          )
-            continue
-
-          //   if (/^[A-Za-z]$/.test(binCode)) continue
-          //   if (/^\d[A-Za-z]$/.test(binCode)) continue
-
-          const quantity = parseInt(quantityRaw)
-          if (!isNaN(quantity)) {
-            parsed.push({
-              binCode,
-              productCode: productRaw,
-              quantity
-            })
-          }
+        const quantity = parseInt(quantityRaw)
+        if (!isNaN(quantity)) {
+          parsed.push({
+            binCode,
+            productCode: productRaw,
+            quantity
+          })
         }
       })
 
