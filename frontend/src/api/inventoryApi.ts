@@ -21,15 +21,6 @@ export const deleteInventory = async (inventoryID: string) => {
   return response.data
 }
 
-export const createInventory = async (newProduct: {
-  productCode: string
-  binCode: string
-  quantity: number
-}) => {
-  const response = await apiClient.post('/inventories', newProduct)
-  return response.data
-}
-
 export const updateInventory = async (
   inventoryID: string,
   updatedFields: {
@@ -45,7 +36,7 @@ export const updateInventory = async (
   return response.data
 }
 
-export const uploadInventories = async (inventories: InventoryUploadType[]) => {
-  const response = await apiClient.post('/inventories/add', inventories)
+export const addInventories = async (inventories: InventoryUploadType[]) => {
+  const response = await apiClient.post('/inventories/', inventories)
   return response.data
 }

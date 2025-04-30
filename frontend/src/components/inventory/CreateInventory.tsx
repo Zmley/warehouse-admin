@@ -29,7 +29,7 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
 }) => {
   const { productCodes, fetchProductCodes } = useProduct()
   const { binCodes, fetchBinCodes } = useBin()
-  const { addInventory, error } = useInventory()
+  const { addInventory } = useInventory()
 
   const [selectedProductCode, setProductCode] = useState('')
   const [selectedBinCode, setSelectedBinCode] = useState('')
@@ -48,22 +48,18 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
   }, [open, fetchProductCodes, fetchBinCodes])
 
   const handleSubmit = async () => {
-    try {
-      const result = await addInventory({
-        productCode: selectedProductCode,
-        binCode: selectedBinCode,
-        quantity
-      })
-      if (result.success) {
-        alert('✅ Inventory item created successfully!')
-        onClose()
-        onSuccess()
-      } else {
-        alert(error)
-      }
-    } catch (err) {
-      console.error('❌ Error creating inventory item:', err)
-      alert('❌ An error occurred while creating inventory item.')
+    const result = await addInventory({
+      productCode: selectedProductCode,
+      binCode: selectedBinCode,
+      quantity
+    })
+
+    if (result.success) {
+      alert('✅ Inventory item created successfully!')
+      onClose()
+      onSuccess()
+    } else {
+      alert(result.message)
     }
   }
 
@@ -104,11 +100,11 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               inputProps={{ min: 1 }}
             />
 
-            {error && (
+            {/* {error && (
               <Alert severity='error' sx={{ fontWeight: 'bold' }}>
                 {error}
               </Alert>
-            )}
+            )} */}
 
             {successMessage && (
               <Alert severity='success' sx={{ fontWeight: 'bold' }}>
