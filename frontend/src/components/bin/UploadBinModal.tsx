@@ -1,62 +1,42 @@
-import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TablePagination,
-  Alert,
-  Typography,
-  Box
-} from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useBin } from 'hooks/useBin'
 import { BinUploadType } from 'types/BinUploadType'
-import { CircularProgress } from '@mui/material'
-import { useLocation } from 'react-router-dom'
+import UploadDialog from 'components/UploadDialog'
 
 interface Props {
   open: boolean
   onClose: () => void
 }
 
-const ROWS_PER_PAGE = 10
-
 const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
-  const [bins, setBins] = useState<BinUploadType[]>([])
-  const [page, setPage] = useState(0)
+  const [bins, setBins] = useState<(BinUploadType & { type: string })[]>([])
+  const [skippedCodes, setSkippedCodes] = useState<string[]>([])
   const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
-  const [skippedCodes, setSkippedCodes] = useState<string[]>([])
-  const [uploadFinished, setUploadFinished] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
   const { uploadBinList } = useBin()
-
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
-  const type = queryParams.get('type')
+  const type = queryParams.get('type') || ''
 
-  const handleClose = () => {
+  const resetState = () => {
     setBins([])
-    setPage(0)
+    setSkippedCodes([])
     setSuccessMessage('')
     setError('')
-    setSkippedCodes([])
-    setUploadFinished(false)
-    onClose()
+    setIsUploading(false)
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  useEffect(() => {
+    if (!open) resetState()
+  }, [open])
 
+  const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
+
+  const handleFileUpload = (file: File) => {
     const reader = new FileReader()
     reader.onload = e => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer)
@@ -68,40 +48,29 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
         | undefined
       )[][]
 
-      if (!raw.length) {
-        setError('❌ Empty Excel file')
-        return
-      }
+      if (!raw.length) return setError('❌ Empty Excel file')
 
-      const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
       if (type === 'INVENTORY') {
-        const parsed: { binCode: string }[] = []
-
         const maybeHeader = raw[0]
         const isHeader =
-          maybeHeader &&
           typeof maybeHeader[0] === 'string' &&
           maybeHeader[0].toLowerCase().includes('bincode')
-
         const dataRows = isHeader ? raw.slice(1) : raw
 
-        dataRows.forEach(row => {
-          const binRaw = row[0]
-          const binCode =
-            typeof binRaw === 'string'
-              ? binRaw.trim()
-              : binRaw?.toString().trim()
+        const parsed = dataRows
+          .map(row => {
+            const binRaw = row[0]
+            const binCode =
+              typeof binRaw === 'string'
+                ? binRaw.trim()
+                : binRaw?.toString().trim()
+            return binCode && !hasChinese(binCode) ? { binCode, type } : null
+          })
+          .filter(Boolean) as (BinUploadType & { type: string })[]
 
-          if (!binCode) return
-          if (hasChinese(binCode)) return
-
-          parsed.push({ binCode })
-        })
-
-        setBins(parsed as any)
+        setBins(parsed)
       } else {
         const headers = raw[0]
-
         const binCodeIndex = headers.findIndex(
           col => col && String(col).toLowerCase().includes('bincode')
         )
@@ -109,13 +78,10 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
           col => col && String(col).toLowerCase().includes('default')
         )
 
-        if (binCodeIndex === -1) {
-          setError("❌ 'binCode' column not found in the file")
-          return
-        }
+        if (binCodeIndex === -1)
+          return setError("❌ 'binCode' column not found")
 
         const map = new Map<string, string[]>()
-
         raw.slice(1).forEach(row => {
           const binRaw = row[binCodeIndex]
           const defaultRaw =
@@ -131,31 +97,24 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
               : defaultRaw?.toString().trim()
 
           if (!binCode) return
-
-          if (!map.has(binCode)) {
-            map.set(binCode, [])
-          }
-          if (defaultCode) {
-            map.get(binCode)!.push(defaultCode)
-          }
+          if (!map.has(binCode)) map.set(binCode, [])
+          if (defaultCode) map.get(binCode)!.push(defaultCode)
         })
 
         const parsed = Array.from(map.entries()).map(
           ([binCode, defaultProductCodes]) => ({
             binCode,
-            defaultProductCodes
+            defaultProductCodes,
+            type
           })
         )
 
         setBins(parsed)
       }
 
-      setPage(0)
       setSuccessMessage('')
       setError('')
-      setUploadFinished(false)
     }
-
     reader.readAsArrayBuffer(file)
   }
 
@@ -164,12 +123,11 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
     try {
       const res = await uploadBinList(bins)
       if (res.success) {
-        setBins([])
         setSuccessMessage(
-          `✅ Uploaded ${res.insertedCount} bin(s). Skipped ${res.skippedCount} due to duplicates.`
+          `✅ Uploaded ${res.insertedCount} bin(s). Skipped ${res.skippedCount} duplicates.`
         )
         setSkippedCodes(res.duplicatedBinCodes || [])
-        setUploadFinished(true)
+        setBins([])
       } else {
         setError(res.error || '❌ Upload failed.')
       }
@@ -180,106 +138,27 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
     }
   }
 
-  const paginated = bins.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE)
-
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth='md'>
-      <DialogTitle>Upload Bins Confirmation</DialogTitle>
-      <DialogContent>
-        {isUploading ? (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: 300
-            }}
-          >
-            <CircularProgress size={50} />
-          </Box>
-        ) : (
-          <>
-            {!uploadFinished && (
-              <Button component='label' variant='contained' sx={{ mb: 2 }}>
-                Upload Excel File
-                <input
-                  hidden
-                  type='file'
-                  accept='.xlsx, .xls'
-                  onChange={handleFileUpload}
-                />
-              </Button>
-            )}
-
-            {successMessage && (
-              <Alert severity='success'>{successMessage}</Alert>
-            )}
-            {error && <Alert severity='error'>{error}</Alert>}
-
-            {bins.length > 0 && (
-              <>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Bin Code</TableCell>
-                      <TableCell>Default Product Codes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {paginated.map((bin, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{bin.binCode}</TableCell>
-                        <TableCell>
-                          {bin.defaultProductCodes?.length
-                            ? bin.defaultProductCodes.join(', ')
-                            : '--'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <TablePagination
-                  component='div'
-                  count={bins.length}
-                  page={page}
-                  onPageChange={(_, newPage) => setPage(newPage)}
-                  rowsPerPage={ROWS_PER_PAGE}
-                  rowsPerPageOptions={[ROWS_PER_PAGE]}
-                />
-              </>
-            )}
-
-            {skippedCodes.length > 0 && (
-              <Box mt={3}>
-                <Typography variant='subtitle1' sx={{ fontWeight: 'bold' }}>
-                  ⚠️ Skipped Bins (Already Exist):
-                </Typography>
-                <ul>
-                  {skippedCodes.map((code, idx) => (
-                    <li key={idx}>
-                      <code>{code}</code>
-                    </li>
-                  ))}
-                </ul>
-              </Box>
-            )}
-          </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
-        {!uploadFinished && (
-          <Button
-            variant='contained'
-            color='success'
-            onClick={handleConfirmUpload}
-            disabled={bins.length === 0 || isUploading}
-          >
-            {isUploading ? 'Uploading...' : 'Confirm Upload'}
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+    <UploadDialog
+      open={open}
+      title='Upload Bins'
+      columns={['Bin Code', 'Default Product Codes', 'Type']}
+      rows={bins}
+      getRowCells={row => [
+        row.binCode,
+        row.defaultProductCodes?.join(', ') || '--',
+        row.type || '--'
+      ]}
+      onClose={onClose}
+      onFileUpload={handleFileUpload}
+      onConfirmUpload={handleConfirmUpload}
+      isUploading={isUploading}
+      successMessage={successMessage}
+      error={error}
+      skippedItems={skippedCodes.map(code => (
+        <code key={code}>{code}</code>
+      ))}
+    />
   )
 }
 
