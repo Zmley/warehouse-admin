@@ -66,7 +66,7 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
                 : binRaw?.toString().trim()
             return binCode && !hasChinese(binCode) ? { binCode, type } : null
           })
-          .filter(Boolean) as (BinUploadType & { type: string })[]
+          .filter(Boolean) as BinUploadType[]
 
         setBins(parsed)
       } else {
