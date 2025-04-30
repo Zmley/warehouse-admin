@@ -59,12 +59,6 @@ const Task: React.FC = () => {
     setPage(newPage)
   }
 
-  // const suggestionOptions = useMemo(() => {
-  //   const ids = tasks.map(task => task.taskID)
-  //   const productCodes = tasks.map(task => task.productCode)
-  //   return [...ids, ...productCodes]
-  // }, [tasks])
-
   const handleKeywordSubmit = () => {
     if (warehouseID) {
       setPage(0)
