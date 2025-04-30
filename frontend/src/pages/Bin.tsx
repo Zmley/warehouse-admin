@@ -183,7 +183,7 @@ const Bin: React.FC = () => {
                   {bin.type}
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {bin.defaultProductCodes || '--'}
+                  {bin.defaultProductCodes || 'Not Required'}
                 </TableCell>
               </TableRow>
             ))}
