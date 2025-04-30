@@ -74,23 +74,28 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
       }
 
       const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
-
       if (type === 'INVENTORY') {
         const parsed: { binCode: string }[] = []
 
-        raw.forEach(row => {
-          for (let i = 0; i < row.length; i += 4) {
-            const binRaw = row[i]
-            const binCode =
-              typeof binRaw === 'string'
-                ? binRaw.trim()
-                : binRaw?.toString().trim()
+        const maybeHeader = raw[0]
+        const isHeader =
+          maybeHeader &&
+          typeof maybeHeader[0] === 'string' &&
+          maybeHeader[0].toLowerCase().includes('bincode')
 
-            if (!binCode) continue
-            if (hasChinese(binCode)) continue
+        const dataRows = isHeader ? raw.slice(1) : raw
 
-            parsed.push({ binCode })
-          }
+        dataRows.forEach(row => {
+          const binRaw = row[0]
+          const binCode =
+            typeof binRaw === 'string'
+              ? binRaw.trim()
+              : binRaw?.toString().trim()
+
+          if (!binCode) return
+          if (hasChinese(binCode)) return
+
+          parsed.push({ binCode })
         })
 
         setBins(parsed as any)
