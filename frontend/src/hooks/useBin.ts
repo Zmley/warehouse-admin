@@ -87,7 +87,7 @@ export const useBin = (autoLoad: boolean = false) => {
   const uploadBinList = useCallback(
     async (list: BinUploadType[]) => {
       if (!warehouseID || !type) {
-        const errorMsg = '❌ Missing warehouseID'
+        const errorMsg = '❌ Missing warehouseID or type'
         console.error(errorMsg)
         return { error: errorMsg }
       }
