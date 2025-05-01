@@ -1,0 +1,281 @@
+import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import * as XLSX from 'xlsx'
+import UploadDialog from 'components/UploadDialog'
+import { useInventory } from 'hooks/useInventory'
+import { useProduct } from 'hooks/useProduct'
+import { useBin } from 'hooks/useBin'
+import {
+  parseInventoryRows,
+  parseProductRows,
+  parseBinUploadRows
+} from 'utils/excelUploadParser'
+import { InventoryUploadType } from 'types/InventoryUploadType'
+import { ProductsUploadType } from 'types/ProductsUploadType'
+import { BinUploadType } from 'types/BinUploadType'
+
+interface Props {
+  open: boolean
+  onClose: () => void
+}
+
+export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
+  const [inventories, setInventories] = useState<InventoryUploadType[]>([])
+  const [successMessage, setSuccessMessage] = useState('')
+  const [error, setError] = useState('')
+  const [skippedItems, setSkippedItems] = useState<InventoryUploadType[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+
+  const { uploadInventoryList } = useInventory()
+
+  const resetState = () => {
+    setInventories([])
+    setSuccessMessage('')
+    setError('')
+    setSkippedItems([])
+    setIsUploading(false)
+  }
+
+  const handleClose = () => {
+    resetState()
+    onClose()
+  }
+
+  useEffect(() => {
+    if (!open) resetState()
+  }, [open])
+
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as (
+        | string
+        | number
+        | undefined
+      )[][]
+
+      const { inventories, error } = parseInventoryRows(raw)
+      if (error) return setError(error)
+
+      setInventories(inventories)
+      setSuccessMessage('')
+      setError('')
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  const handleConfirmUpload = async () => {
+    setIsUploading(true)
+    try {
+      const res = await uploadInventoryList(inventories)
+      if (res.success) {
+        setInventories([])
+        setSuccessMessage(
+          `✅ Uploaded ${res.result.insertedCount} inventory item(s). Skipped ${res.result.skippedCount} items.`
+        )
+        setSkippedItems(res.result.skipped || [])
+      } else {
+        setError(res.message || 'Upload failed.')
+      }
+    } catch (err: any) {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <UploadDialog<InventoryUploadType>
+      open={open}
+      title='Upload Inventory'
+      columns={['Bin Code', 'Product Code', 'Quantity']}
+      rows={inventories}
+      getRowCells={row => [row.binCode, row.productCode, row.quantity]}
+      onClose={handleClose}
+      onFileUpload={handleFileUpload}
+      onConfirmUpload={handleConfirmUpload}
+      isUploading={isUploading}
+      successMessage={successMessage}
+      error={error}
+      skippedItems={skippedItems.map(item => (
+        <code key={item.productCode}>
+          BinCode: {item.binCode}, ProductCode: {item.productCode}, Quantity:{' '}
+          {item.quantity}
+        </code>
+      ))}
+    />
+  )
+}
+
+export const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
+  const [products, setProducts] = useState<ProductsUploadType[]>([])
+  const [successMessage, setSuccessMessage] = useState('')
+  const [error, setError] = useState('')
+  const [skippedCodes, setSkippedCodes] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+
+  const { uploadProductList } = useProduct()
+
+  useEffect(() => {
+    if (!open) {
+      setProducts([])
+      setSuccessMessage('')
+      setError('')
+      setSkippedCodes([])
+      setIsUploading(false)
+    }
+  }, [open])
+
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as (
+        | string
+        | number
+        | undefined
+      )[][]
+
+      const { products, error } = parseProductRows(raw)
+      if (error) return setError(error)
+
+      setProducts(products)
+      setSuccessMessage('')
+      setError('')
+    }
+
+    reader.readAsArrayBuffer(file)
+  }
+
+  const handleConfirmUpload = async () => {
+    setIsUploading(true)
+    try {
+      const res = await uploadProductList(products)
+      if (res.success) {
+        setSuccessMessage(
+          `✅ Uploaded ${res.result.insertedCount} product(s). Skipped ${res.result.skippedCount}.`
+        )
+        setSkippedCodes(res.result.duplicatedProductCodes || [])
+        setProducts([])
+      } else {
+        setError(res.message || 'Upload failed.')
+      }
+    } catch (err: any) {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <UploadDialog<ProductsUploadType>
+      open={open}
+      title='Upload Products'
+      columns={['Product Code', 'Bar Code', 'Box Type']}
+      rows={products}
+      getRowCells={row => [row.productCode, row.barCode, row.boxType]}
+      onClose={onClose}
+      onFileUpload={handleFileUpload}
+      onConfirmUpload={handleConfirmUpload}
+      isUploading={isUploading}
+      successMessage={successMessage}
+      error={error}
+      skippedItems={skippedCodes.map(code => (
+        <code key={code}>{code}</code>
+      ))}
+    />
+  )
+}
+
+export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
+  const [bins, setBins] = useState<BinUploadType[]>([])
+  const [skippedCodes, setSkippedCodes] = useState<string[]>([])
+  const [successMessage, setSuccessMessage] = useState('')
+  const [error, setError] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+
+  const { uploadBinList } = useBin()
+  const location = useLocation()
+  const queryParams = new URLSearchParams(location.search)
+  const type = queryParams.get('type') || ''
+
+  useEffect(() => {
+    if (!open) {
+      setBins([])
+      setSkippedCodes([])
+      setSuccessMessage('')
+      setError('')
+      setIsUploading(false)
+    }
+  }, [open])
+
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as (
+        | string
+        | number
+        | undefined
+      )[][]
+
+      const { bins, error } = parseBinUploadRows(raw, type)
+      if (error) return setError(error)
+
+      setBins(bins)
+      setSuccessMessage('')
+      setError('')
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  const handleConfirmUpload = async () => {
+    setIsUploading(true)
+    try {
+      const res = await uploadBinList(bins)
+      if (res.success) {
+        setSuccessMessage(
+          `✅ Uploaded ${res.insertedCount} bin(s). Skipped ${res.skippedCount} duplicates.`
+        )
+        setSkippedCodes(res.duplicatedBinCodes || [])
+        setBins([])
+      } else {
+        setError(res.error || 'Upload failed.')
+      }
+    } catch (err: any) {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <UploadDialog<BinUploadType>
+      open={open}
+      title='Upload Bins'
+      columns={['Bin Code', 'Default Product Codes', 'Type']}
+      rows={bins}
+      getRowCells={row => [
+        row.binCode,
+        row.defaultProductCodes?.join(', ') || '--',
+        row.type || '--'
+      ]}
+      onClose={onClose}
+      onFileUpload={handleFileUpload}
+      onConfirmUpload={handleConfirmUpload}
+      isUploading={isUploading}
+      successMessage={successMessage}
+      error={error}
+      skippedItems={skippedCodes.map(code => (
+        <code key={code}>{code}</code>
+      ))}
+    />
+  )
+}

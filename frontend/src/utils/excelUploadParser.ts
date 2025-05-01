@@ -5,7 +5,7 @@ import { ProductsUploadType } from 'types/ProductsUploadType'
 export const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
 
 export const parseInventoryRows = (
-  raw: string[][]
+  raw: (string | number | undefined)[][]
 ): { inventories: InventoryUploadType[]; error?: string } => {
   if (!raw.length) return { inventories: [], error: '❌ Empty Excel file' }
 
@@ -50,7 +50,7 @@ export const parseInventoryRows = (
 }
 
 export const parseProductRows = (
-  raw: (string | undefined)[][]
+  raw: (string | number | undefined)[][]
 ): { products: ProductsUploadType[]; error?: string } => {
   if (!raw.length) return { products: [], error: '❌ Excel file is empty' }
 

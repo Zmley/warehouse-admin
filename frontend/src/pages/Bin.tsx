@@ -17,7 +17,7 @@ import {
 } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
-import UploadBinModal from 'components/bin/UploadBinModal'
+import { UploadBinModal } from 'components/UploadGenericModal'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
