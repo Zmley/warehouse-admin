@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import { useProduct } from 'hooks/useProduct'
 import { ProductsUploadType } from 'types/ProductsUploadType'
 import UploadDialog from 'components/UploadDialog'
+import { parseProductRows } from 'utils/excelUploadParser'
 
 interface Props {
   open: boolean
@@ -34,66 +35,15 @@ const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer)
       const workbook = XLSX.read(data, { type: 'array' })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as (
-        | string
-        | undefined
-      )[][]
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
 
-      if (!raw.length) {
-        setError('❌ Excel file is empty')
-        return
-      }
+      const { products, error } = parseProductRows(raw)
+      if (error) return setError(error)
 
-      const headers = raw[0]
-
-      const productCodeIndex = headers.findIndex(
-        col =>
-          typeof col === 'string' && col.toLowerCase().includes('productcode')
-      )
-      const barCodeIndex = headers.findIndex(
-        col => typeof col === 'string' && col.toLowerCase().includes('barcode')
-      )
-      const boxTypeIndex = headers.findIndex(
-        col => typeof col === 'string' && col.toLowerCase().includes('boxtype')
-      )
-
-      if (
-        productCodeIndex === -1 ||
-        barCodeIndex === -1 ||
-        boxTypeIndex === -1
-      ) {
-        setError(
-          '❌ Missing required columns: productCode, barCode, or boxType'
-        )
-        return
-      }
-
-      const parsed: ProductsUploadType[] = raw
-        .slice(1)
-        .filter(row => {
-          const productCode = row[productCodeIndex]?.toString().trim()
-          const barCode = row[barCodeIndex]?.toString().trim()
-          const boxType = row[boxTypeIndex]?.toString().trim()
-          return (
-            productCode &&
-            barCode &&
-            boxType &&
-            productCode !== '#N/A' &&
-            barCode !== '#N/A' &&
-            boxType !== '#N/A'
-          )
-        })
-        .map(row => ({
-          productCode: row[productCodeIndex]!.toString().trim(),
-          barCode: row[barCodeIndex]!.toString().trim(),
-          boxType: row[boxTypeIndex]!.toString().trim()
-        }))
-
-      setProducts(parsed)
+      setProducts(products)
       setSuccessMessage('')
       setError('')
     }
-
     reader.readAsArrayBuffer(file)
   }
 

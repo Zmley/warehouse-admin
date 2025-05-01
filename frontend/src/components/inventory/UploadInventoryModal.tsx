@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import { InventoryUploadType } from 'types/InventoryUploadType'
 import { useInventory } from 'hooks/useInventory'
 import UploadDialog from 'components/UploadDialog'
+import { parseInventoryRows } from 'utils/excelUploadParser'
 
 interface Props {
   open: boolean
@@ -45,58 +46,13 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][]
 
-      if (!raw.length) {
-        setError('❌ Empty Excel file')
-        return
-      }
+      const { inventories, error } = parseInventoryRows(raw)
+      if (error) return setError(error)
 
-      const headers = raw[0].map(cell => cell?.toString().toLowerCase().trim())
-
-      const binCodeIdx = headers.findIndex(h => h?.includes('bincode'))
-      const productCodeIdx = headers.findIndex(h => h?.includes('productcode'))
-      const quantityIdx = headers.findIndex(h => h?.includes('quantity'))
-
-      if (binCodeIdx === -1 || productCodeIdx === -1 || quantityIdx === -1) {
-        setError(
-          '❌ Missing required columns: binCode, productCode, or quantity.'
-        )
-        return
-      }
-
-      const parsed: InventoryUploadType[] = []
-      let lastBinCode = ''
-
-      raw.slice(1).forEach(row => {
-        const binRaw = row[binCodeIdx]?.toString().trim()
-        const productRaw = row[productCodeIdx]?.toString().trim()
-        const quantityRaw = row[quantityIdx]?.toString().trim()
-
-        const binCode = binRaw || lastBinCode
-        if (binRaw) lastBinCode = binRaw
-
-        if (!binCode || !productRaw || !quantityRaw) return
-        if (
-          hasChinese(binCode) ||
-          hasChinese(productRaw) ||
-          hasChinese(quantityRaw)
-        )
-          return
-
-        const quantity = parseInt(quantityRaw)
-        if (!isNaN(quantity)) {
-          parsed.push({
-            binCode,
-            productCode: productRaw,
-            quantity
-          })
-        }
-      })
-
-      setInventories(parsed)
+      setInventories(inventories)
       setSuccessMessage('')
       setError('')
     }
-
     reader.readAsArrayBuffer(file)
   }
 
@@ -142,5 +98,3 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
     />
   )
 }
-
-export default UploadInventoryModal

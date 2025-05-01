@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx'
 import { useBin } from 'hooks/useBin'
 import { BinUploadType } from 'types/BinUploadType'
 import UploadDialog from 'components/UploadDialog'
+import { parseBinUploadRows } from 'utils/excelUploadParser'
 
 interface Props {
   open: boolean
@@ -48,71 +49,10 @@ const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
         | undefined
       )[][]
 
-      if (!raw.length) return setError('❌ Empty Excel file')
+      const { bins, error } = parseBinUploadRows(raw, type)
+      if (error) return setError(error)
 
-      if (type === 'INVENTORY') {
-        const maybeHeader = raw[0]
-        const isHeader =
-          typeof maybeHeader[0] === 'string' &&
-          maybeHeader[0].toLowerCase().includes('bincode')
-        const dataRows = isHeader ? raw.slice(1) : raw
-
-        const parsed = dataRows
-          .map(row => {
-            const binRaw = row[0]
-            const binCode =
-              typeof binRaw === 'string'
-                ? binRaw.trim()
-                : binRaw?.toString().trim()
-            return binCode && !hasChinese(binCode) ? { binCode, type } : null
-          })
-          .filter(Boolean) as BinUploadType[]
-
-        setBins(parsed)
-      } else {
-        const headers = raw[0]
-        const binCodeIndex = headers.findIndex(
-          col => col && String(col).toLowerCase().includes('bincode')
-        )
-        const defaultCodeIndex = headers.findIndex(
-          col =>
-            col && String(col).toLowerCase().includes('defaultproductcodes')
-        )
-
-        if (binCodeIndex === -1)
-          return setError("❌ 'binCode' column not found")
-
-        const map = new Map<string, string[]>()
-        raw.slice(1).forEach(row => {
-          const binRaw = row[binCodeIndex]
-          const defaultRaw =
-            defaultCodeIndex !== -1 ? row[defaultCodeIndex] : undefined
-
-          const binCode =
-            typeof binRaw === 'string'
-              ? binRaw.trim()
-              : binRaw?.toString().trim()
-          const defaultCode =
-            typeof defaultRaw === 'string'
-              ? defaultRaw.trim()
-              : defaultRaw?.toString().trim()
-
-          if (!binCode) return
-          if (!map.has(binCode)) map.set(binCode, [])
-          if (defaultCode) map.get(binCode)!.push(defaultCode)
-        })
-
-        const parsed = Array.from(map.entries()).map(
-          ([binCode, defaultProductCodes]) => ({
-            binCode,
-            defaultProductCodes,
-            type
-          })
-        )
-
-        setBins(parsed)
-      }
-
+      setBins(bins)
       setSuccessMessage('')
       setError('')
     }
