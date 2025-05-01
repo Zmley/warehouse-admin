@@ -1,4 +1,3 @@
-// utils/excelUploadParser.ts
 import { InventoryUploadType } from 'types/InventoryUploadType'
 import { BinUploadType } from 'types/BinUploadType'
 import { ProductsUploadType } from 'types/ProductsUploadType'
@@ -104,7 +103,6 @@ export const parseBinUploadRows = (
 ): { bins: BinUploadType[]; error?: string } => {
   if (!raw.length) return { bins: [], error: '❌ Empty Excel file' }
 
-  // INVENTORY type (just binCode)
   if (type === 'INVENTORY') {
     const maybeHeader = raw[0]
     const isHeader =
@@ -124,7 +122,6 @@ export const parseBinUploadRows = (
     return { bins }
   }
 
-  // General binCode + defaultProductCodes type
   const headers = raw[0]
   const binCodeIndex = headers.findIndex(
     col => col && String(col).toLowerCase().includes('bincode')
