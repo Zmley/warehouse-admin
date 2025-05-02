@@ -122,7 +122,7 @@ export const useBin = (autoLoad: boolean = false) => {
   )
 
   const fetchAvailableBinCodes = useCallback(
-    (productCode: string): Promise<string[]> =>
+    (productCode: string): Promise<{ binCode: string; quantity: number }[]> =>
       getBinCodesByProductCode(productCode),
     []
   )

@@ -222,7 +222,7 @@ const Task: React.FC = () => {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
               {[
-                'Task ID',
+                // 'Task ID',
                 'Product Code',
                 'Quantity',
                 'Source Bins',
@@ -245,9 +245,9 @@ const Task: React.FC = () => {
           <TableBody>
             {paginatedTasks.map(task => (
               <TableRow key={task.taskID} sx={tableRowStyle}>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                {/* <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.taskID}
-                </TableCell>
+                </TableCell> */}
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.productCode}
                 </TableCell>

@@ -32,7 +32,7 @@ export const getBinByBinCode = async (binCode: string): Promise<Bin> => {
 
 export const getBinCodesByProductCode = async (
   productCode: string
-): Promise<string[]> => {
+): Promise<{ binCode: string; quantity: number }[]> => {
   const response = await apiClient.get(`/bins/code/${productCode}`)
   return response.data.binCodes
 }

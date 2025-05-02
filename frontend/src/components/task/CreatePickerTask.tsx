@@ -24,12 +24,20 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState<number>(1)
-  const [sourceBinCodes, setSourceBinCodes] = useState<string[]>([])
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
 
   const { binCodes, fetchBinCodes, fetchAvailableBinCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const { createPickTask, isLoading, error } = useTask()
+
+  const [sourceBinCodes, setSourceBinCodes] = useState<
+    { binCode: string; quantity: number }[]
+  >([])
+
+  const maxAvailableQuantity = Math.max(
+    ...sourceBinCodes.map(b => b.quantity),
+    0
+  )
 
   useEffect(() => {
     fetchBinCodes()
@@ -61,6 +69,11 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   const handleSubmit = async () => {
     if (!destinationBinCode || !productCode) {
       alert('❌ Please select bin code and product code.')
+      return
+    }
+
+    if (sourceBinCodes.length > 0 && quantity > maxAvailableQuantity) {
+      alert(`❌ Quantity cannot exceed ${maxAvailableQuantity}`)
       return
     }
 
@@ -112,6 +125,12 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
             onChange={e => setQuantity(Number(e.target.value))}
             fullWidth
             sx={{ mb: 2 }}
+            error={sourceBinCodes.length > 0 && quantity > maxAvailableQuantity}
+            helperText={
+              sourceBinCodes.length > 0 && quantity > maxAvailableQuantity
+                ? `❌ Cannot exceed max available quantity: ${maxAvailableQuantity}`
+                : ''
+            }
           />
 
           <Paper
@@ -126,17 +145,22 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
             <Typography fontWeight='bold' sx={{ mb: 1 }}>
               Available Source Bins:
             </Typography>
+
             {loadingSourceBins ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CircularProgress size={20} />
                 <Typography>Loading source bins...</Typography>
               </Box>
+            ) : sourceBinCodes.length > 0 ? (
+              <Box>
+                {sourceBinCodes.map(({ binCode, quantity }) => (
+                  <Typography key={binCode}>
+                    {binCode} (Qty: {quantity})
+                  </Typography>
+                ))}
+              </Box>
             ) : (
-              <Typography>
-                {sourceBinCodes.length > 0
-                  ? sourceBinCodes.join(', ')
-                  : 'No matching source bins'}
-              </Typography>
+              <Typography>No matching source bins</Typography>
             )}
           </Paper>
         </>
