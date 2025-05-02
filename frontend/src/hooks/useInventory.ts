@@ -111,15 +111,18 @@ export const useInventory = () => {
     }
   }, [])
 
-  const uploadInventoryList = async (inventories: InventoryUploadType[]) => {
-    try {
-      const result = await addInventories(inventories)
-      return result
-    } catch (error) {
-      console.error('❌ Error uploading inventory:', error)
-      throw error
-    }
-  }
+  const uploadInventoryList = useCallback(
+    async (inventories: InventoryUploadType[]) => {
+      try {
+        const result = await addInventories(inventories)
+        return result
+      } catch (error) {
+        console.error('❌ Error uploading inventory:', error)
+        throw error
+      }
+    },
+    []
+  )
 
   return {
     uploadInventoryList,
