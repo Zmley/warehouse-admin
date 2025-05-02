@@ -80,24 +80,32 @@ const Task: React.FC = () => {
     }
   }, [status, keyword])
 
-  return isLoading ? (
-    <Box
-      sx={{
-        p: 3,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%'
-      }}
-    >
-      <CircularProgress size={50} sx={{ marginRight: 2 }} />
-      <Typography variant='h6'>Loading...</Typography>
-    </Box>
-  ) : error ? (
-    <Typography color='error' align='center' sx={{ mt: 10 }}>
-      {error}
-    </Typography>
-  ) : (
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%'
+        }}
+      >
+        <CircularProgress size={50} sx={{ marginRight: 2 }} />
+        <Typography variant='h6'>Loading...</Typography>
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Typography color='error' align='center' sx={{ mt: 10 }}>
+        {error}
+      </Typography>
+    )
+  }
+
+  return (
     <Box sx={{ pt: 0 }}>
       <Box
         sx={{
