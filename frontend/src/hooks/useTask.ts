@@ -2,11 +2,13 @@ import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
 import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import { useParams } from 'react-router-dom'
+import { createPickerTask } from 'api/taskApi'
 
 interface CreateTaskPayload {
   sourceBinCode: string
   destinationBinCode: string
   productCode: string
+  quantity?: number
 }
 
 interface FetchParams {
@@ -64,12 +66,38 @@ export const useTask = () => {
         ...payload,
         warehouseID
       })
+
       setError(null)
+
+      if (!result.success) {
+        throw new Error(result.error || '❌ Task creation failed')
+      }
+
       return result
     } catch (err: any) {
-      console.error('❌ Failed to create task:', err)
+      const message =
+        err?.response?.data?.error || err?.message || '❌ Unknown error'
+
+      setError(message)
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const createPickTask = async (
+    binCode: string,
+    productCode: string,
+    quantity: number
+  ): Promise<CreateTaskPayload | null> => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const task = await createPickerTask(binCode, productCode, quantity)
+      return task
+    } catch (err) {
       setError('Failed to create task')
-      throw err
+      return null
     } finally {
       setIsLoading(false)
     }
@@ -81,6 +109,7 @@ export const useTask = () => {
     error,
     cancelTask,
     fetchTasks,
-    createTask
+    createTask,
+    createPickTask
   }
 }

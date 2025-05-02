@@ -1,5 +1,10 @@
 import { useCallback, useState } from 'react'
-import { addBins, getBinCodes, getBins } from 'api/binApi'
+import {
+  addBins,
+  getBinCodes,
+  getBinCodesByProductCode,
+  getBins
+} from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
 import { BinUploadType } from 'types/BinUploadType'
@@ -116,6 +121,12 @@ export const useBin = (autoLoad: boolean = false) => {
     [warehouseID, type]
   )
 
+  const fetchAvailableBinCodes = useCallback(
+    (productCode: string): Promise<string[]> =>
+      getBinCodesByProductCode(productCode),
+    []
+  )
+
   return {
     uploadBinList,
     totalPages,
@@ -124,6 +135,7 @@ export const useBin = (autoLoad: boolean = false) => {
     bins,
     binCodes,
     error,
-    fetchBinCodes
+    fetchBinCodes,
+    fetchAvailableBinCodes
   }
 }

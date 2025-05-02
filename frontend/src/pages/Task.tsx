@@ -25,6 +25,7 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import { tableRowStyle } from 'styles/tableRowStyle'
+import CreatePickerTask from 'components/task/CreatePickerTask'
 
 const ROWS_PER_PAGE = 10
 
@@ -38,6 +39,7 @@ const Task: React.FC = () => {
   )
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [isDialogOpen, setOpenDialog] = useState(false)
+  const [isPickerDialogOpen, setPickerDialogOpen] = useState(false)
   const [page, setPage] = useState(0)
 
   const handleOpen = () => setOpenDialog(true)
@@ -111,33 +113,68 @@ const Task: React.FC = () => {
           Tasks
         </Typography>
 
-        <Button
-          variant='contained'
-          onClick={handleOpen}
-          sx={{
-            borderRadius: '8px',
-            backgroundColor: '#3F72AF',
-            '&:hover': { backgroundColor: '#2d5e8c' },
-            fontWeight: 'bold'
-          }}
-        >
-          Create Task
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {' '}
+          <Button
+            variant='contained'
+            onClick={handleOpen}
+            sx={{
+              borderRadius: '8px',
+              backgroundColor: '#3F72AF',
+              '&:hover': { backgroundColor: '#2d5e8c' },
+              fontWeight: 'bold'
+            }}
+          >
+            Create Task
+          </Button>
+          <Button
+            variant='outlined'
+            onClick={() => setPickerDialogOpen(true)}
+            sx={{
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              borderColor: '#3F72AF',
+              color: '#3F72AF',
+              '&:hover': {
+                borderColor: '#2d5e8c',
+                backgroundColor: '#e3f2fd'
+              }
+            }}
+          >
+            Create Picker Task
+          </Button>
+        </Box>
       </Box>
 
       <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
-        <Box sx={{ p: 3 }}>
-          <CreateTask
-            onSuccess={() => {
-              handleClose()
-              fetchTasks({
-                warehouseID: warehouseID!,
-                status: status,
-                keyword: keyword
-              })
-            }}
-          />
-        </Box>
+        <CreateTask
+          onSuccess={() => {
+            handleClose()
+            fetchTasks({
+              warehouseID: warehouseID!,
+              status: status,
+              keyword: keyword
+            })
+          }}
+        />
+      </Dialog>
+
+      <Dialog
+        open={isPickerDialogOpen}
+        onClose={() => setPickerDialogOpen(false)}
+        maxWidth='sm'
+        fullWidth
+      >
+        <CreatePickerTask
+          onSuccess={() => {
+            setPickerDialogOpen(false)
+            fetchTasks({
+              warehouseID: warehouseID!,
+              status,
+              keyword
+            })
+          }}
+        />
       </Dialog>
 
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
@@ -187,6 +224,7 @@ const Task: React.FC = () => {
               {[
                 'Task ID',
                 'Product Code',
+                'Quantity',
                 'Source Bins',
                 'Target Bin',
                 'Status',
@@ -212,6 +250,9 @@ const Task: React.FC = () => {
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.productCode}
+                </TableCell>
+                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                  {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                 </TableCell>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.sourceBins

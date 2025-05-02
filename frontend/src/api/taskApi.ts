@@ -23,3 +23,16 @@ export const cancelTask = async (taskID: string) => {
   const response = await apiClient.post(`/tasks/${taskID}/cancel`)
   return response.data
 }
+
+export const createPickerTask = async (
+  binCode: string,
+  productCode: string,
+  quantity: number
+) => {
+  const response = await apiClient.post('/tasks', {
+    binCode,
+    productCode,
+    quantity
+  })
+  return response.data.task
+}

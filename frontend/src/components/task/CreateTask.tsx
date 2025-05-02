@@ -5,7 +5,8 @@ import {
   TextField,
   Autocomplete,
   Typography,
-  Paper
+  Paper,
+  Alert
 } from '@mui/material'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
@@ -19,31 +20,43 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
   const [sourceBinCode, setSourceBinCode] = useState('')
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
+  const [quantity, setQuantity] = useState('1')
 
   const { fetchBinCodes, binCodes } = useBin()
-
   const { productCodes, fetchProductCodes } = useProduct()
+  const { createTask, error } = useTask()
 
-  const { createTask } = useTask()
+  const extendedProductCodes = ['ALL', ...productCodes]
 
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSubmit = async () => {
+    const finalQuantity =
+      productCode === 'ALL' ? undefined : parseInt(quantity, 10)
+
+    if (!sourceBinCode || !destinationBinCode || !productCode) {
+      alert('Please fill in all fields.')
+      return
+    }
+
     try {
-      await createTask({
+      const result = await createTask({
         sourceBinCode,
         destinationBinCode,
-        productCode
+        productCode,
+        quantity: finalQuantity
       })
-      alert('✅ Task created successfully!')
-      onSuccess?.()
+
+      if (result?.success) {
+        alert('✅ Task created successfully!')
+        onSuccess?.()
+      } else {
+      }
     } catch (err: any) {
-      console.error('❌ Error creating task:', err)
-      alert('Failed to create task.')
+      alert('❌ An unexpected error occurred.')
     }
   }
 
@@ -83,13 +96,25 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
           )}
         />
         <Autocomplete
-          options={productCodes}
+          options={extendedProductCodes}
           value={productCode}
           onChange={(event, newValue) => setProductCode(newValue || '')}
           renderInput={params => (
             <TextField {...params} label='Product Code' fullWidth />
           )}
         />
+
+        {productCode !== 'ALL' && (
+          <TextField
+            label='Quantity'
+            value={quantity}
+            onChange={e => setQuantity(e.target.value)}
+            type='number'
+            inputProps={{ min: 1 }}
+            fullWidth
+          />
+        )}
+
         <Button
           variant='contained'
           onClick={handleSubmit}
@@ -105,6 +130,12 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
         >
           Create Task
         </Button>
+
+        {error && (
+          <Alert severity='error' sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
       </Stack>
     </Paper>
   )
