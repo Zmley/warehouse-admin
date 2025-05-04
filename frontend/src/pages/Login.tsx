@@ -1,11 +1,20 @@
 import React, { useState } from 'react'
-import { Typography, Button, TextField, Box, Alert } from '@mui/material'
+import {
+  Typography,
+  Button,
+  TextField,
+  Box,
+  Alert,
+  Avatar
+} from '@mui/material'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import { useAuth } from 'hooks/useAuth'
 
 const LoginPage: React.FC = () => {
   const { handleLogin, error } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
   const handleLoginClick = () => {
     handleLogin(email, password)
   }
@@ -20,31 +29,38 @@ const LoginPage: React.FC = () => {
         height: '100vh',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        bgcolor: 'rgba(0,0,0,0.4)'
       }}
     >
       <Box
         sx={{
           width: '100%',
-          maxWidth: '400px',
-          background: '#FFF',
-          padding: '30px',
-          borderRadius: '12px',
-          textAlign: 'center',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+          maxWidth: '420px',
+          backgroundColor: '#fff',
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          padding: '40px 32px',
+          textAlign: 'center'
         }}
       >
-        <Typography
-          variant='h5'
-          sx={{ fontWeight: 'bold', mb: 2, color: '#2272FF' }}
+        <Avatar
+          sx={{
+            bgcolor: '#2272FF',
+            width: 64,
+            height: 64,
+            mx: 'auto',
+            mb: 2
+          }}
         >
-          Welcome to
+          <AdminPanelSettingsIcon fontSize='large' />
+        </Avatar>
+
+        <Typography variant='h5' fontWeight='bold' color='primary' gutterBottom>
+          Admin Login
         </Typography>
-        <Typography
-          variant='h5'
-          sx={{ fontWeight: 'bold', mb: 3, color: '#2272FF' }}
-        >
-          Inventory System!
+        <Typography variant='body2' color='text.secondary' mb={3}>
+          Inventory Management System
         </Typography>
 
         {error && (
@@ -54,18 +70,12 @@ const LoginPage: React.FC = () => {
         )}
 
         <TextField
-          label='User name'
+          label='Username'
           variant='outlined'
           fullWidth
           value={email}
           onChange={e => setEmail(e.target.value)}
-          sx={{
-            mb: 2,
-            borderRadius: '8px',
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px'
-            }
-          }}
+          sx={{ mb: 2 }}
         />
         <TextField
           label='Password'
@@ -74,36 +84,24 @@ const LoginPage: React.FC = () => {
           type='password'
           value={password}
           onChange={e => setPassword(e.target.value)}
-          sx={{
-            mb: 2,
-            borderRadius: '8px',
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px'
-            }
-          }}
+          sx={{ mb: 3 }}
         />
 
         <Button
           variant='contained'
           fullWidth
+          size='large'
           sx={{
             backgroundColor: '#2272FF',
             color: '#FFF',
-            padding: '12px',
-            borderRadius: '8px',
-            fontSize: '16px',
             fontWeight: 'bold',
             textTransform: 'none',
             '&:hover': { backgroundColor: '#1A5BCC' }
           }}
           onClick={handleLoginClick}
         >
-          Login
+          Sign In
         </Button>
-
-        <Typography sx={{ color: '#555', fontSize: '14px', mt: 2 }}>
-          Forgot password?
-        </Typography>
       </Box>
     </Box>
   )
