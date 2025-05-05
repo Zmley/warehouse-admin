@@ -122,24 +122,32 @@ const Inventory: React.FC = () => {
     fetchInventories(undefined, 1, 10, keyword || undefined)
   }
 
-  return isLoading ? (
-    <Box
-      sx={{
-        p: 3,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%'
-      }}
-    >
-      <CircularProgress size={50} sx={{ marginRight: 2 }} />
-      <Typography variant='h6'>Loading...</Typography>
-    </Box>
-  ) : error ? (
-    <Typography color='error' align='center' sx={{ mt: 10 }}>
-      {error}
-    </Typography>
-  ) : (
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%'
+        }}
+      >
+        <CircularProgress size={50} sx={{ marginRight: 2 }} />
+        <Typography variant='h6'>Loading...</Typography>
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Typography color='error' align='center' sx={{ mt: 10 }}>
+        {error}
+      </Typography>
+    )
+  }
+
+  return (
     <Box sx={{ height: '100%', overflowY: 'auto' }}>
       <Box sx={{ mb: 3 }}>
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
