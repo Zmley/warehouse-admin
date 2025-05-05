@@ -9,11 +9,12 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TextField,
   Typography
 } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const ROWS_PER_PAGE = 10
 
@@ -21,15 +22,30 @@ const Product: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const keywordParam = searchParams.get('keyword') || ''
-  const initialPage = parseInt(searchParams.get('page') || '1') - 1
+  const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
+
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
 
-  const { products, isLoading, error, fetchProducts, totalProductsCount } =
-    useProduct()
+  const {
+    products,
+    isLoading,
+    error,
+    fetchProducts,
+    totalProductsCount,
+    productCodes,
+    fetchProductCodes
+  } = useProduct()
+
+  const combinedOptions = [...productCodes]
 
   const updateQueryParams = (keyword: string, page: number) => {
     setSearchParams({ keyword, page: (page + 1).toString() })
+  }
+
+  const handleKeywordSubmit = () => {
+    setPage(0)
+    updateQueryParams(searchKeyword, 0)
   }
 
   useEffect(() => {
@@ -38,6 +54,7 @@ const Product: React.FC = () => {
       page: page + 1,
       limit: ROWS_PER_PAGE
     })
+    fetchProductCodes()
   }, [keywordParam, page])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -45,39 +62,48 @@ const Product: React.FC = () => {
     updateQueryParams(searchKeyword, newPage)
   }
 
-  return isLoading ? (
-    <Box
-      sx={{
-        p: 3,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%'
-      }}
-    >
-      <CircularProgress size={50} sx={{ marginRight: 2 }} />
-      <Typography variant='h6'>Loading...</Typography>
-    </Box>
-  ) : error ? (
-    <Typography color='error' align='center' sx={{ mt: 10 }}>
-      {error}
-    </Typography>
-  ) : (
-    <Box sx={{ pt: 0 }}>
-      <TextField
-        label='Search Products'
-        variant='outlined'
-        size='small'
-        value={searchKeyword}
-        onChange={e => setSearchKeyword(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            setPage(0)
-            updateQueryParams(searchKeyword, 0)
-          }
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%'
         }}
-        sx={{ width: 250, mb: 2 }}
-      />
+      >
+        <CircularProgress size={50} sx={{ marginRight: 2 }} />
+        <Typography variant='h6'>Loading...</Typography>
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Typography color='error' align='center' sx={{ mt: 10 }}>
+        {error}
+      </Typography>
+    )
+  }
+
+  return (
+    <Box sx={{ pt: 0 }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          Product Management
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <AutocompleteTextField
+          label='Search productCode'
+          value={searchKeyword}
+          onChange={setSearchKeyword}
+          onSubmit={handleKeywordSubmit}
+          options={combinedOptions}
+          sx={{ width: 250 }}
+        />
+      </Box>
 
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
@@ -90,11 +116,7 @@ const Product: React.FC = () => {
                 'Box Type',
                 'Created At'
               ].map(header => (
-                <TableCell
-                  key={header}
-                  align='center'
-                  sx={{ border: '1px solid #e0e0e0' }}
-                >
+                <TableCell key={header} align='center'>
                   {header}
                 </TableCell>
               ))}
@@ -102,7 +124,7 @@ const Product: React.FC = () => {
           </TableHead>
           <TableBody>
             {products.map(product => (
-              <TableRow key={product.productID}>
+              <TableRow key={product.productID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {product.productCode}
                 </TableCell>

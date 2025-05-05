@@ -26,7 +26,7 @@ import { TaskStatusFilter } from 'types/TaskStatusFilter'
 const ROWS_PER_PAGE = 10
 
 const TaskForm: React.FC = () => {
-  const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
+  const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -68,23 +68,24 @@ const TaskForm: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, keywordParam])
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
-  return (
+  return isLoading ? (
+    <Box
+      sx={{
+        p: 3,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%'
+      }}
+    >
+      <CircularProgress size={50} sx={{ marginRight: 2 }} />
+      <Typography variant='h6'>Loading...</Typography>
+    </Box>
+  ) : error ? (
+    <Typography color='error' align='center' sx={{ mt: 10 }}>
+      {error}
+    </Typography>
+  ) : (
     <Box>
       <Box
         sx={{

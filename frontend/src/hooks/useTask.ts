@@ -17,7 +17,7 @@ interface FetchParams {
 
 export const useTask = () => {
   const [tasks, setTasks] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const { warehouseID } = useParams()
@@ -25,7 +25,7 @@ export const useTask = () => {
   const fetchTasks = useCallback(
     async ({ warehouseID, status, keyword }: FetchParams) => {
       try {
-        setLoading(true)
+        setIsLoading(true)
 
         const res = await taskApi.fetchTasks({
           warehouseID,
@@ -37,7 +37,7 @@ export const useTask = () => {
         console.error('❌ Error fetching tasks:', err)
         setError('Failed to fetch tasks')
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     },
     []
@@ -59,7 +59,7 @@ export const useTask = () => {
 
   const createTask = async (payload: CreateTaskPayload) => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const result = await taskApi.createTask({
         ...payload,
         warehouseID
@@ -71,13 +71,13 @@ export const useTask = () => {
       setError('Failed to create task')
       throw err
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return {
     tasks,
-    loading,
+    isLoading,
     error,
     cancelTask,
     fetchTasks,

@@ -19,7 +19,7 @@ export interface BasicBin {
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<Bin[]>([])
-  const [binCodes, setAllBinCodes] = useState<string[]>([])
+  const [binCodes, setBinCodes] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalPages, setTotalPages] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -44,8 +44,8 @@ export const useBin = (autoLoad: boolean = false) => {
         return []
       }
 
-      const codes = res.bins.map((bin: any) => bin.binCode)
-      setAllBinCodes(codes)
+      const codes = res.data.map((bin: any) => bin.binCode)
+      setBinCodes(codes)
 
       setError(null)
       return res.bins
@@ -86,8 +86,8 @@ export const useBin = (autoLoad: boolean = false) => {
 
   const uploadBinList = useCallback(
     async (list: BinUploadType[]) => {
-      if (!warehouseID) {
-        const errorMsg = '❌ Missing warehouseID'
+      if (!warehouseID || !type) {
+        const errorMsg = '❌ Missing warehouseID or type'
         console.error(errorMsg)
         return { error: errorMsg }
       }

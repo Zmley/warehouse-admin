@@ -14,7 +14,6 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TextField,
   Typography
 } from '@mui/material'
 import dayjs from 'dayjs'
@@ -22,20 +21,22 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
 import CreateTask from 'components/task/CreateTask'
 import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
+import { tableRowStyle } from 'styles/tableRowStyle'
 
 const ROWS_PER_PAGE = 10
 
 const Task: React.FC = () => {
-  const { tasks, loading, error, cancelTask, fetchTasks } = useTask()
+  const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const statusParam =
+  const [status, setStatus] = useState<TaskStatusFilter>(
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
-  const keywordParam = searchParams.get('keyword') || ''
-  const [filterStatus, setFilterStatus] =
-    useState<TaskStatusFilter>(statusParam)
-  const [searchKeyword, setSearchKeyword] = useState(keywordParam)
+  )
+  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [isDialogOpen, setOpenDialog] = useState(false)
   const [page, setPage] = useState(0)
 
@@ -55,17 +56,31 @@ const Task: React.FC = () => {
     setPage(newPage)
   }
 
+  const handleSearchSubmit = () => {
+    if (warehouseID) {
+      setPage(0)
+      updateQueryParams(status, keyword)
+    }
+  }
+
+  const { binCodes, fetchBinCodes } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
+  const combinedOptions = [...binCodes, ...productCodes]
+
   useEffect(() => {
     if (warehouseID) {
       fetchTasks({
         warehouseID,
-        status: filterStatus,
-        keyword: keywordParam
+        status,
+        keyword
       })
-    }
-  }, [filterStatus, keywordParam])
 
-  if (loading) {
+      fetchBinCodes()
+      fetchProductCodes()
+    }
+  }, [status, keyword])
+
+  if (isLoading) {
     return (
       <Box
         sx={{
@@ -103,6 +118,7 @@ const Task: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#333' }}>
           Tasks
         </Typography>
+
         <Button
           variant='contained'
           onClick={handleOpen}
@@ -124,8 +140,8 @@ const Task: React.FC = () => {
               handleClose()
               fetchTasks({
                 warehouseID: warehouseID!,
-                status: filterStatus,
-                keyword: searchKeyword
+                status: status,
+                keyword: keyword
               })
             }}
           />
@@ -133,25 +149,20 @@ const Task: React.FC = () => {
       </Dialog>
 
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
-        <TextField
-          label='Search tasks'
-          variant='outlined'
-          size='small'
-          value={searchKeyword}
-          onChange={e => setSearchKeyword(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && warehouseID) {
-              setPage(0)
-              updateQueryParams(filterStatus, searchKeyword)
-            }
-          }}
+        <AutocompleteTextField
+          label='Search taskID / productCode'
+          value={keyword}
+          onChange={setKeyword}
+          onSubmit={handleSearchSubmit}
+          options={combinedOptions}
           sx={{ width: 250 }}
         />
+
         <Tabs
-          value={filterStatus}
+          value={status}
           onChange={(_, newStatus: TaskStatusFilter) => {
-            setFilterStatus(newStatus)
-            setSearchKeyword('')
+            setStatus(newStatus)
+            setKeyword('')
             setPage(0)
             updateQueryParams(newStatus, '')
           }}
@@ -203,7 +214,7 @@ const Task: React.FC = () => {
           </TableHead>
           <TableBody>
             {paginatedTasks.map(task => (
-              <TableRow key={task.taskID}>
+              <TableRow key={task.taskID} sx={tableRowStyle}>
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.taskID}
                 </TableCell>
@@ -240,8 +251,8 @@ const Task: React.FC = () => {
                         ) {
                           cancelTask(task.taskID, {
                             warehouseID: warehouseID!,
-                            status: filterStatus,
-                            keyword: searchKeyword
+                            status: status,
+                            keyword: keyword
                           })
                         }
                       }}
