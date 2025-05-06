@@ -5,9 +5,11 @@ import {
   Card,
   TextField,
   Autocomplete,
-  Paper,
-  CircularProgress,
-  Box
+  Box,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  CircularProgress
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
@@ -21,14 +23,15 @@ interface Props {
 const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   const navigate = useNavigate()
 
-  const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState<number>(1)
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
+  const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
+  const [selectedSourceBins, setSelectedSourceBins] = useState<string[]>([])
 
-  const { binCodes, fetchBinCodes, fetchAvailableBinCodes } = useBin()
+  const { fetchAvailableBinCodes, getBinByProductCode } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
-  const { createPickTask, isLoading, error } = useTask()
+  const { createPickTask, createTask, isLoading, error, setError } = useTask()
 
   const [sourceBinCodes, setSourceBinCodes] = useState<
     { binCode: string; quantity: number }[]
@@ -40,50 +43,98 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   )
 
   useEffect(() => {
-    fetchBinCodes()
     fetchProductCodes()
   }, [])
 
   useEffect(() => {
-    const fetchSourceBins = async () => {
+    const fetchBins = async () => {
       if (!productCode || productCode === 'ALL') {
         setSourceBinCodes([])
+        setPickupBinCode(null)
         return
       }
 
       try {
         setLoadingSourceBins(true)
-        const allBins = await fetchAvailableBinCodes(productCode)
-        setSourceBinCodes(allBins)
+
+        const [sourceBins, pickupRes] = await Promise.all([
+          fetchAvailableBinCodes(productCode),
+          getBinByProductCode(productCode)
+        ])
+
+        setSourceBinCodes(sourceBins)
+        setSelectedSourceBins([])
+
+        if (!pickupRes.success || !pickupRes.data?.length) {
+          setPickupBinCode(null)
+          console.error(pickupRes.error || '❌ No pickup bin found')
+        } else {
+          setPickupBinCode(pickupRes.data[0].binCode)
+        }
       } catch (err) {
-        console.error('❌ Failed to fetch source bins:', err)
+        console.error('❌ Failed to fetch bins:', err)
         setSourceBinCodes([])
+        setPickupBinCode(null)
       } finally {
         setLoadingSourceBins(false)
       }
     }
 
-    fetchSourceBins()
+    fetchBins()
   }, [productCode])
 
+  useEffect(() => {
+    if (sourceBinCodes.length === 1) {
+      setSelectedSourceBins([sourceBinCodes[0].binCode])
+    }
+  }, [sourceBinCodes])
+
   const handleSubmit = async () => {
-    if (!destinationBinCode || !productCode) {
-      alert('❌ Please select bin code and product code.')
+    setError(null)
+
+    if (!productCode) {
+      alert('❌ Please select a product code.')
       return
     }
 
-    if (sourceBinCodes.length > 0 && quantity > maxAvailableQuantity) {
-      alert(`❌ Quantity cannot exceed ${maxAvailableQuantity}`)
+    if (selectedSourceBins.length === 0) {
+      alert('❌ Please select at least one source bin.')
       return
     }
 
-    const task = await createPickTask(destinationBinCode, productCode, quantity)
-    if (task) {
-      alert('✅ Task created successfully.')
-      onSuccess?.()
-      navigate(-1)
+    if (selectedSourceBins.length === 1) {
+      if (!pickupBinCode) {
+        alert('❌ No pickup bin found.')
+        return
+      }
+
+      const payload = {
+        sourceBinCode: selectedSourceBins[0],
+        destinationBinCode: pickupBinCode,
+        productCode,
+        quantity
+      }
+
+      const result = await createTask(payload)
+      if (result) {
+        alert('✅ Task created successfully.')
+        onSuccess?.()
+        navigate(-1)
+      }
     } else {
-      alert(error || '❌ Failed to create task.')
+      if (quantity > maxAvailableQuantity) {
+        alert(`❌ Quantity cannot exceed ${maxAvailableQuantity}`)
+        return
+      }
+
+      const result = await createPickTask(productCode, quantity)
+      if (result) {
+        alert('✅ Pick task created successfully.')
+        onSuccess?.()
+        navigate(-1)
+      } else {
+        alert(error || '❌ Failed to create pick task.')
+      }
     }
   }
 
@@ -97,17 +148,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
       </Typography>
 
       <Autocomplete
-        options={binCodes}
-        value={destinationBinCode}
-        onChange={(_, val) => setDestinationBinCode(val || '')}
-        renderInput={params => (
-          <TextField {...params} label='Destination Bin Code' fullWidth />
-        )}
-        sx={{ my: 2 }}
-      />
-
-      <Autocomplete
-        options={['ALL', ...productCodes]}
+        options={[...productCodes]}
         value={productCode}
         onChange={(_, val) => setProductCode(val || '')}
         renderInput={params => (
@@ -125,44 +166,125 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
             onChange={e => setQuantity(Number(e.target.value))}
             fullWidth
             sx={{ mb: 2 }}
-            error={sourceBinCodes.length > 0 && quantity > maxAvailableQuantity}
+            error={
+              selectedSourceBins.length > 1 && quantity > maxAvailableQuantity
+            }
             helperText={
-              sourceBinCodes.length > 0 && quantity > maxAvailableQuantity
+              selectedSourceBins.length > 1 && quantity > maxAvailableQuantity
                 ? `❌ Cannot exceed max available quantity: ${maxAvailableQuantity}`
                 : ''
             }
           />
 
-          <Paper
-            variant='outlined'
-            sx={{
-              p: 2,
-              mb: 2,
-              backgroundColor: '#f9fbe7',
-              borderRadius: 2
-            }}
-          >
-            <Typography fontWeight='bold' sx={{ mb: 1 }}>
-              Available Source Bins:
+          {pickupBinCode !== null && (
+            <Typography sx={{ mt: 1.5, fontWeight: 'bold', color: '#1976d2' }}>
+              Pick Up Bin:{' '}
+              <span style={{ fontWeight: 600 }}>{pickupBinCode}</span>
             </Typography>
+          )}
 
-            {loadingSourceBins ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CircularProgress size={20} />
-                <Typography>Loading source bins...</Typography>
-              </Box>
-            ) : sourceBinCodes.length > 0 ? (
-              <Box>
+          {loadingSourceBins ? (
+            <Box display='flex' justifyContent='center' mt={2}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <RadioGroup
+              value={
+                selectedSourceBins.length === sourceBinCodes.length
+                  ? 'ALL'
+                  : selectedSourceBins[0] || ''
+              }
+              onChange={e => {
+                const val = e.target.value
+                if (val === 'ALL') {
+                  setSelectedSourceBins(sourceBinCodes.map(b => b.binCode))
+                } else {
+                  setSelectedSourceBins([val])
+                }
+              }}
+            >
+              {sourceBinCodes.length > 1 && (
+                <Box sx={{ px: 1, mb: 1 }}>
+                  <FormControlLabel
+                    value='ALL'
+                    control={<Radio size='small' />}
+                    label='🌐 Select All'
+                    sx={{
+                      width: '100%',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 1,
+                      backgroundColor:
+                        selectedSourceBins.length === sourceBinCodes.length
+                          ? '#e3f2fd'
+                          : 'transparent',
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5'
+                      },
+                      '& .MuiFormControlLabel-label': {
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        lineHeight: 1.3,
+                        color: '#1976d2'
+                      }
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Grid 形式的 Bin 单选列表 */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  mt: 1,
+                  px: 1
+                }}
+              >
                 {sourceBinCodes.map(({ binCode, quantity }) => (
-                  <Typography key={binCode}>
-                    {binCode} (Qty: {quantity})
-                  </Typography>
+                  <FormControlLabel
+                    key={binCode}
+                    value={binCode}
+                    control={
+                      <Radio
+                        size='small'
+                        checked={selectedSourceBins.includes(binCode)}
+                        onChange={() => setSelectedSourceBins([binCode])}
+                      />
+                    }
+                    label={`${binCode} · Total: ${quantity}`}
+                    sx={{
+                      m: 0,
+                      px: 0.5,
+                      py: 0.25,
+                      minHeight: '26px',
+                      height: '26px',
+                      borderRadius: 1,
+                      backgroundColor: selectedSourceBins.includes(binCode)
+                        ? '#e3f2fd'
+                        : 'transparent',
+                      '&:hover': {
+                        backgroundColor: '#f0f0f0'
+                      },
+                      '& .MuiFormControlLabel-label': {
+                        fontSize: '0.78rem',
+                        lineHeight: 1,
+                        padding: 0,
+                        margin: 0
+                      }
+                    }}
+                  />
                 ))}
               </Box>
-            ) : (
-              <Typography>No matching source bins</Typography>
-            )}
-          </Paper>
+            </RadioGroup>
+          )}
+
+          {error && (
+            <Typography color='error' sx={{ mt: 2, fontWeight: 'bold' }}>
+              {error}
+            </Typography>
+          )}
         </>
       )}
 

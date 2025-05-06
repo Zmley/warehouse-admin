@@ -3,7 +3,8 @@ import {
   addBins,
   getBinCodes,
   getBinCodesByProductCode,
-  getBins
+  getBins,
+  getPickupBinsByProductCodeApi
 } from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
@@ -127,7 +128,31 @@ export const useBin = (autoLoad: boolean = false) => {
     []
   )
 
+  const getBinByProductCode = useCallback(async (productCode: string) => {
+    try {
+      const res = await getPickupBinsByProductCodeApi(productCode)
+
+      if (!res.data || res.data.length === 0) {
+        return {
+          success: false,
+          error: `❌ No ${productCode} in current warehouse!`
+        }
+      }
+
+      return {
+        success: true,
+        data: res.data
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.response?.data?.error || '❌ Failed to fetch pickup bin'
+      }
+    }
+  }, [])
+
   return {
+    getBinByProductCode,
     uploadBinList,
     totalPages,
     fetchBins,

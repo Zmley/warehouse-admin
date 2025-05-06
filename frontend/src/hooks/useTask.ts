@@ -86,17 +86,23 @@ export const useTask = () => {
   }
 
   const createPickTask = async (
-    binCode: string,
     productCode: string,
     quantity: number
   ): Promise<CreateTaskPayload | null> => {
     setIsLoading(true)
     setError(null)
     try {
-      const task = await createPickerTask(binCode, productCode, quantity)
-      return task
-    } catch (err) {
-      setError('Failed to create task')
+      const result = await createPickerTask(productCode, quantity)
+
+      if (!result.success) {
+        throw new Error(result.error || '❌ Pick task creation failed')
+      }
+
+      return result.task
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error || err?.message || '❌ Failed to create task'
+      setError(message)
       return null
     } finally {
       setIsLoading(false)
@@ -107,6 +113,7 @@ export const useTask = () => {
     tasks,
     isLoading,
     error,
+    setError,
     cancelTask,
     fetchTasks,
     createTask,

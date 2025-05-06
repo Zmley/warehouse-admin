@@ -36,3 +36,8 @@ export const getBinCodesByProductCode = async (
   const response = await apiClient.get(`/bins/code/${productCode}`)
   return response.data.binCodes
 }
+
+export const getPickupBinsByProductCodeApi = async (productCode: string) => {
+  const res = await apiClient.get(`/bins/pickup/${productCode}`)
+  return res.data
+}
