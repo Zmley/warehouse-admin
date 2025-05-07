@@ -157,13 +157,13 @@ const Task: React.FC = () => {
       <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
         <CreateTask
           onSuccess={() => {
-            handleClose()
             fetchTasks({
               warehouseID: warehouseID!,
               status: status,
               keyword: keyword
             })
           }}
+          onClose={handleClose}
         />
       </Dialog>
 
@@ -175,13 +175,9 @@ const Task: React.FC = () => {
       >
         <CreatePickerTask
           onSuccess={() => {
-            setPickerDialogOpen(false)
-            fetchTasks({
-              warehouseID: warehouseID!,
-              status,
-              keyword
-            })
+            fetchTasks({ warehouseID: warehouseID!, status, keyword })
           }}
+          onClose={() => setPickerDialogOpen(false)}
         />
       </Dialog>
 
@@ -253,9 +249,6 @@ const Task: React.FC = () => {
           <TableBody>
             {paginatedTasks.map(task => (
               <TableRow key={task.taskID} sx={tableRowStyle}>
-                {/* <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.taskID}
-                </TableCell> */}
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.productCode}
                 </TableCell>

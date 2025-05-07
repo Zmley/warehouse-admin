@@ -9,20 +9,20 @@ import {
   FormControlLabel,
   Radio,
   RadioGroup,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import CloseIcon from '@mui/icons-material/Close'
 import { useTask } from 'hooks/useTask'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 
 interface Props {
   onSuccess?: () => void
+  onClose?: () => void
 }
 
-const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
-  const navigate = useNavigate()
-
+const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState<number>(1)
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
@@ -47,6 +47,8 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   }, [])
 
   useEffect(() => {
+    setQuantity(1)
+
     const fetchBins = async () => {
       if (!productCode || productCode === 'ALL') {
         setSourceBinCodes([])
@@ -56,12 +58,10 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
 
       try {
         setLoadingSourceBins(true)
-
         const [sourceBins, pickupRes] = await Promise.all([
           fetchAvailableBinCodes(productCode),
           getBinByProductCode(productCode)
         ])
-
         setSourceBinCodes(sourceBins)
         setSelectedSourceBins([])
 
@@ -86,8 +86,17 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
   useEffect(() => {
     if (sourceBinCodes.length === 1) {
       setSelectedSourceBins([sourceBinCodes[0].binCode])
+      setQuantity(sourceBinCodes[0].quantity)
     }
   }, [sourceBinCodes])
+
+  const resetForm = () => {
+    setProductCode('')
+    setQuantity(1)
+    setSelectedSourceBins([])
+    setSourceBinCodes([])
+    setPickupBinCode(null)
+  }
 
   const handleSubmit = async () => {
     setError(null)
@@ -119,7 +128,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
       if (result) {
         alert('✅ Task created successfully.')
         onSuccess?.()
-        navigate(-1)
+        resetForm()
       }
     } else {
       if (quantity > maxAvailableQuantity) {
@@ -131,7 +140,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
       if (result) {
         alert('✅ Pick task created successfully.')
         onSuccess?.()
-        navigate(-1)
+        resetForm()
       } else {
         alert(error || '❌ Failed to create pick task.')
       }
@@ -143,16 +152,36 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
       elevation={5}
       sx={{ p: 4, borderRadius: 4, backgroundColor: 'white' }}
     >
-      <Typography variant='h5' align='center' fontWeight='bold' gutterBottom>
-        Admin Create Picker Task
-      </Typography>
+      <Box
+        display='flex'
+        justifyContent='space-between'
+        alignItems='center'
+        mb={2}
+      >
+        <Typography variant='h5' fontWeight='bold'>
+          Admin Create Picker Task
+        </Typography>
+        <IconButton onClick={() => onClose?.()} size='small'>
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
       <Autocomplete
+        freeSolo
         options={[...productCodes]}
         value={productCode}
         onChange={(_, val) => setProductCode(val || '')}
         renderInput={params => (
-          <TextField {...params} label='Product Code' fullWidth />
+          <TextField
+            {...params}
+            label='Product Code'
+            fullWidth
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                setProductCode((e.target as HTMLInputElement).value.trim())
+              }
+            }}
+          />
         )}
         sx={{ mb: 2 }}
       />
@@ -176,7 +205,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
             }
           />
 
-          {pickupBinCode !== null && (
+          {pickupBinCode && (
             <Typography sx={{ mt: 1.5, fontWeight: 'bold', color: '#1976d2' }}>
               Pick Up Bin:{' '}
               <span style={{ fontWeight: 600 }}>{pickupBinCode}</span>
@@ -200,6 +229,8 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
                   setSelectedSourceBins(sourceBinCodes.map(b => b.binCode))
                 } else {
                   setSelectedSourceBins([val])
+                  const matched = sourceBinCodes.find(b => b.binCode === val)
+                  if (matched) setQuantity(matched.quantity)
                 }
               }}
             >
@@ -218,9 +249,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
                         selectedSourceBins.length === sourceBinCodes.length
                           ? '#e3f2fd'
                           : 'transparent',
-                      '&:hover': {
-                        backgroundColor: '#f5f5f5'
-                      },
+                      '&:hover': { backgroundColor: '#f5f5f5' },
                       '& .MuiFormControlLabel-label': {
                         fontSize: '0.85rem',
                         fontWeight: 500,
@@ -232,7 +261,6 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
                 </Box>
               )}
 
-              {/* Grid 形式的 Bin 单选列表 */}
               <Box
                 sx={{
                   display: 'flex',
@@ -250,7 +278,10 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
                       <Radio
                         size='small'
                         checked={selectedSourceBins.includes(binCode)}
-                        onChange={() => setSelectedSourceBins([binCode])}
+                        onChange={() => {
+                          setSelectedSourceBins([binCode])
+                          setQuantity(quantity)
+                        }}
                       />
                     }
                     label={`${binCode} · Total: ${quantity}`}
@@ -264,9 +295,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
                       backgroundColor: selectedSourceBins.includes(binCode)
                         ? '#e3f2fd'
                         : 'transparent',
-                      '&:hover': {
-                        backgroundColor: '#f0f0f0'
-                      },
+                      '&:hover': { backgroundColor: '#f0f0f0' },
                       '& .MuiFormControlLabel-label': {
                         fontSize: '0.78rem',
                         lineHeight: 1,
@@ -279,12 +308,6 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
               </Box>
             </RadioGroup>
           )}
-
-          {error && (
-            <Typography color='error' sx={{ mt: 2, fontWeight: 'bold' }}>
-              {error}
-            </Typography>
-          )}
         </>
       )}
 
@@ -292,19 +315,9 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess }) => {
         fullWidth
         variant='contained'
         onClick={handleSubmit}
-        sx={{ borderRadius: 2, fontWeight: 'bold', py: 1 }}
+        sx={{ borderRadius: 2, fontWeight: 'bold', py: 1, mt: 3 }}
       >
         {isLoading ? 'Creating Task...' : 'Create Task'}
-      </Button>
-
-      <Button
-        fullWidth
-        variant='outlined'
-        color='error'
-        onClick={() => navigate(-1)}
-        sx={{ mt: 2, borderRadius: 2, fontWeight: 'bold', py: 1 }}
-      >
-        ❌ Cancel
       </Button>
     </Card>
   )

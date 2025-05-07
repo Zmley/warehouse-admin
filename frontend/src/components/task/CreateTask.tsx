@@ -6,17 +6,21 @@ import {
   Autocomplete,
   Typography,
   Paper,
-  Alert
+  Alert,
+  IconButton,
+  Box
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import { useTask } from 'hooks/useTask'
 
 interface Props {
   onSuccess?: () => void
+  onClose?: () => void
 }
 
-const CreateTask: React.FC<Props> = ({ onSuccess }) => {
+const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [sourceBinCode, setSourceBinCode] = useState('')
   const [destinationBinCode, setDestinationBinCode] = useState('')
   const [productCode, setProductCode] = useState('')
@@ -53,7 +57,12 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
       if (result?.success) {
         alert('✅ Task created successfully!')
         onSuccess?.()
-      } else {
+
+        // ✅ 清空输入而不是关闭
+        setSourceBinCode('')
+        setDestinationBinCode('')
+        setProductCode('')
+        setQuantity('1')
       }
     } catch (err: any) {
       alert('❌ An unexpected error occurred.')
@@ -67,16 +76,24 @@ const CreateTask: React.FC<Props> = ({ onSuccess }) => {
         padding: 4,
         borderRadius: 4,
         minWidth: 400,
-        backgroundColor: '#fdfdfd'
+        backgroundColor: '#fdfdfd',
+        position: 'relative'
       }}
     >
-      <Typography
-        variant='h6'
-        gutterBottom
-        sx={{ fontWeight: 'bold', color: '#333' }}
+      {/* ✅ 顶部标题和右上角关闭按钮 */}
+      <Box
+        display='flex'
+        justifyContent='space-between'
+        alignItems='center'
+        mb={2}
       >
-        Create New Task
-      </Typography>
+        <Typography variant='h6' sx={{ fontWeight: 'bold', color: '#333' }}>
+          Create New Task
+        </Typography>
+        <IconButton onClick={() => onClose?.()} size='small'>
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
       <Stack spacing={3} mt={2}>
         <Autocomplete
