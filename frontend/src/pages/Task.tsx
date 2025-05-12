@@ -204,18 +204,24 @@ const Task: React.FC = () => {
           sx={{ minHeight: 36 }}
         >
           <Tab
-            label='All'
-            value={TaskStatusFilter.ALL}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
-          />
-          <Tab
             label='Pending'
             value={TaskStatusFilter.PENDING}
             sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
           <Tab
+            label='IN_PROCESS'
+            value={TaskStatusFilter.IN_PROCESS}
+            sx={{ minHeight: 36, fontWeight: 'bold' }}
+          />
+          <Tab
             label='Completed'
             value={TaskStatusFilter.COMPLETED}
+            sx={{ minHeight: 36, fontWeight: 'bold' }}
+          />
+
+          <Tab
+            label='All'
+            value={TaskStatusFilter.ALL}
             sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
         </Tabs>
