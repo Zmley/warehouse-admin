@@ -22,7 +22,7 @@ export const useTask = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { warehouseID } = useParams()
+  const warehouseID = useParams().warehouseID as string
 
   const fetchTasks = useCallback(
     async ({ warehouseID, status, keyword }: FetchParams) => {
@@ -92,7 +92,7 @@ export const useTask = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const result = await createPickerTask(productCode, quantity)
+      const result = await createPickerTask(productCode, quantity, warehouseID)
 
       if (!result.success) {
         throw new Error(result.error || '❌ Pick task creation failed')

@@ -26,11 +26,13 @@ export const cancelTask = async (taskID: string) => {
 
 export const createPickerTask = async (
   productCode: string,
-  quantity: number
+  quantity: number,
+  warehouseID: string
 ) => {
   const response = await apiClient.post('/tasks', {
     productCode,
-    quantity
+    quantity,
+    warehouseID
   })
   return response.data
 }

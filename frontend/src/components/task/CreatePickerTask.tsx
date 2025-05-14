@@ -319,6 +319,12 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
       >
         {isLoading ? 'Creating Task...' : 'Create Task'}
       </Button>
+
+      {error && (
+        <Typography color='error' sx={{ mb: 2, fontWeight: 500 }}>
+          {error}
+        </Typography>
+      )}
     </Card>
   )
 }
