@@ -28,12 +28,8 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
   const [selectedSourceBins, setSelectedSourceBins] = useState<string[]>([])
 
-  const {
-    fetchAvailableBinCodes,
-    getPickUpBinByProductCode,
-    pickupBinCode
-    // setPickupBinCode
-  } = useBin()
+  const { fetchAvailableBinCodes, getPickUpBinByProductCode, pickupBinCode } =
+    useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const { createPickTask, createTask, isLoading, error, setError } = useTask()
 
@@ -135,7 +131,11 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         return
       }
 
-      const result = await createPickTask(productCode, quantity)
+      if (!pickupBinCode) {
+        alert('❌ No pickup bin found.')
+        return
+      }
+      const result = await createPickTask(productCode, quantity, pickupBinCode)
       if (result) {
         alert('✅ Pick task created successfully.')
         onSuccess?.()
