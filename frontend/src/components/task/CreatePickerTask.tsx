@@ -26,10 +26,14 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState<number>(1)
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
-  const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
   const [selectedSourceBins, setSelectedSourceBins] = useState<string[]>([])
 
-  const { fetchAvailableBinCodes, getBinByProductCode } = useBin()
+  const {
+    fetchAvailableBinCodes,
+    getPickUpBinByProductCode,
+    pickupBinCode
+    // setPickupBinCode
+  } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const { createPickTask, createTask, isLoading, error, setError } = useTask()
 
@@ -52,7 +56,6 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
     const fetchBins = async () => {
       if (!productCode || productCode === 'ALL') {
         setSourceBinCodes([])
-        setPickupBinCode(null)
         return
       }
 
@@ -60,21 +63,18 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         setLoadingSourceBins(true)
         const [sourceBins, pickupRes] = await Promise.all([
           fetchAvailableBinCodes(productCode),
-          getBinByProductCode(productCode)
+          getPickUpBinByProductCode(productCode)
         ])
         setSourceBinCodes(sourceBins)
         setSelectedSourceBins([])
 
         if (!pickupRes.success || !pickupRes.data?.length) {
-          setPickupBinCode(null)
           console.error(pickupRes.error || '❌ No pickup bin found')
         } else {
-          setPickupBinCode(pickupRes.data[0].binCode)
         }
       } catch (err) {
         console.error('❌ Failed to fetch bins:', err)
         setSourceBinCodes([])
-        setPickupBinCode(null)
       } finally {
         setLoadingSourceBins(false)
       }
@@ -95,7 +95,6 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
     setQuantity(1)
     setSelectedSourceBins([])
     setSourceBinCodes([])
-    setPickupBinCode(null)
   }
 
   const handleSubmit = async () => {

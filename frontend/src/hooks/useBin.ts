@@ -4,7 +4,7 @@ import {
   getBinCodes,
   getBinCodesByProductCode,
   getBins,
-  getPickupBinsByProductCodeApi
+  getPickupBinsByProductCodeApi as getPickBinByProductCode
 } from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
@@ -30,6 +30,8 @@ export const useBin = (autoLoad: boolean = false) => {
   const [totalPages, setTotalPages] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const { warehouseID } = useParams()
+
+  const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
 
   const location = useLocation()
 
@@ -128,9 +130,9 @@ export const useBin = (autoLoad: boolean = false) => {
     []
   )
 
-  const getBinByProductCode = useCallback(async (productCode: string) => {
+  const getPickUpBinByProductCode = useCallback(async (productCode: string) => {
     try {
-      const res = await getPickupBinsByProductCodeApi(productCode)
+      const res = await getPickBinByProductCode(productCode)
 
       if (!res.data || res.data.length === 0) {
         return {
@@ -138,6 +140,8 @@ export const useBin = (autoLoad: boolean = false) => {
           error: `❌ No ${productCode} in current warehouse!`
         }
       }
+
+      setPickupBinCode(res.data.binCode)
 
       return {
         success: true,
@@ -152,7 +156,9 @@ export const useBin = (autoLoad: boolean = false) => {
   }, [])
 
   return {
-    getBinByProductCode,
+    pickupBinCode,
+    setPickupBinCode,
+    getPickUpBinByProductCode,
     uploadBinList,
     totalPages,
     fetchBins,
