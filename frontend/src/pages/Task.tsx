@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Button,
@@ -20,12 +20,12 @@ import dayjs from 'dayjs'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
 import CreateTask from 'components/task/CreateTask'
-import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import CreatePickerTask from 'components/task/CreatePickerTask'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import { tableRowStyle } from 'styles/tableRowStyle'
-import CreatePickerTask from 'components/task/CreatePickerTask'
 
 const ROWS_PER_PAGE = 10
 
@@ -33,6 +33,7 @@ const Task: React.FC = () => {
   const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+
   const [status, setStatus] = useState<TaskStatusFilter>(
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   )
@@ -70,44 +71,15 @@ const Task: React.FC = () => {
 
   useEffect(() => {
     if (warehouseID) {
-      fetchTasks({
-        warehouseID,
-        status,
-        keyword
-      })
-
+      fetchTasks({ warehouseID, status, keyword })
       fetchBinCodes()
       fetchProductCodes()
     }
   }, [status, keyword])
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
   return (
     <Box sx={{ pt: 0 }}>
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -119,9 +91,7 @@ const Task: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#333' }}>
           Tasks
         </Typography>
-
         <Box sx={{ display: 'flex', gap: 2 }}>
-          {' '}
           <Button
             variant='contained'
             onClick={handleOpen}
@@ -153,14 +123,12 @@ const Task: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Dialogs */}
       <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
         <CreateTask
           onSuccess={() => {
-            fetchTasks({
-              warehouseID: warehouseID!,
-              status: status,
-              keyword: keyword
-            })
+            fetchTasks({ warehouseID: warehouseID!, status, keyword })
+            handleClose()
           }}
           onClose={handleClose}
         />
@@ -175,11 +143,13 @@ const Task: React.FC = () => {
         <CreatePickerTask
           onSuccess={() => {
             fetchTasks({ warehouseID: warehouseID!, status, keyword })
+            setPickerDialogOpen(false)
           }}
           onClose={() => setPickerDialogOpen(false)}
         />
       </Dialog>
 
+      {/* Filter */}
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <AutocompleteTextField
           label='Search taskID / productCode'
@@ -205,27 +175,27 @@ const Task: React.FC = () => {
           <Tab
             label='Pending'
             value={TaskStatusFilter.PENDING}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
+            sx={{ fontWeight: 'bold' }}
           />
           <Tab
             label='IN Process'
             value={TaskStatusFilter.IN_PROCESS}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
+            sx={{ fontWeight: 'bold' }}
           />
           <Tab
             label='Completed'
             value={TaskStatusFilter.COMPLETED}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
+            sx={{ fontWeight: 'bold' }}
           />
-
           <Tab
             label='Canceled'
             value={TaskStatusFilter.CANCELED}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
+            sx={{ fontWeight: 'bold' }}
           />
         </Tabs>
       </Stack>
 
+      {/* Task Table */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
@@ -251,74 +221,103 @@ const Task: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedTasks.map(task => (
-              <TableRow key={task.taskID} sx={tableRowStyle}>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.productCode}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.sourceBins
-                    ?.map((s: any) => s.bin?.binCode)
-                    .join(' / ') || '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.destinationBinCode || '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.status}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.status === 'PENDING' && (
-                    <Button
-                      variant='outlined'
-                      color='error'
-                      size='small'
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Are you sure you want to cancel this task?'
-                          )
-                        ) {
-                          cancelTask(task.taskID, {
-                            warehouseID: warehouseID!,
-                            status: status,
-                            keyword: keyword
-                          })
-                        }
-                      }}
-                      sx={{
-                        border: '1.0px solid #f44336',
-                        color: '#f44336',
-                        borderRadius: 2,
-                        fontWeight: 400,
-
-                        textTransform: 'uppercase',
-
-                        minWidth: 80,
-                        '&:hover': {
-                          backgroundColor: '#ffebee',
-                          borderColor: '#d32f2f'
-                        }
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  )}
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} align='center'>
+                  <CircularProgress size={30} />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              paginatedTasks.map(task => (
+                <TableRow key={task.taskID} sx={tableRowStyle}>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.productCode}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.sourceBins
+                      ?.map((s: any) => s.bin?.binCode)
+                      .join(' / ') || '--'}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.destinationBinCode || '--'}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.status}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.status === 'PENDING' && (
+                      <Button
+                        variant='outlined'
+                        color='error'
+                        size='small'
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              'Are you sure you want to cancel this task?'
+                            )
+                          ) {
+                            cancelTask(task.taskID, {
+                              warehouseID: warehouseID!,
+                              status,
+                              keyword
+                            })
+                          }
+                        }}
+                        sx={{
+                          border: '1.0px solid #f44336',
+                          color: '#f44336',
+                          borderRadius: 2,
+                          fontWeight: 400,
+                          textTransform: 'uppercase',
+                          minWidth: 80,
+                          '&:hover': {
+                            backgroundColor: '#ffebee',
+                            borderColor: '#d32f2f'
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
-
         <TablePagination
           component='div'
           count={tasks.length}
