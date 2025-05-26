@@ -1,4 +1,5 @@
-import { Autocomplete, TextField, SxProps } from '@mui/material'
+import { Autocomplete, TextField, InputAdornment, SxProps } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 
 interface AutocompleteTextFieldProps {
   label: string
@@ -32,10 +33,40 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
           onSubmit()
         }
       }}
+      sx={{
+        minWidth: 250,
+        ...sx
+      }}
       renderInput={params => (
-        <TextField {...params} label={label} variant='outlined' size='small' />
+        <TextField
+          {...params}
+          placeholder={label}
+          variant='outlined'
+          size='small'
+          InputProps={{
+            ...params.InputProps,
+            startAdornment: (
+              <InputAdornment position='start'>
+                <SearchIcon sx={{ color: '#3F72AF' }} />
+              </InputAdornment>
+            ),
+            sx: {
+              borderRadius: 2,
+              backgroundColor: '#f9f9f9',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#ccc'
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3F72AF'
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#3F72AF',
+                borderWidth: '2px'
+              }
+            }
+          }}
+        />
       )}
-      sx={sx}
     />
   )
 }

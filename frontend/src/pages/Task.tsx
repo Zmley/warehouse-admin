@@ -1,19 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Box,
   Button,
-  CircularProgress,
   Dialog,
-  Paper,
   Stack,
   Tab,
   Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TablePagination,
-  TableRow,
   Typography
 } from '@mui/material'
 import dayjs from 'dayjs'
@@ -25,7 +17,9 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
-import { tableRowStyle } from 'styles/tableRowStyle'
+import TaskTable from 'components/task/TaskTable'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import IconButton from '@mui/material/IconButton'
 
 const ROWS_PER_PAGE = 10
 
@@ -49,11 +43,6 @@ const Task: React.FC = () => {
     setSearchParams({ status, keyword })
   }
 
-  const paginatedTasks = useMemo(() => {
-    const start = page * ROWS_PER_PAGE
-    return tasks.slice(start, start + ROWS_PER_PAGE)
-  }, [tasks, page])
-
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
   }
@@ -76,6 +65,12 @@ const Task: React.FC = () => {
       fetchProductCodes()
     }
   }, [status, keyword])
+
+  const handleRefresh = () => {
+    if (warehouseID) {
+      fetchTasks({ warehouseID, status, keyword })
+    }
+  }
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -152,7 +147,7 @@ const Task: React.FC = () => {
       {/* Filter */}
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <AutocompleteTextField
-          label='Search taskID / productCode'
+          label=''
           value={keyword}
           onChange={setKeyword}
           onSubmit={handleSearchSubmit}
@@ -193,140 +188,71 @@ const Task: React.FC = () => {
             sx={{ fontWeight: 'bold' }}
           />
         </Tabs>
+
+        <IconButton onClick={handleRefresh} sx={{ mt: -0.5 }}>
+          <RefreshIcon />
+        </IconButton>
       </Stack>
 
       {/* Task Table */}
-      <Paper elevation={3} sx={{ borderRadius: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
-              {[
-                'Product Code',
-                'Quantity',
-                'Source Bins',
-                'Target Bin',
-                'Status',
-                'Created At',
-                'Updated At',
-                'Action'
-              ].map(header => (
-                <TableCell
-                  key={header}
-                  align='center'
-                  sx={{ border: '1px solid #e0e0e0' }}
-                >
-                  {header}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={8} align='center'>
-                  <CircularProgress size={30} />
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedTasks.map(task => (
-                <TableRow key={task.taskID} sx={tableRowStyle}>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.productCode}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.sourceBins
-                      ?.map((s: any) => s.bin?.binCode)
-                      .join(' / ') || '--'}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.destinationBinCode || '--'}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.status}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {task.status === 'PENDING' && (
-                      <Button
-                        variant='outlined'
-                        color='error'
-                        size='small'
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              'Are you sure you want to cancel this task?'
-                            )
-                          ) {
-                            cancelTask(task.taskID, {
-                              warehouseID: warehouseID!,
-                              status,
-                              keyword
-                            })
-                          }
-                        }}
-                        sx={{
-                          border: '1.0px solid #f44336',
-                          color: '#f44336',
-                          borderRadius: 2,
-                          fontWeight: 400,
-                          textTransform: 'uppercase',
-                          minWidth: 80,
-                          '&:hover': {
-                            backgroundColor: '#ffebee',
-                            borderColor: '#d32f2f'
-                          }
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component='div'
-          count={tasks.length}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={ROWS_PER_PAGE}
-          rowsPerPageOptions={[ROWS_PER_PAGE]}
-        />
-      </Paper>
+
+      <TaskTable
+        tasks={tasks}
+        isLoading={isLoading}
+        page={page}
+        rowsPerPage={ROWS_PER_PAGE}
+        onPageChange={handleChangePage}
+        onCancel={taskID =>
+          cancelTask(taskID, {
+            warehouseID: warehouseID!,
+            status,
+            keyword
+          })
+        }
+        onPrint={task => {
+          const printWindow = window.open('', '_blank')
+          if (printWindow) {
+            printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Task</title>
+            <style>
+              body { font-family: Arial; padding: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              td, th { border: 1px solid #ccc; padding: 8px; }
+            </style>
+          </head>
+          <body>
+            <h2>Task Detail</h2>
+            <table>
+              <tr><th>Task ID</th><td>${task.taskID}</td></tr>
+              <tr><th>Product Code</th><td>${task.productCode}</td></tr>
+              <tr><th>Quantity</th><td>${
+                task.quantity === 0 ? 'ALL' : task.quantity
+              }</td></tr>
+              <tr><th>Source Bins</th><td>${
+                task.sourceBins?.map((s: any) => s.bin?.binCode).join(' / ') ||
+                '--'
+              }</td></tr>
+              <tr><th>Target Bin</th><td>${
+                task.destinationBinCode || '--'
+              }</td></tr>
+              <tr><th>Status</th><td>${task.status}</td></tr>
+              <tr><th>Created At</th><td>${dayjs(task.createdAt).format(
+                'YYYY-MM-DD HH:mm:ss'
+              )}</td></tr>
+              <tr><th>Updated At</th><td>${dayjs(task.updatedAt).format(
+                'YYYY-MM-DD HH:mm:ss'
+              )}</td></tr>
+            </table>
+            <script>window.onload = function() { window.print(); }</script>
+          </body>
+        </html>
+      `)
+            printWindow.document.close()
+          }
+        }}
+      />
     </Box>
   )
 }
