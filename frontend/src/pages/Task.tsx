@@ -33,9 +33,8 @@ const Task: React.FC = () => {
   const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-
   const [status, setStatus] = useState<TaskStatusFilter>(
-    (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
+    (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   )
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [isDialogOpen, setOpenDialog] = useState(false)
@@ -209,7 +208,7 @@ const Task: React.FC = () => {
             sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
           <Tab
-            label='IN_PROCESS'
+            label='IN Process'
             value={TaskStatusFilter.IN_PROCESS}
             sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
@@ -220,8 +219,8 @@ const Task: React.FC = () => {
           />
 
           <Tab
-            label='All'
-            value={TaskStatusFilter.ALL}
+            label='Canceled'
+            value={TaskStatusFilter.CANCELED}
             sx={{ minHeight: 36, fontWeight: 'bold' }}
           />
         </Tabs>
@@ -232,7 +231,6 @@ const Task: React.FC = () => {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
               {[
-                // 'Task ID',
                 'Product Code',
                 'Quantity',
                 'Source Bins',
@@ -281,6 +279,7 @@ const Task: React.FC = () => {
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.status === 'PENDING' && (
                     <Button
+                      variant='outlined'
                       color='error'
                       size='small'
                       onClick={() => {
@@ -294,6 +293,20 @@ const Task: React.FC = () => {
                             status: status,
                             keyword: keyword
                           })
+                        }
+                      }}
+                      sx={{
+                        border: '1.0px solid #f44336',
+                        color: '#f44336',
+                        borderRadius: 2,
+                        fontWeight: 400,
+
+                        textTransform: 'uppercase',
+
+                        minWidth: 80,
+                        '&:hover': {
+                          backgroundColor: '#ffebee',
+                          borderColor: '#d32f2f'
                         }
                       }}
                     >

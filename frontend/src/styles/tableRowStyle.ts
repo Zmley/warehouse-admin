@@ -1,7 +1,7 @@
 export const tableRowStyle = {
-  height: 48,
+  height: 32,
   '& td': {
-    padding: '8px 16px',
+    padding: '4px 8px',
     fontSize: '14px'
   }
 }

@@ -58,7 +58,6 @@ const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         alert('✅ Task created successfully!')
         onSuccess?.()
 
-        // ✅ 清空输入而不是关闭
         setSourceBinCode('')
         setDestinationBinCode('')
         setProductCode('')
@@ -80,7 +79,6 @@ const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         position: 'relative'
       }}
     >
-      {/* ✅ 顶部标题和右上角关闭按钮 */}
       <Box
         display='flex'
         justifyContent='space-between'

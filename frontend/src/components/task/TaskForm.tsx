@@ -32,7 +32,7 @@ const TaskForm: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const statusParam =
-    (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.ALL
+    (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   const keywordParam = searchParams.get('keyword') || ''
 
   const [filterStatus, setFilterStatus] =
@@ -127,51 +127,6 @@ const TaskForm: React.FC = () => {
         </Box>
       </Dialog>
 
-      <Stack direction='row' spacing={2} mb={3} alignItems='center'>
-        <TextField
-          label='Search tasks'
-          variant='outlined'
-          size='small'
-          value={searchKeyword}
-          onChange={e => setSearchKeyword(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && warehouseID) {
-              setPage(0)
-              updateQueryParams(filterStatus, searchKeyword)
-            }
-          }}
-          sx={{ width: 250 }}
-        />
-        <Tabs
-          value={filterStatus}
-          onChange={(_, newStatus: TaskStatusFilter) => {
-            setFilterStatus(newStatus)
-            setSearchKeyword('')
-            setPage(0)
-            updateQueryParams(newStatus, '')
-          }}
-          textColor='primary'
-          indicatorColor='primary'
-          sx={{ minHeight: 36 }}
-        >
-          <Tab
-            label='All'
-            value={TaskStatusFilter.ALL}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
-          />
-          <Tab
-            label='Pending'
-            value={TaskStatusFilter.PENDING}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
-          />
-          <Tab
-            label='Completed'
-            value={TaskStatusFilter.COMPLETED}
-            sx={{ minHeight: 36, fontWeight: 'bold' }}
-          />
-        </Tabs>
-      </Stack>
-
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
@@ -205,11 +160,13 @@ const TaskForm: React.FC = () => {
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.productCode}
                 </TableCell>
+
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.sourceBins
                     ?.map((s: any) => s.Bin?.binCode)
                     .join(' / ') || '--'}
                 </TableCell>
+
                 <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                   {task.destinationBinCode || '--'}
                 </TableCell>
