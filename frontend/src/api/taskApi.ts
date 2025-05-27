@@ -38,3 +38,11 @@ export const createPickerTask = async (
   })
   return response.data
 }
+
+export const updateTask = async (
+  taskID: string,
+  payload: { sourceBinCode?: string; status?: string }
+) => {
+  const response = await apiClient.patch(`/tasks/${taskID}`, payload)
+  return response.data
+}

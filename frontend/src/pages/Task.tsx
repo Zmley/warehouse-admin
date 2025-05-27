@@ -210,6 +210,7 @@ const Task: React.FC = () => {
           })
         }
         onPrint={printTask}
+        onRefresh={handleRefresh}
       />
     </Box>
   )

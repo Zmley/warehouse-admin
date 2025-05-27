@@ -20,6 +20,7 @@ import PrintIcon from '@mui/icons-material/Print'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
+import { useTask } from 'hooks/useTask'
 
 interface TaskTableProps {
   tasks: any[]
@@ -29,6 +30,7 @@ interface TaskTableProps {
   onPageChange: (event: unknown, newPage: number) => void
   onCancel: (taskID: string) => void
   onPrint: (task: any) => void
+  onRefresh: () => void
 }
 
 const TaskTable: React.FC<TaskTableProps> = ({
@@ -38,12 +40,14 @@ const TaskTable: React.FC<TaskTableProps> = ({
   rowsPerPage,
   onPageChange,
   onCancel,
-  onPrint
+  onPrint,
+  onRefresh
 }) => {
   const [editTaskID, setEditTaskID] = useState<string | null>(null)
   const [editedStatus, setEditedStatus] = useState('')
   const [editedSourceBin, setEditedSourceBin] = useState('')
   const { binCodes, fetchBinCodes } = useBin()
+  const { updateTask } = useTask()
 
   const paginatedTasks = tasks.slice(
     page * rowsPerPage,
@@ -126,15 +130,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '100%',
-                          width: '100%'
-                        }}
-                      >
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <AutocompleteTextField
                           label=''
                           value={editedSourceBin}
@@ -157,25 +153,17 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '100%',
-                          width: '100%'
-                        }}
-                      >
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Select
                           value={editedStatus}
                           onChange={e => setEditedStatus(e.target.value)}
                           size='small'
                           sx={{ minWidth: 120 }}
                         >
-                          <MenuItem value='PENDING'>Pending</MenuItem>
-                          <MenuItem value='IN_PROCESS'>In Process</MenuItem>
-                          <MenuItem value='COMPLETED'>Completed</MenuItem>
-                          <MenuItem value='CANCELED'>Canceled</MenuItem>
+                          <MenuItem value='PENDING'>PENDING</MenuItem>
+                          <MenuItem value='IN_PROCESS'>IN_PROCESS</MenuItem>
+                          <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
+                          <MenuItem value='CANCELED'>CANCELED</MenuItem>
                         </Select>
                       </Box>
                     ) : (
@@ -206,8 +194,20 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       size='small'
                       onClick={() => {
                         if (isEditing) {
-                          // TODO: Save logic here
+                          updateTask(
+                            task.taskID,
+                            {
+                              status: editedStatus,
+                              sourceBinCode: editedSourceBin
+                            },
+                            {
+                              warehouseID: task.warehouseID,
+                              status: task.status,
+                              keyword: ''
+                            }
+                          )
                           setEditTaskID(null)
+                          onRefresh()
                         } else {
                           fetchBinCodes()
                           setEditedStatus(task.status)

@@ -115,6 +115,19 @@ export const useTask = () => {
     }
   }
 
+  const updateTask = async (
+    taskID: string,
+    payload: { sourceBinCode?: string; status?: string },
+    params: { warehouseID: string; status?: string; keyword?: string }
+  ) => {
+    try {
+      await taskApi.updateTask(taskID, payload)
+      await fetchTasks(params)
+    } catch (err: any) {
+      console.error('Update task failed:', err)
+    }
+  }
+
   return {
     tasks,
     isLoading,
@@ -123,6 +136,7 @@ export const useTask = () => {
     cancelTask,
     fetchTasks,
     createTask,
-    createPickTask
+    createPickTask,
+    updateTask
   }
 }
