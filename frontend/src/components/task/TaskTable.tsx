@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Paper,
   Table,
@@ -8,12 +8,18 @@ import {
   TableBody,
   TablePagination,
   Button,
-  CircularProgress
+  CircularProgress,
+  IconButton,
+  Select,
+  MenuItem,
+  Box,
+  Typography
 } from '@mui/material'
 import dayjs from 'dayjs'
-import { tableRowStyle } from 'styles/tableRowStyle'
-import IconButton from '@mui/material/IconButton'
 import PrintIcon from '@mui/icons-material/Print'
+import { tableRowStyle } from 'styles/tableRowStyle'
+import AutocompleteTextField from 'utils/AutocompleteTextField'
+import { useBin } from 'hooks/useBin'
 
 interface TaskTableProps {
   tasks: any[]
@@ -34,117 +40,207 @@ const TaskTable: React.FC<TaskTableProps> = ({
   onCancel,
   onPrint
 }) => {
+  const [editTaskID, setEditTaskID] = useState<string | null>(null)
+  const [editedStatus, setEditedStatus] = useState('')
+  const [editedSourceBin, setEditedSourceBin] = useState('')
+  const { binCodes, fetchBinCodes } = useBin()
+
   const paginatedTasks = tasks.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   )
 
+  const cellStyle = {
+    border: '1px solid #e0e0e0',
+    whiteSpace: 'nowrap',
+    padding: '6px 8px',
+    height: 40,
+    verticalAlign: 'middle'
+  }
+
+  const headStyle = {
+    ...cellStyle,
+    backgroundColor: '#f0f4f9',
+    fontWeight: 600,
+    fontSize: 14,
+    color: '#333'
+  }
+
   return (
     <Paper elevation={3} sx={{ borderRadius: 3 }}>
       <Table>
         <TableHead>
-          <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
+          <TableRow>
             {[
-              'Product Code',
-              'Quantity',
-              'Source Bins',
-              'Target Bin',
-              'Status',
-              'Created At',
-              'Updated At',
-              'Print',
-              'Action'
-            ].map(header => (
+              { label: 'Product', minWidth: 120 },
+              { label: 'Qty', width: 80 },
+              { label: 'Source Bin', minWidth: 140 },
+              { label: 'Target Bin', minWidth: 120 },
+              { label: 'Status', minWidth: 130 },
+              { label: 'Created', minWidth: 160 },
+              { label: 'Updated', minWidth: 160 },
+              { label: 'Print', width: 60 },
+              { label: 'Action', width: 90 }
+            ].map(col => (
               <TableCell
-                key={header}
+                key={col.label}
                 align='center'
-                sx={{ border: '1px solid #e0e0e0' }}
+                sx={{
+                  ...headStyle,
+                  minWidth: col.minWidth,
+                  width: col.width
+                }}
               >
-                {header}
+                <Typography variant='body2'>{col.label}</Typography>
               </TableCell>
             ))}
           </TableRow>
         </TableHead>
+
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={9} align='center'>
+              <TableCell colSpan={9} align='center' sx={cellStyle}>
                 <CircularProgress size={30} />
               </TableCell>
             </TableRow>
           ) : (
-            paginatedTasks.map(task => (
-              <TableRow key={task.taskID} sx={tableRowStyle}>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.productCode}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.sourceBins
-                    ?.map((s: any) => s.bin?.binCode)
-                    .join(' / ') || '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.destinationBinCode || '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.status}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  <IconButton
-                    onClick={() => onPrint(task)}
-                    size='small'
-                    color='primary'
-                  >
+            paginatedTasks.map(task => {
+              const isEditing = editTaskID === task.taskID
+
+              return (
+                <TableRow
+                  key={task.taskID}
+                  sx={{
+                    ...tableRowStyle,
+                    backgroundColor: isEditing ? '#e8f4fd' : undefined
+                  }}
+                >
+                  <TableCell align='center' sx={cellStyle}>
+                    {task.productCode}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {isEditing ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '100%',
+                          width: '100%'
+                        }}
+                      >
+                        <AutocompleteTextField
+                          label=''
+                          value={editedSourceBin}
+                          onChange={setEditedSourceBin}
+                          onSubmit={() => {}}
+                          options={binCodes}
+                          sx={{ minWidth: 140 }}
+                        />
+                      </Box>
+                    ) : (
+                      task.sourceBins
+                        ?.map((s: any) => s.bin?.binCode)
+                        .join(' / ') || '--'
+                    )}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {task.destinationBinCode || '--'}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {isEditing ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '100%',
+                          width: '100%'
+                        }}
+                      >
+                        <Select
+                          value={editedStatus}
+                          onChange={e => setEditedStatus(e.target.value)}
+                          size='small'
+                          sx={{ minWidth: 120 }}
+                        >
+                          <MenuItem value='PENDING'>Pending</MenuItem>
+                          <MenuItem value='IN_PROCESS'>In Process</MenuItem>
+                          <MenuItem value='COMPLETED'>Completed</MenuItem>
+                          <MenuItem value='CANCELED'>Canceled</MenuItem>
+                        </Select>
+                      </Box>
+                    ) : (
+                      task.status
+                    )}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+                  <TableCell align='center' sx={cellStyle}>
+                    {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
                     <IconButton
                       onClick={() => onPrint(task)}
                       size='small'
-                      sx={{
-                        color: '#3F72AF',
-                        padding: '4px',
-                        fontSize: '16px'
-                      }}
+                      sx={{ color: '#3F72AF', p: 0 }}
                     >
                       <PrintIcon fontSize='small' />
                     </IconButton>
-                  </IconButton>
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {task.status === 'PENDING' && (
+                  </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
                     <Button
-                      variant='outlined'
+                      variant={isEditing ? 'contained' : 'outlined'}
                       size='small'
-                      onClick={() => onCancel(task.taskID)}
+                      onClick={() => {
+                        if (isEditing) {
+                          // TODO: Save logic here
+                          setEditTaskID(null)
+                        } else {
+                          fetchBinCodes()
+                          setEditedStatus(task.status)
+                          setEditedSourceBin(
+                            task.sourceBins?.[0]?.bin?.binCode || ''
+                          )
+                          setEditTaskID(task.taskID)
+                        }
+                      }}
                       sx={{
+                        backgroundColor: isEditing ? '#3F72AF' : 'transparent',
+                        color: isEditing ? '#fff' : '#3F72AF',
                         border: '1px solid #3F72AF',
-                        color: '#3F72AF',
                         borderRadius: 2,
                         fontWeight: 400,
                         textTransform: 'uppercase',
-                        minWidth: 80,
+                        minWidth: 70,
                         '&:hover': {
-                          backgroundColor: '#E8F5E9',
+                          backgroundColor: isEditing ? '#2d5e8c' : '#E8F5E9',
                           borderColor: '#3F72AF'
                         }
                       }}
                     >
-                      Cancel
+                      {isEditing ? 'Save' : 'Edit'}
                     </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
+                  </TableCell>
+                </TableRow>
+              )
+            })
           )}
         </TableBody>
       </Table>
+
       <TablePagination
         component='div'
         count={tasks.length}
