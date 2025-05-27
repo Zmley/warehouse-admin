@@ -19,7 +19,6 @@ const Topbar: React.FC = () => {
   const { userProfile } = useContext(AuthContext)!
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const navigate = useNavigate()
-
   const { warehouseCode } = useParams()
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -37,48 +36,70 @@ const Topbar: React.FC = () => {
   return (
     <Box
       sx={{
-        height: 60,
-        flexShrink: 0,
-        background: 'linear-gradient(to right, #f4f6f9, #dfe9f3)',
+        height: 55,
+        px: 4,
+        background: 'linear-gradient(to right, #e8f0fe, #f5f7fa)',
+        borderBottom: '1px solid #d0d7de',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        px: 4,
-        borderBottom: '1px solid #e0e0e0'
+        justifyContent: 'space-between'
       }}
     >
+      {/* Left: Back & Greeting */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Tooltip title='Back'>
-          <IconButton onClick={handleBack}>
-            <ArrowBack sx={{ color: '#333' }} />
+          <IconButton onClick={handleBack} sx={{ color: '#333' }}>
+            <ArrowBack />
           </IconButton>
         </Tooltip>
-        <Typography variant='h6' sx={{ fontWeight: 600, color: '#2e3a59' }}>
-          Welcome back, {userProfile.firstName}!
+        <Typography variant='h6' sx={{ fontWeight: 700, color: '#2d3e50' }}>
+          Hi, {userProfile.firstName}
         </Typography>
       </Box>
 
-      {warehouseCode ? (
-        <Chip
-          label={`Current Warehouse: ${warehouseCode}`}
-          color='primary'
-          variant='outlined'
-          sx={{ fontWeight: 500 }}
-        />
-      ) : (
-        <Typography variant='body2' sx={{ color: '#999' }}>
-          No Warehouse Selected
-        </Typography>
-      )}
+      {/* Center: optional content */}
+      <Box />
 
-      <Tooltip title='Account Settings'>
-        <IconButton onClick={handleMenuClick}>
-          <Avatar sx={{ bgcolor: deepPurple[500] }}>
-            {userProfile.firstName.charAt(0).toUpperCase()}
-          </Avatar>
-        </IconButton>
-      </Tooltip>
+      {/* Right: Warehouse & Avatar */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {warehouseCode ? (
+          <Chip
+            label={`Warehouse: ${warehouseCode}`}
+            color='primary'
+            sx={{
+              fontWeight: 500,
+              backgroundColor: '#dce8ff',
+              color: '#2a3e5c',
+              px: 2,
+              height: 32,
+              fontSize: 14
+            }}
+          />
+        ) : (
+          <Typography variant='body2' sx={{ color: '#999' }}>
+            No Warehouse Selected
+          </Typography>
+        )}
 
+        <Tooltip title='Account'>
+          <IconButton onClick={handleMenuClick}>
+            <Avatar
+              sx={{
+                bgcolor: deepPurple[500],
+                width: 36,
+                height: 36,
+                fontSize: 16,
+                fontWeight: 600
+              }}
+            >
+              {userProfile.firstName.charAt(0).toUpperCase()}
+            </Avatar>
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Account Popover */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
@@ -90,9 +111,9 @@ const Topbar: React.FC = () => {
             mt: 1.5,
             borderRadius: 3,
             boxShadow: 4,
-            minWidth: 150,
+            minWidth: 180,
             maxHeight: 420,
-            transform: 'scale(0.8)',
+            transform: 'scale(0.9)',
             transformOrigin: 'top right'
           }
         }}

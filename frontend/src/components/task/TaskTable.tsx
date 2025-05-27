@@ -21,6 +21,7 @@ import { tableRowStyle } from 'styles/tableRowStyle'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useTask } from 'hooks/useTask'
+import { useNavigate, useParams } from 'react-router-dom'
 
 interface TaskTableProps {
   tasks: any[]
@@ -48,6 +49,12 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const [editedSourceBin, setEditedSourceBin] = useState('')
   const { binCodes, fetchBinCodes } = useBin()
   const { updateTask } = useTask()
+  const navigate = useNavigate()
+
+  const { warehouseID, warehouseCode } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
 
   const paginatedTasks = tasks.slice(
     page * rowsPerPage,
@@ -120,7 +127,19 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     backgroundColor: isEditing ? '#e8f4fd' : undefined
                   }}
                 >
-                  <TableCell align='center' sx={cellStyle}>
+                  <TableCell
+                    align='center'
+                    sx={{
+                      ...cellStyle,
+                      cursor: 'pointer',
+                      color: '#3F72AF'
+                    }}
+                    onClick={() =>
+                      navigate(
+                        `/${warehouseID}/${warehouseCode}/product?keyword=${task.productCode}`
+                      )
+                    }
+                  >
                     {task.productCode}
                   </TableCell>
 
