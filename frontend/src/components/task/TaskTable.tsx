@@ -121,19 +121,18 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   {task.status === 'PENDING' && (
                     <Button
                       variant='outlined'
-                      color='error'
                       size='small'
                       onClick={() => onCancel(task.taskID)}
                       sx={{
-                        border: '1.0px solid #f44336',
-                        color: '#f44336',
+                        border: '1px solid #3F72AF',
+                        color: '#3F72AF',
                         borderRadius: 2,
                         fontWeight: 400,
                         textTransform: 'uppercase',
                         minWidth: 80,
                         '&:hover': {
-                          backgroundColor: '#ffebee',
-                          borderColor: '#d32f2f'
+                          backgroundColor: '#E8F5E9',
+                          borderColor: '#3F72AF'
                         }
                       }}
                     >

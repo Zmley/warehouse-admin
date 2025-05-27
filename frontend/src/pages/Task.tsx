@@ -8,7 +8,6 @@ import {
   Tabs,
   Typography
 } from '@mui/material'
-import dayjs from 'dayjs'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
 import CreateTask from 'components/task/CreateTask'
@@ -20,6 +19,7 @@ import { useProduct } from 'hooks/useProduct'
 import TaskTable from 'components/task/TaskTable'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import IconButton from '@mui/material/IconButton'
+import { printTask } from 'utils/printTask'
 
 const ROWS_PER_PAGE = 10
 
@@ -209,49 +209,7 @@ const Task: React.FC = () => {
             keyword
           })
         }
-        onPrint={task => {
-          const printWindow = window.open('', '_blank')
-          if (printWindow) {
-            printWindow.document.write(`
-        <html>
-          <head>
-            <title>Print Task</title>
-            <style>
-              body { font-family: Arial; padding: 20px; }
-              table { width: 100%; border-collapse: collapse; }
-              td, th { border: 1px solid #ccc; padding: 8px; }
-            </style>
-          </head>
-          <body>
-            <h2>Task Detail</h2>
-            <table>
-              <tr><th>Task ID</th><td>${task.taskID}</td></tr>
-              <tr><th>Product Code</th><td>${task.productCode}</td></tr>
-              <tr><th>Quantity</th><td>${
-                task.quantity === 0 ? 'ALL' : task.quantity
-              }</td></tr>
-              <tr><th>Source Bins</th><td>${
-                task.sourceBins?.map((s: any) => s.bin?.binCode).join(' / ') ||
-                '--'
-              }</td></tr>
-              <tr><th>Target Bin</th><td>${
-                task.destinationBinCode || '--'
-              }</td></tr>
-              <tr><th>Status</th><td>${task.status}</td></tr>
-              <tr><th>Created At</th><td>${dayjs(task.createdAt).format(
-                'YYYY-MM-DD HH:mm:ss'
-              )}</td></tr>
-              <tr><th>Updated At</th><td>${dayjs(task.updatedAt).format(
-                'YYYY-MM-DD HH:mm:ss'
-              )}</td></tr>
-            </table>
-            <script>window.onload = function() { window.print(); }</script>
-          </body>
-        </html>
-      `)
-            printWindow.document.close()
-          }
-        }}
+        onPrint={printTask}
       />
     </Box>
   )
