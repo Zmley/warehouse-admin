@@ -21,6 +21,7 @@ import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
 import { tableRowStyle } from 'styles/tableRowStyle'
@@ -58,6 +59,7 @@ const Bin: React.FC = () => {
     totalPages,
     fetchBinCodes,
     updateBin,
+    uploadBinList,
     isLoading: updating
   } = useBin()
   const { warehouseID } = useParams<{ warehouseID: string }>()
@@ -72,9 +74,10 @@ const Bin: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const { fetchProductCodes, productCodes } = useProduct()
 
-  // 每行编辑状态
   const [editKey, setEditKey] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<string>('')
+  const [addProductBinID, setAddProductBinID] = useState<string | null>(null)
+  const [addProductValue, setAddProductValue] = useState<string>('')
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
     setSearchParams({
@@ -120,9 +123,7 @@ const Bin: React.FC = () => {
     return `${row.binID}-${row._rowIndex}`
   }
 
-  // 只保存当前行的编辑内容
   const handleSave = async (row: any) => {
-    // 找到原 bin
     const originalBin = bins.find((b: any) => b.binID === row.binID)
     const originCodes =
       originalBin && originalBin.defaultProductCodes
@@ -131,7 +132,6 @@ const Bin: React.FC = () => {
             .map((v: string) => v.trim())
         : []
 
-    // 替换对应 index
     const newCodes = [...originCodes]
     newCodes[row._rowIndex] = editValue
     const cleanCodes = newCodes.filter(Boolean).join(',')
@@ -139,7 +139,6 @@ const Bin: React.FC = () => {
     await updateBin(row.binID, cleanCodes)
     setEditKey(null)
     setEditValue('')
-    // 保存后刷新
     fetchBins({
       warehouseID: warehouseID!,
       type: binType === 'ALL' ? undefined : binType,
@@ -157,6 +156,63 @@ const Bin: React.FC = () => {
   const handleCancel = () => {
     setEditKey(null)
     setEditValue('')
+    setAddProductBinID(null)
+    setAddProductValue('')
+  }
+
+  const handleAddProductClick = (binID: string) => {
+    setAddProductBinID(binID)
+    setAddProductValue('')
+    setEditKey(null)
+    setEditValue('')
+  }
+
+  const handleAddProductSave = async (bin: any) => {
+    const originalBin = bins.find((b: any) => b.binID === bin.binID)
+    const originCodes =
+      originalBin && originalBin.defaultProductCodes
+        ? originalBin.defaultProductCodes
+            .split(',')
+            .map((v: string) => v.trim())
+        : []
+    const allCodes = [...originCodes, addProductValue.trim()]
+      .filter(Boolean)
+      .join(',')
+
+    await updateBin(bin.binID, allCodes)
+    setAddProductBinID(null)
+    setAddProductValue('')
+    fetchBins({
+      warehouseID: warehouseID!,
+      type: binType === 'ALL' ? undefined : binType,
+      keyword: keywordParam || undefined,
+      page: page + 1,
+      limit: ROWS_PER_PAGE
+    })
+  }
+
+  // 删除单个 productCode
+  const handleDeleteProduct = async (row: any) => {
+    const originalBin = bins.find((b: any) => b.binID === row.binID)
+    const originCodes =
+      originalBin && originalBin.defaultProductCodes
+        ? originalBin.defaultProductCodes
+            .split(',')
+            .map((v: string) => v.trim())
+        : []
+
+    // 删除对应 index
+    const newCodes = originCodes.filter((_, i) => i !== row._rowIndex)
+    const cleanCodes = newCodes.filter(Boolean).join(',')
+
+    await updateBin(row.binID, cleanCodes)
+    fetchBins({
+      warehouseID: warehouseID!,
+      type: binType === 'ALL' ? undefined : binType,
+      keyword: keywordParam || undefined,
+      page: page + 1,
+      limit: ROWS_PER_PAGE
+    })
   }
 
   return (
@@ -225,7 +281,6 @@ const Bin: React.FC = () => {
               <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                 Type
               </TableCell>
-
               <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
                 Bin Code
               </TableCell>
@@ -237,14 +292,12 @@ const Bin: React.FC = () => {
                   >
                     Default Product Codes
                   </TableCell>
-
                   <TableCell
                     align='center'
                     sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
                   >
                     Last Updated
                   </TableCell>
-
                   <TableCell
                     align='center'
                     sx={{ border: '1px solid #e0e0e0' }}
@@ -253,7 +306,6 @@ const Bin: React.FC = () => {
                   </TableCell>
                 </>
               )}
-              {/* 非 PICK_UP 只加 updatedAt */}
               {binType !== BinType.PICK_UP && (
                 <TableCell
                   align='center'
@@ -295,68 +347,155 @@ const Bin: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map(row => {
+              rows.map((row, idx) => {
                 const rowKey = getRowKey(row)
                 const isEditing = editKey === rowKey
-                return (
-                  <TableRow
-                    key={rowKey}
-                    sx={{
-                      ...tableRowStyle,
-                      backgroundColor: isEditing ? '#e8f4fd' : undefined
-                    }}
-                  >
-                    {row._rowIndex === 0 && (
-                      <TableCell
-                        align='center'
-                        rowSpan={row._rowCount}
-                        sx={{ border: '1px solid #e0e0e0' }}
-                      >
-                        {row.type}
-                      </TableCell>
-                    )}
-                    {row._rowIndex === 0 && (
-                      <TableCell
-                        align='center'
-                        rowSpan={row._rowCount}
-                        sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
-                      >
-                        {row.binCode}
-                      </TableCell>
-                    )}
+                const isFirstRow = row._rowIndex === 0
+                const showAddProductRow =
+                  addProductBinID === row.binID && isFirstRow
 
-                    {binType === BinType.PICK_UP && (
-                      <>
+                return (
+                  <React.Fragment key={rowKey}>
+                    <TableRow
+                      sx={{
+                        ...tableRowStyle,
+                        backgroundColor: isEditing ? '#e8f4fd' : undefined
+                      }}
+                    >
+                      {isFirstRow && (
                         <TableCell
                           align='center'
-                          sx={{
-                            border: '1px solid #e0e0e0',
-                            minWidth: 250,
-                            ...(isEditing && { p: 1 })
-                          }}
+                          rowSpan={row._rowCount}
+                          sx={{ border: '1px solid #e0e0e0' }}
                         >
-                          {isEditing ? (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                              }}
-                            >
-                              <AutocompleteTextField
-                                label='Edit product code'
-                                value={editValue}
-                                onChange={setEditValue}
-                                onSubmit={() => handleSave(row)}
-                                options={productCodes}
-                                sx={{ width: 180 }}
-                              />
-                            </Box>
-                          ) : (
-                            row._code
-                          )}
+                          {row.type}
                         </TableCell>
-
+                      )}
+                      {isFirstRow && (
+                        <TableCell
+                          align='center'
+                          rowSpan={row._rowCount}
+                          sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
+                        >
+                          {row.binCode}
+                        </TableCell>
+                      )}
+                      {!isFirstRow && <></>}
+                      {binType === BinType.PICK_UP && (
+                        <>
+                          <TableCell
+                            align='center'
+                            sx={{
+                              border: '1px solid #e0e0e0',
+                              minWidth: 250,
+                              ...(isEditing && { p: 1 })
+                            }}
+                          >
+                            {isEditing ? (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'center',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                <AutocompleteTextField
+                                  label='Edit product code'
+                                  value={editValue}
+                                  onChange={setEditValue}
+                                  onSubmit={() => handleSave(row)}
+                                  options={productCodes}
+                                  sx={{ width: 180 }}
+                                />
+                              </Box>
+                            ) : (
+                              row._code
+                            )}
+                          </TableCell>
+                          <TableCell
+                            align='center'
+                            sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
+                          >
+                            {row.updatedAt
+                              ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
+                              : '--'}
+                          </TableCell>
+                          <TableCell
+                            align='center'
+                            sx={{ border: '1px solid #e0e0e0', minWidth: 220 }}
+                          >
+                            {isEditing ? (
+                              <Box
+                                display='flex'
+                                justifyContent='center'
+                                alignItems='center'
+                                gap={1}
+                              >
+                                <Button
+                                  variant='contained'
+                                  size='small'
+                                  sx={{ borderRadius: 2, fontWeight: 500 }}
+                                  onClick={() => handleSave(row)}
+                                  disabled={updating}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant='outlined'
+                                  size='small'
+                                  sx={{ borderRadius: 2, fontWeight: 500 }}
+                                  onClick={handleCancel}
+                                  color='secondary'
+                                >
+                                  Cancel
+                                </Button>
+                              </Box>
+                            ) : (
+                              <Box
+                                display='flex'
+                                justifyContent='center'
+                                alignItems='center'
+                                gap={1}
+                              >
+                                <Button
+                                  variant='outlined'
+                                  size='small'
+                                  sx={{ borderRadius: 2, fontWeight: 500 }}
+                                  onClick={() => handleEdit(row)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant='outlined'
+                                  color='error'
+                                  size='small'
+                                  startIcon={<DeleteIcon />}
+                                  sx={{ borderRadius: 2, fontWeight: 500 }}
+                                  onClick={() => handleDeleteProduct(row)}
+                                  disabled={row._allCodes.length <= 1} // 至少保留一行
+                                >
+                                  Delete
+                                </Button>
+                                {isFirstRow && (
+                                  <Button
+                                    variant='outlined'
+                                    size='small'
+                                    color='success'
+                                    sx={{ borderRadius: 2, fontWeight: 500 }}
+                                    onClick={() =>
+                                      handleAddProductClick(row.binID)
+                                    }
+                                    disabled={!!addProductBinID}
+                                  >
+                                    Add Product
+                                  </Button>
+                                )}
+                              </Box>
+                            )}
+                          </TableCell>
+                        </>
+                      )}
+                      {binType !== BinType.PICK_UP && (
                         <TableCell
                           align='center'
                           sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
@@ -365,61 +504,52 @@ const Bin: React.FC = () => {
                             ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
                             : '--'}
                         </TableCell>
-
+                      )}
+                    </TableRow>
+                    {showAddProductRow && (
+                      <TableRow>
                         <TableCell
-                          align='center'
-                          sx={{ border: '1px solid #e0e0e0', minWidth: 180 }}
+                          colSpan={5}
+                          sx={{ background: '#f8fff4', p: 2 }}
                         >
-                          {isEditing ? (
-                            <Box
-                              display='flex'
-                              justifyContent='center'
-                              alignItems='center'
-                              gap={1}
-                            >
-                              <Button
-                                variant='contained'
-                                size='small'
-                                sx={{ borderRadius: 2, fontWeight: 500 }}
-                                onClick={() => handleSave(row)}
-                                disabled={updating}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                variant='outlined'
-                                size='small'
-                                sx={{ borderRadius: 2, fontWeight: 500 }}
-                                onClick={handleCancel}
-                                color='secondary'
-                              >
-                                Cancel
-                              </Button>
-                            </Box>
-                          ) : (
+                          <Box
+                            display='flex'
+                            alignItems='center'
+                            gap={2}
+                            justifyContent='center'
+                          >
+                            <AutocompleteTextField
+                              label='New product code'
+                              value={addProductValue}
+                              onChange={setAddProductValue}
+                              onSubmit={() => handleAddProductSave(row)}
+                              options={productCodes}
+                              sx={{ width: 200 }}
+                            />
                             <Button
-                              variant='outlined'
+                              variant='contained'
+                              color='success'
                               size='small'
                               sx={{ borderRadius: 2, fontWeight: 500 }}
-                              onClick={() => handleEdit(row)}
+                              disabled={!addProductValue.trim()}
+                              onClick={() => handleAddProductSave(row)}
                             >
-                              Edit
+                              Save
                             </Button>
-                          )}
+                            <Button
+                              variant='outlined'
+                              color='secondary'
+                              size='small'
+                              sx={{ borderRadius: 2, fontWeight: 500 }}
+                              onClick={handleCancel}
+                            >
+                              Cancel
+                            </Button>
+                          </Box>
                         </TableCell>
-                      </>
+                      </TableRow>
                     )}
-                    {binType !== BinType.PICK_UP && (
-                      <TableCell
-                        align='center'
-                        sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
-                      >
-                        {row.updatedAt
-                          ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
-                          : '--'}
-                      </TableCell>
-                    )}
-                  </TableRow>
+                  </React.Fragment>
                 )
               })
             )}
