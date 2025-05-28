@@ -4,7 +4,8 @@ import {
   getBinCodes,
   getBinCodesByProductCode,
   getBins,
-  getPickupBinsByProductCodeApi as getPickBinByProductCode
+  getPickupBinsByProductCodeApi as getPickBinByProductCode,
+  updateBinDefaultProductCodes
 } from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
@@ -155,6 +156,20 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }, [])
 
+  const updateBin = async (binID: string, newCodes: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      await updateBinDefaultProductCodes(binID, newCodes)
+      setIsLoading(false)
+      return true
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err.message)
+      setIsLoading(false)
+      return false
+    }
+  }
+
   return {
     pickupBinCode,
     setPickupBinCode,
@@ -167,6 +182,7 @@ export const useBin = (autoLoad: boolean = false) => {
     binCodes,
     error,
     fetchBinCodes,
-    fetchAvailableBinCodes
+    fetchAvailableBinCodes,
+    updateBin
   }
 }

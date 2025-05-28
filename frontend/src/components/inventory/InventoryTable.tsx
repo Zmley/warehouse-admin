@@ -27,6 +27,16 @@ interface InventoryTableProps {
   onEdit: (item: InventoryItem) => void
 }
 
+const groupByBinCode = (list: InventoryItem[]) => {
+  const map: Record<string, InventoryItem[]> = {}
+  list.forEach(item => {
+    const code = item.bin?.binCode || '--'
+    if (!map[code]) map[code] = []
+    map[code].push(item)
+  })
+  return map
+}
+
 const InventoryTable: React.FC<InventoryTableProps> = ({
   inventories,
   page,
@@ -42,13 +52,17 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     warehouseCode: string
   }>()
 
+  // 分组
+  const grouped = groupByBinCode(inventories)
+  const binCodes = Object.keys(grouped)
+
   return (
     <Paper elevation={3} sx={{ borderRadius: 3 }}>
       <Table>
         <TableHead>
           <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
             {[
-              'Inventory ID',
+              //   'Inventory ID',
               'Bin Code',
               'Product Code',
               'Quantity',
@@ -81,63 +95,80 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            inventories.map(item => (
-              <TableRow key={item.inventoryID} sx={tableRowStyle}>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {item.inventoryID}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {item.bin?.binCode || '--'}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  <Typography
-                    sx={{
-                      textDecoration: 'underline',
-                      color: '#1976d2',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() =>
-                      navigate(
-                        `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
-                      )
-                    }
+            binCodes.map(binCode => {
+              const items = grouped[binCode]
+              return items.map((item, idx) => (
+                <TableRow key={item.inventoryID} sx={tableRowStyle}>
+                  {idx === 0 ? (
+                    <TableCell
+                      align='center'
+                      sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
+                      rowSpan={items.length}
+                    >
+                      {binCode}
+                    </TableCell>
+                  ) : null}
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
                   >
-                    {item.productCode}
-                  </Typography>
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  <Typography
-                    sx={{
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                      color: '#3F72AF'
-                    }}
-                    onClick={() => onEdit(item)}
-                  >
-                    {item.quantity}
-                  </Typography>
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  <IconButton
-                    color='error'
-                    size='small'
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Are you sure you want to delete this item?'
+                    <Typography
+                      sx={{
+                        color: '#1976d2',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() =>
+                        navigate(
+                          `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
                         )
-                      )
-                        onDelete(item.inventoryID)
-                    }}
+                      }
+                    >
+                      {item.productCode}
+                    </Typography>
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
                   >
-                    <DeleteIcon fontSize='small' />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))
+                    <Typography
+                      sx={{
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        color: '#3F72AF'
+                      }}
+                      onClick={() => onEdit(item)}
+                    >
+                      {item.quantity}
+                    </Typography>
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    <IconButton
+                      color='error'
+                      size='small'
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            'Are you sure you want to delete this item?'
+                          )
+                        )
+                          onDelete(item.inventoryID)
+                      }}
+                    >
+                      <DeleteIcon fontSize='small' />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            })
           )}
         </TableBody>
       </Table>

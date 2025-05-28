@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import dayjs from 'dayjs'
 import {
   Box,
   CircularProgress,
@@ -27,6 +28,26 @@ import { tableRowStyle } from 'styles/tableRowStyle'
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
 
+function expandBins(bins: any[]) {
+  const result: any[] = []
+  bins.forEach(bin => {
+    const codes =
+      bin.defaultProductCodes && bin.defaultProductCodes.trim() !== ''
+        ? bin.defaultProductCodes.split(',').map((v: string) => v.trim())
+        : ['Not Required']
+    codes.forEach((code: string, idx: number) => {
+      result.push({
+        ...bin,
+        _rowIndex: idx,
+        _rowCount: codes.length,
+        _code: code,
+        _allCodes: codes
+      })
+    })
+  })
+  return result
+}
+
 const Bin: React.FC = () => {
   const {
     bins,
@@ -35,12 +56,13 @@ const Bin: React.FC = () => {
     fetchBins,
     isLoading,
     totalPages,
-    fetchBinCodes
+    fetchBinCodes,
+    updateBin,
+    isLoading: updating
   } = useBin()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-
-  const typeParam = searchParams.get('type') || BinType.INVENTORY
+  const typeParam = searchParams.get('type') || BinType.PICK_UP
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
 
@@ -48,8 +70,11 @@ const Bin: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
-
   const { fetchProductCodes, productCodes } = useProduct()
+
+  // 每行编辑状态
+  const [editKey, setEditKey] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState<string>('')
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
     setSearchParams({
@@ -70,16 +95,14 @@ const Bin: React.FC = () => {
 
   useEffect(() => {
     if (!warehouseID) return
-
     if (!searchParams.get('type')) {
       setSearchParams(prev => {
-        prev.set('type', BinType.INVENTORY)
+        prev.set('type', BinType.PICK_UP)
         return prev
       })
     }
-
     fetchBins({
-      warehouseID,
+      warehouseID: warehouseID!,
       type: binType === 'ALL' ? undefined : binType,
       keyword: keywordParam || undefined,
       page: page + 1,
@@ -91,6 +114,50 @@ const Bin: React.FC = () => {
   }, [warehouseID, binType, keywordParam, page])
 
   const combinedOptions = [...binCodes, ...productCodes]
+  const rows = expandBins(bins)
+
+  function getRowKey(row: any) {
+    return `${row.binID}-${row._rowIndex}`
+  }
+
+  // 只保存当前行的编辑内容
+  const handleSave = async (row: any) => {
+    // 找到原 bin
+    const originalBin = bins.find((b: any) => b.binID === row.binID)
+    const originCodes =
+      originalBin && originalBin.defaultProductCodes
+        ? originalBin.defaultProductCodes
+            .split(',')
+            .map((v: string) => v.trim())
+        : []
+
+    // 替换对应 index
+    const newCodes = [...originCodes]
+    newCodes[row._rowIndex] = editValue
+    const cleanCodes = newCodes.filter(Boolean).join(',')
+
+    await updateBin(row.binID, cleanCodes)
+    setEditKey(null)
+    setEditValue('')
+    // 保存后刷新
+    fetchBins({
+      warehouseID: warehouseID!,
+      type: binType === 'ALL' ? undefined : binType,
+      keyword: keywordParam || undefined,
+      page: page + 1,
+      limit: ROWS_PER_PAGE
+    })
+  }
+
+  const handleEdit = (row: any) => {
+    setEditKey(getRowKey(row))
+    setEditValue(row._code)
+  }
+
+  const handleCancel = () => {
+    setEditKey(null)
+    setEditValue('')
+  }
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -106,7 +173,6 @@ const Bin: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Bin Management
         </Typography>
-
         <Button
           variant='contained'
           startIcon={<AddIcon />}
@@ -115,16 +181,13 @@ const Bin: React.FC = () => {
             fontWeight: 'bold',
             borderRadius: '8px',
             backgroundColor: '#3F72AF',
-            '&:hover': {
-              backgroundColor: '#2d5e8c'
-            },
+            '&:hover': { backgroundColor: '#2d5e8c' },
             textTransform: 'none'
           }}
         >
           Upload Bins
         </Button>
       </Box>
-
       <Stack direction='row' spacing={2} mb={2} alignItems='center'>
         <AutocompleteTextField
           label='Search binCode'
@@ -134,7 +197,6 @@ const Bin: React.FC = () => {
           options={combinedOptions}
           sx={{ width: 250 }}
         />
-
         <Tabs
           value={binType}
           onChange={(_, newType: string) => {
@@ -156,71 +218,213 @@ const Bin: React.FC = () => {
           ))}
         </Tabs>
       </Stack>
-
-      {/* Table with loading/error/empty state */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
-              {['Bin Code', 'Type', 'Default Product Codes'].map(header => (
+              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                Type
+              </TableCell>
+
+              <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
+                Bin Code
+              </TableCell>
+              {binType === BinType.PICK_UP && (
+                <>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0', minWidth: 220 }}
+                  >
+                    Default Product Codes
+                  </TableCell>
+
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
+                  >
+                    Last Updated
+                  </TableCell>
+
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    Action
+                  </TableCell>
+                </>
+              )}
+              {/* 非 PICK_UP 只加 updatedAt */}
+              {binType !== BinType.PICK_UP && (
                 <TableCell
-                  key={header}
                   align='center'
-                  sx={{ border: '1px solid #e0e0e0' }}
+                  sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
                 >
-                  {header}
+                  Last Updated
                 </TableCell>
-              ))}
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={3} align='center'>
+                <TableCell
+                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
+                  align='center'
+                >
                   <CircularProgress size={32} sx={{ m: 2 }} />
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={3} align='center'>
+                <TableCell
+                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
+                  align='center'
+                >
                   <Typography color='error'>{error}</Typography>
                 </TableCell>
               </TableRow>
-            ) : bins.length === 0 ? (
+            ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} align='center'>
+                <TableCell
+                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
+                  align='center'
+                >
                   <Typography color='text.secondary' sx={{ my: 2 }}>
                     No bins found.
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              bins.map(bin => (
-                <TableRow key={bin.binID} sx={tableRowStyle}>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
+              rows.map(row => {
+                const rowKey = getRowKey(row)
+                const isEditing = editKey === rowKey
+                return (
+                  <TableRow
+                    key={rowKey}
+                    sx={{
+                      ...tableRowStyle,
+                      backgroundColor: isEditing ? '#e8f4fd' : undefined
+                    }}
                   >
-                    {bin.binCode}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {bin.type}
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {bin.defaultProductCodes || 'Not Required'}
-                  </TableCell>
-                </TableRow>
-              ))
+                    {row._rowIndex === 0 && (
+                      <TableCell
+                        align='center'
+                        rowSpan={row._rowCount}
+                        sx={{ border: '1px solid #e0e0e0' }}
+                      >
+                        {row.type}
+                      </TableCell>
+                    )}
+                    {row._rowIndex === 0 && (
+                      <TableCell
+                        align='center'
+                        rowSpan={row._rowCount}
+                        sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
+                      >
+                        {row.binCode}
+                      </TableCell>
+                    )}
+
+                    {binType === BinType.PICK_UP && (
+                      <>
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            minWidth: 250,
+                            ...(isEditing && { p: 1 })
+                          }}
+                        >
+                          {isEditing ? (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <AutocompleteTextField
+                                label='Edit product code'
+                                value={editValue}
+                                onChange={setEditValue}
+                                onSubmit={() => handleSave(row)}
+                                options={productCodes}
+                                sx={{ width: 180 }}
+                              />
+                            </Box>
+                          ) : (
+                            row._code
+                          )}
+                        </TableCell>
+
+                        <TableCell
+                          align='center'
+                          sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
+                        >
+                          {row.updatedAt
+                            ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
+                            : '--'}
+                        </TableCell>
+
+                        <TableCell
+                          align='center'
+                          sx={{ border: '1px solid #e0e0e0', minWidth: 180 }}
+                        >
+                          {isEditing ? (
+                            <Box
+                              display='flex'
+                              justifyContent='center'
+                              alignItems='center'
+                              gap={1}
+                            >
+                              <Button
+                                variant='contained'
+                                size='small'
+                                sx={{ borderRadius: 2, fontWeight: 500 }}
+                                onClick={() => handleSave(row)}
+                                disabled={updating}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                variant='outlined'
+                                size='small'
+                                sx={{ borderRadius: 2, fontWeight: 500 }}
+                                onClick={handleCancel}
+                                color='secondary'
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          ) : (
+                            <Button
+                              variant='outlined'
+                              size='small'
+                              sx={{ borderRadius: 2, fontWeight: 500 }}
+                              onClick={() => handleEdit(row)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                        </TableCell>
+                      </>
+                    )}
+                    {binType !== BinType.PICK_UP && (
+                      <TableCell
+                        align='center'
+                        sx={{ border: '1px solid #e0e0e0', minWidth: 140 }}
+                      >
+                        {row.updatedAt
+                          ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
+                          : '--'}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
-
         <TablePagination
           component='div'
           count={totalPages}
@@ -230,7 +434,6 @@ const Bin: React.FC = () => {
           rowsPerPageOptions={[ROWS_PER_PAGE]}
         />
       </Paper>
-
       <UploadBinModal
         open={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}

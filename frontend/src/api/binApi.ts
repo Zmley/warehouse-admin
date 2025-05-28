@@ -41,3 +41,13 @@ export const getPickupBinsByProductCodeApi = async (productCode: string) => {
   const res = await apiClient.get(`/bins/pickup/${productCode}`)
   return res.data
 }
+
+export const updateBinDefaultProductCodes = async (
+  binID: string,
+  newCodes: string
+) => {
+  const res = await apiClient.patch(`/bins/${binID}/defaultProductCodes`, {
+    defaultProductCodes: newCodes
+  })
+  return res.data
+}
