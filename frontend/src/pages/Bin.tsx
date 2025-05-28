@@ -87,44 +87,45 @@ const Bin: React.FC = () => {
     })
     fetchBinCodes()
     fetchProductCodes()
+    // eslint-disable-next-line
   }, [warehouseID, binType, keywordParam, page])
 
   const combinedOptions = [...binCodes, ...productCodes]
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%'
-        }}
-      >
-        <CircularProgress size={50} sx={{ marginRight: 2 }} />
-        <Typography variant='h6'>Loading...</Typography>
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Typography color='error' align='center' sx={{ mt: 10 }}>
-        {error}
-      </Typography>
-    )
-  }
-
   return (
     <Box sx={{ pt: 0 }}>
-      <Box sx={{ mb: 3 }}>
+      {/* Title & Upload Button Row */}
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Bin Management
         </Typography>
+
+        <Button
+          variant='contained'
+          startIcon={<AddIcon />}
+          onClick={() => setIsUploadOpen(true)}
+          sx={{
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            backgroundColor: '#3F72AF',
+            '&:hover': {
+              backgroundColor: '#2d5e8c'
+            },
+            textTransform: 'none'
+          }}
+        >
+          Upload Bins by Excel
+        </Button>
       </Box>
 
-      <Stack direction='row' spacing={2} mb={3} alignItems='center'>
+      <Stack direction='row' spacing={2} mb={2} alignItems='center'>
         <AutocompleteTextField
           label='Search binCode'
           value={searchKeyword}
@@ -134,7 +135,6 @@ const Bin: React.FC = () => {
           sx={{ width: 250 }}
         />
 
-        {/* Bin Type Tabs */}
         <Tabs
           value={binType}
           onChange={(_, newType: string) => {
@@ -155,17 +155,9 @@ const Bin: React.FC = () => {
             />
           ))}
         </Tabs>
-
-        <Button
-          variant='contained'
-          startIcon={<AddIcon />}
-          onClick={() => setIsUploadOpen(true)}
-          sx={{ fontWeight: 'bold' }}
-        >
-          Upload Bins By Excel
-        </Button>
       </Stack>
 
+      {/* Table with loading/error/empty state */}
       <Paper elevation={3} sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
@@ -182,19 +174,50 @@ const Bin: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {bins.map(bin => (
-              <TableRow key={bin.binID} sx={tableRowStyle}>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {bin.binCode}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {bin.type}
-                </TableCell>
-                <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-                  {bin.defaultProductCodes || 'Not Required'}
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={3} align='center'>
+                  <CircularProgress size={32} sx={{ m: 2 }} />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={3} align='center'>
+                  <Typography color='error'>{error}</Typography>
+                </TableCell>
+              </TableRow>
+            ) : bins.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} align='center'>
+                  <Typography color='text.secondary' sx={{ my: 2 }}>
+                    No bins found.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              bins.map(bin => (
+                <TableRow key={bin.binID} sx={tableRowStyle}>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {bin.binCode}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {bin.type}
+                  </TableCell>
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {bin.defaultProductCodes || 'Not Required'}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
 
