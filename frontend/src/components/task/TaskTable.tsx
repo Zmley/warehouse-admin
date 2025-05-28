@@ -88,6 +88,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
               { label: 'Source Bin', minWidth: 140 },
               { label: 'Target Bin', minWidth: 120 },
               { label: 'Status', minWidth: 130 },
+              { label: 'Accepter', minWidth: 130 },
               { label: 'Created', minWidth: 160 },
               { label: 'Updated', minWidth: 160 },
               { label: 'Print', width: 60 },
@@ -111,7 +112,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={9} align='center' sx={cellStyle}>
+              <TableCell colSpan={10} align='center' sx={cellStyle}>
                 <CircularProgress size={30} />
               </TableCell>
             </TableRow>
@@ -142,11 +143,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   >
                     {task.productCode}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -165,11 +164,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         .join(' / ') || '--'
                     )}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {task.destinationBinCode || '--'}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -190,13 +187,23 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     )}
                   </TableCell>
 
+                  <TableCell
+                    align='center'
+                    sx={{ border: '1px solid #e0e0e0' }}
+                  >
+                    {task.accepter
+                      ? `${task.accepter.firstName || ''} ${
+                          task.accepter.lastName || ''
+                        }`.trim() || '--'
+                      : 'TBD'}
+                  </TableCell>
+
                   <TableCell align='center' sx={cellStyle}>
                     {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
                   </TableCell>
                   <TableCell align='center' sx={cellStyle}>
                     {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     <IconButton
                       onClick={() => onPrint(task)}
@@ -206,7 +213,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       <PrintIcon fontSize='small' />
                     </IconButton>
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     <Button
                       variant={isEditing ? 'contained' : 'outlined'}

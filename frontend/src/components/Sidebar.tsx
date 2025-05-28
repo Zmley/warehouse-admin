@@ -45,38 +45,74 @@ const Sidebar: React.FC = () => {
         boxShadow: '4px 0 10px rgba(0,0,0,0.1)'
       }}
     >
-      {sidebarItems.map(item => (
-        <Tooltip title={item.label} placement='right' key={item.page}>
-          <Box
-            onClick={() => handleClick(item.page)}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              color: page === item.page ? '#90caf9' : '#ffffff',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                color: '#90caf9',
-                transform: 'scale(1.1)'
-              }
-            }}
-          >
-            {item.icon}
-            <Typography
-              variant='caption'
+      {sidebarItems.map(item => {
+        const selected = page === item.page
+        return (
+          <Tooltip title={item.label} placement='right' key={item.page}>
+            <Box
+              onClick={() => handleClick(item.page)}
               sx={{
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                textAlign: 'center',
-                mt: 0.5
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+                px: 0,
+                py: 1.5,
+                mb: 1,
+                cursor: 'pointer',
+                color: selected ? '#1976d2' : '#fff',
+                backgroundColor: selected
+                  ? 'rgba(25, 118, 210, 0.1)'
+                  : 'transparent',
+                position: 'relative',
+                fontWeight: selected ? 700 : 400,
+                transition: 'all 0.18s cubic-bezier(.45,2,.55,.9)',
+                '&:hover': {
+                  color: '#1976d2',
+                  transform: 'scale(1.08)'
+                },
+                '&::after': selected
+                  ? {
+                      content: '""',
+                      position: 'absolute',
+                      right: 0,
+                      top: 6,
+                      bottom: 6,
+                      width: 5,
+                      borderRadius: '5px 0 0 5px',
+                      background:
+                        'linear-gradient(180deg,#1976d2 0%,#90caf9 100%)'
+                    }
+                  : {}
               }}
             >
-              {item.label}
-            </Typography>
-          </Box>
-        </Tooltip>
-      ))}
+              <Box
+                sx={{
+                  fontSize: 32,
+                  mb: 0.3,
+                  transition: 'font-size 0.2s',
+                  color: 'inherit'
+                }}
+              >
+                {item.icon}
+              </Box>
+              <Typography
+                variant='caption'
+                sx={{
+                  fontWeight: selected ? 700 : 600,
+                  fontSize: '0.88rem',
+                  textAlign: 'center',
+                  mt: 0.5,
+                  letterSpacing: 0.5,
+                  color: 'inherit'
+                }}
+              >
+                {item.label}
+              </Typography>
+            </Box>
+          </Tooltip>
+        )
+      })}
     </Box>
   )
 }

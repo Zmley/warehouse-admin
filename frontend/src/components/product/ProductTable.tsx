@@ -39,7 +39,11 @@ const ProductTable: React.FC<ProductTableProps> = ({
               'Box Type',
               'Created At'
             ].map(header => (
-              <TableCell key={header} align='center'>
+              <TableCell
+                key={header}
+                align='center'
+                sx={{ border: '1px solid #e0e0e0' }}
+              >
                 {header}
               </TableCell>
             ))}

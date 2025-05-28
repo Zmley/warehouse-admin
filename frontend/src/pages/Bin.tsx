@@ -121,7 +121,7 @@ const Bin: React.FC = () => {
             textTransform: 'none'
           }}
         >
-          Upload Bins by Excel
+          Upload Bins
         </Button>
       </Box>
 
