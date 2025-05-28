@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react'
 import { Autocomplete, TextField, InputAdornment, SxProps } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 
@@ -18,19 +19,36 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
   options,
   sx
 }) => {
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(value.toLowerCase())
-  )
+  const [open, setOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const showOptions = value.length > 0
+  const filteredOptions = showOptions
+    ? options.filter(option =>
+        option.toLowerCase().startsWith(value.toLowerCase())
+      )
+    : []
 
   return (
     <Autocomplete
       freeSolo
+      disableClearable
       options={filteredOptions}
       inputValue={value}
-      onInputChange={(_, newInputValue) => onChange(newInputValue)}
+      open={open && filteredOptions.length > 0}
+      onInputChange={(_, newInputValue, reason) => {
+        onChange(newInputValue)
+        if (reason === 'input') setOpen(true)
+      }}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      onClose={() => setOpen(false)}
       onKeyDown={e => {
         if (e.key === 'Enter') {
+          setOpen(false)
           onSubmit()
+          // 可选：失焦
+          if (inputRef.current) inputRef.current.blur()
         }
       }}
       sx={{
@@ -40,6 +58,7 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
       renderInput={params => (
         <TextField
           {...params}
+          inputRef={inputRef}
           placeholder={label}
           variant='outlined'
           size='small'

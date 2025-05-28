@@ -87,10 +87,13 @@ const TaskTable: React.FC<TaskTableProps> = ({
               { label: 'Qty', width: 80 },
               { label: 'Source Bin', minWidth: 140 },
               { label: 'Target Bin', minWidth: 120 },
-              { label: 'Status', minWidth: 130 },
-              { label: 'Accepter', minWidth: 130 },
+
               { label: 'Created', minWidth: 160 },
               { label: 'Updated', minWidth: 160 },
+
+              { label: 'Status', minWidth: 130 },
+              { label: 'Accepter', minWidth: 130 },
+
               { label: 'Print', width: 60 },
               { label: 'Action', width: 90 }
             ].map(col => (
@@ -167,6 +170,14 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   <TableCell align='center' sx={cellStyle}>
                     {task.destinationBinCode || '--'}
                   </TableCell>
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+                  <TableCell align='center' sx={cellStyle}>
+                    {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </TableCell>
+
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -198,12 +209,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       : 'TBD'}
                   </TableCell>
 
-                  <TableCell align='center' sx={cellStyle}>
-                    {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
-                  <TableCell align='center' sx={cellStyle}>
-                    {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
                   <TableCell align='center' sx={cellStyle}>
                     <IconButton
                       onClick={() => onPrint(task)}
