@@ -36,6 +36,7 @@ const Sidebar: React.FC = () => {
     <Box
       sx={{
         width: 120,
+        minWidth: 120,
         backgroundColor: '#2f3e4e',
         display: 'flex',
         flexDirection: 'column',

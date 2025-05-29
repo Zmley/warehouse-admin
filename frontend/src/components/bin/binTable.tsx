@@ -47,13 +47,13 @@ interface BinTableProps {
 const ROWS_PER_PAGE = 10
 
 const COL_WIDTH = {
-  type: 70,
-  binCode: 85,
-  codes: 105,
-  updated: 100,
-  action: 85
+  type: 90,
+  binCode: 110,
+  codes: 250,
+  updated: 150,
+  action: 110
 }
-const rowHeight = 40 // px
+const rowHeight = 44 // px
 
 const BinTable: React.FC<BinTableProps> = ({
   rows,
@@ -77,6 +77,7 @@ const BinTable: React.FC<BinTableProps> = ({
   setEditProductCodes,
   setAddProductValue
 }) => {
+  // 编辑行
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
       <>
@@ -85,6 +86,7 @@ const BinTable: React.FC<BinTableProps> = ({
             key={binID + '-edit-' + idx}
             sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
           >
+            {/* 1. Type */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -102,6 +104,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 {binRows[0].type}
               </TableCell>
             )}
+            {/* 2. Bin Code */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -119,6 +122,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 {binRows[0].binCode}
               </TableCell>
             )}
+            {/* 3. Product Codes */}
             <TableCell
               align='center'
               sx={{
@@ -145,7 +149,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   onSubmit={() => {}}
                   options={productCodes}
                   sx={{
-                    width: 75,
+                    width: 130,
                     minWidth: 130,
                     height: 32,
                     '& .MuiInputBase-root': {
@@ -180,6 +184,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 </Tooltip>
               </Box>
             </TableCell>
+            {/* 4. Last Updated */}
             <TableCell
               align='center'
               sx={{
@@ -194,6 +199,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 ? dayjs(binRows[idx].updatedAt).format('YYYY-MM-DD HH:mm')
                 : '--'}
             </TableCell>
+            {/* 5. Action */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -263,16 +269,18 @@ const BinTable: React.FC<BinTableProps> = ({
             )}
           </TableRow>
         ))}
+
         {newRow && (
           <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
+            {/* Default Product Codes */}
             <TableCell
               align='center'
               sx={{
                 border: '1px solid #e0e0e0',
                 width: COL_WIDTH.codes,
                 minWidth: COL_WIDTH.codes,
-                p: 0,
-                height: rowHeight
+                height: rowHeight,
+                p: 0
               }}
             >
               <Box
@@ -287,7 +295,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   onSubmit={() => {}}
                   options={productCodes}
                   sx={{
-                    width: 75,
+                    width: 130,
                     minWidth: 130,
                     height: 32,
                     '& .MuiInputBase-root': {
@@ -321,6 +329,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 </Tooltip>
               </Box>
             </TableCell>
+            {/* Last Updated 列: 空cell */}
             <TableCell
               align='center'
               sx={{
@@ -337,30 +346,32 @@ const BinTable: React.FC<BinTableProps> = ({
     )
   }
 
+  // 空行补全
   function renderEmptyRows(count: number) {
     return Array.from({ length: count }).map((_, idx) => (
       <TableRow key={'empty-row-' + idx} sx={{ height: rowHeight }}>
-        <TableCell
-          colSpan={binType === BinType.PICK_UP ? 5 : 3}
-          sx={{
-            height: rowHeight,
-            border: '1px solid #e0e0e0',
-            p: 0,
-            background: '#fafafa'
-          }}
-        />
+        {[...Array(5)].map((_, i) => (
+          <TableCell
+            key={i}
+            sx={{
+              height: rowHeight,
+              border: '1px solid #e0e0e0',
+              p: 0,
+              background: '#fafafa'
+            }}
+          />
+        ))}
       </TableRow>
     ))
   }
 
-  // 主体渲染
+  // 主体内容
   let bodyContent: React.ReactNode
-
   if (isLoading) {
     bodyContent = (
       <TableRow>
         <TableCell
-          colSpan={binType === BinType.PICK_UP ? 5 : 3}
+          colSpan={5}
           align='center'
           sx={{ height: rowHeight * ROWS_PER_PAGE }}
         >
@@ -372,7 +383,7 @@ const BinTable: React.FC<BinTableProps> = ({
     bodyContent = (
       <TableRow>
         <TableCell
-          colSpan={binType === BinType.PICK_UP ? 5 : 3}
+          colSpan={5}
           align='center'
           sx={{ height: rowHeight * ROWS_PER_PAGE }}
         >
@@ -384,7 +395,7 @@ const BinTable: React.FC<BinTableProps> = ({
     bodyContent = (
       <TableRow>
         <TableCell
-          colSpan={binType === BinType.PICK_UP ? 5 : 3}
+          colSpan={5}
           align='center'
           sx={{ height: rowHeight * ROWS_PER_PAGE }}
         >
@@ -399,7 +410,7 @@ const BinTable: React.FC<BinTableProps> = ({
       const binID = rows[i].binID
       const binRows = rows.filter(r => r.binID === binID)
       const codes = binRows.map(r => r._code)
-      const isEditing = editBinID === binID
+      const isEditing = binType === BinType.PICK_UP && editBinID === binID
 
       if (isEditing) {
         render.push(renderBinEditArea(binRows, binID))
@@ -450,10 +461,15 @@ const BinTable: React.FC<BinTableProps> = ({
                   minWidth: COL_WIDTH.codes,
                   fontSize: 13,
                   height: rowHeight,
-                  p: 0
+                  p: 0,
+                  color:
+                    binType === BinType.PICK_UP
+                      ? undefined
+                      : theme => theme.palette.action.disabled,
+                  fontStyle: binType === BinType.PICK_UP ? undefined : ''
                 }}
               >
-                {row._code}
+                {binType === BinType.PICK_UP ? row._code : 'Not Applied'}
               </TableCell>
               <TableCell
                 align='center'
@@ -483,19 +499,33 @@ const BinTable: React.FC<BinTableProps> = ({
                     p: 0
                   }}
                 >
-                  <Tooltip title='Edit'>
-                    <span>
-                      <IconButton
-                        color='primary'
-                        size='small'
-                        sx={{ height: 32, width: 32, p: 0 }}
-                        onClick={() => handleEdit(binID, codes)}
-                        disabled={!!editBinID}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                  {binType === BinType.PICK_UP ? (
+                    <Tooltip title='Edit'>
+                      <span>
+                        <IconButton
+                          color='primary'
+                          size='small'
+                          sx={{ height: 32, width: 32, p: 0 }}
+                          onClick={() => handleEdit(binID, codes)}
+                          disabled={!!editBinID}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title='Not Editable'>
+                      <span>
+                        <IconButton
+                          size='small'
+                          sx={{ height: 32, width: 32, p: 0 }}
+                          disabled
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                 </TableCell>
               )}
             </TableRow>
@@ -518,12 +548,7 @@ const BinTable: React.FC<BinTableProps> = ({
     <Box sx={{ minWidth: 500, margin: '0 auto' }}>
       <Table
         size='small'
-        sx={{
-          tableLayout: 'fixed',
-
-          width: '100%',
-          margin: '0 auto'
-        }}
+        sx={{ tableLayout: 'fixed', width: '100%', margin: '0 auto' }}
       >
         <TableHead>
           <TableRow sx={{ backgroundColor: '#f0f4f9', height: rowHeight }}>
@@ -553,64 +578,45 @@ const BinTable: React.FC<BinTableProps> = ({
             >
               Bin Code
             </TableCell>
-            {binType === BinType.PICK_UP && (
-              <>
-                <TableCell
-                  align='center'
-                  sx={{
-                    width: COL_WIDTH.codes,
-                    minWidth: COL_WIDTH.codes,
-                    border: '1px solid #e0e0e0',
-                    fontSize: 13,
-                    height: rowHeight,
-                    p: 0
-                  }}
-                >
-                  Default Product Codes
-                </TableCell>
-                <TableCell
-                  align='center'
-                  sx={{
-                    width: COL_WIDTH.updated,
-                    minWidth: COL_WIDTH.updated,
-                    border: '1px solid #e0e0e0',
-                    fontSize: 13,
-                    height: rowHeight,
-                    p: 0
-                  }}
-                >
-                  Last Updated
-                </TableCell>
-                <TableCell
-                  align='center'
-                  sx={{
-                    width: COL_WIDTH.action,
-                    minWidth: COL_WIDTH.action,
-                    border: '1px solid #e0e0e0',
-                    fontSize: 13,
-                    height: rowHeight,
-                    p: 0
-                  }}
-                >
-                  Action
-                </TableCell>
-              </>
-            )}
-            {binType !== BinType.PICK_UP && (
-              <TableCell
-                align='center'
-                sx={{
-                  width: COL_WIDTH.updated,
-                  minWidth: COL_WIDTH.updated,
-                  border: '1px solid #e0e0e0',
-                  fontSize: 13,
-                  height: rowHeight,
-                  p: 0
-                }}
-              >
-                Last Updated
-              </TableCell>
-            )}
+            <TableCell
+              align='center'
+              sx={{
+                width: COL_WIDTH.codes,
+                minWidth: COL_WIDTH.codes,
+                border: '1px solid #e0e0e0',
+                fontSize: 13,
+                height: rowHeight,
+                p: 0
+              }}
+            >
+              Default Product Codes
+            </TableCell>
+            <TableCell
+              align='center'
+              sx={{
+                width: COL_WIDTH.updated,
+                minWidth: COL_WIDTH.updated,
+                border: '1px solid #e0e0e0',
+                fontSize: 13,
+                height: rowHeight,
+                p: 0
+              }}
+            >
+              Last Updated
+            </TableCell>
+            <TableCell
+              align='center'
+              sx={{
+                width: COL_WIDTH.action,
+                minWidth: COL_WIDTH.action,
+                border: '1px solid #e0e0e0',
+                fontSize: 13,
+                height: rowHeight,
+                p: 0
+              }}
+            >
+              Action
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>{bodyContent}</TableBody>
@@ -621,11 +627,7 @@ const BinTable: React.FC<BinTableProps> = ({
         alignItems='center'
         px={2}
         py={1}
-        sx={{
-          borderTop: 'none',
-          background: '#fff',
-          minWidth: 500
-        }}
+        sx={{ borderTop: 'none', background: '#fff', minWidth: 500 }}
       >
         <TablePagination
           component='div'
