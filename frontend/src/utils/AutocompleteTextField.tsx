@@ -9,6 +9,7 @@ interface AutocompleteTextFieldProps {
   onSubmit: () => void
   options: string[]
   sx?: SxProps
+  freeSolo?: boolean
 }
 
 const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
@@ -47,7 +48,6 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
         if (e.key === 'Enter') {
           setOpen(false)
           onSubmit()
-          // 可选：失焦
           if (inputRef.current) inputRef.current.blur()
         }
       }}
