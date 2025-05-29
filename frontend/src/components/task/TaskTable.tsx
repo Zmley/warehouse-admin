@@ -7,7 +7,6 @@ import {
   TableCell,
   TableBody,
   TablePagination,
-  Button,
   CircularProgress,
   IconButton,
   Select,
@@ -17,6 +16,9 @@ import {
 } from '@mui/material'
 import dayjs from 'dayjs'
 import PrintIcon from '@mui/icons-material/Print'
+import EditIcon from '@mui/icons-material/Edit'
+import SaveIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
@@ -66,7 +68,8 @@ const TaskTable: React.FC<TaskTableProps> = ({
     whiteSpace: 'nowrap',
     padding: '6px 8px',
     height: 40,
-    verticalAlign: 'middle'
+    verticalAlign: 'middle',
+    fontSize: 14
   }
 
   const headStyle = {
@@ -78,7 +81,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
   }
 
   return (
-    <Paper elevation={3} sx={{ borderRadius: 3 }}>
+    <Paper
+      elevation={3}
+      sx={{ borderRadius: 3, boxShadow: 2, overflow: 'hidden' }}
+    >
       <Table>
         <TableHead>
           <TableRow>
@@ -87,15 +93,12 @@ const TaskTable: React.FC<TaskTableProps> = ({
               { label: 'Qty', width: 80 },
               { label: 'Source Bin', minWidth: 140 },
               { label: 'Target Bin', minWidth: 120 },
-
               { label: 'Created', minWidth: 160 },
               { label: 'Updated', minWidth: 160 },
-
               { label: 'Status', minWidth: 130 },
               { label: 'Accepter', minWidth: 130 },
-
               { label: 'Print', width: 60 },
-              { label: 'Action', width: 90 }
+              { label: 'Action', width: 110 }
             ].map(col => (
               <TableCell
                 key={col.label}
@@ -200,7 +203,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
                   <TableCell
                     align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
+                    sx={{
+                      ...cellStyle,
+                      color: !task.accepter ? '' : undefined
+                    }}
                   >
                     {task.accepter
                       ? `${task.accepter.firstName || ''} ${
@@ -219,50 +225,78 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     </IconButton>
                   </TableCell>
                   <TableCell align='center' sx={cellStyle}>
-                    <Button
-                      variant={isEditing ? 'contained' : 'outlined'}
-                      size='small'
-                      onClick={() => {
-                        if (isEditing) {
-                          updateTask(
-                            task.taskID,
-                            {
-                              status: editedStatus,
-                              sourceBinCode: editedSourceBin
-                            },
-                            {
-                              warehouseID: task.warehouseID,
-                              status: task.status,
-                              keyword: ''
+                    <Box display='flex' gap={0.5} justifyContent='center'>
+                      {isEditing ? (
+                        <>
+                          <IconButton
+                            onClick={() => {
+                              updateTask(
+                                task.taskID,
+                                {
+                                  status: editedStatus,
+                                  sourceBinCode: editedSourceBin
+                                },
+                                {
+                                  warehouseID: task.warehouseID,
+                                  status: task.status,
+                                  keyword: ''
+                                }
+                              )
+                              setEditTaskID(null)
+                              onRefresh()
+                            }}
+                            size='small'
+                            sx={{
+                              color: 'success.main',
+                              background: '#e9fbe7',
+                              borderRadius: 2,
+                              '&:hover': {
+                                background: '#e1f9db'
+                              }
+                            }}
+                          >
+                            <SaveIcon fontSize='small' />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => setEditTaskID(null)}
+                            size='small'
+                            sx={{
+                              color: 'purple',
+                              borderRadius: 2,
+                              background: '#f5f2fc',
+                              ml: 0.5,
+                              '&:hover': {
+                                background: '#ede7f6'
+                              }
+                            }}
+                          >
+                            <CancelIcon fontSize='small' />
+                          </IconButton>
+                        </>
+                      ) : (
+                        <IconButton
+                          onClick={() => {
+                            fetchBinCodes()
+                            setEditedStatus(task.status)
+                            setEditedSourceBin(
+                              task.sourceBins?.[0]?.bin?.binCode || ''
+                            )
+                            setEditTaskID(task.taskID)
+                          }}
+                          size='small'
+                          sx={{
+                            color: '#3F72AF',
+                            background: 'transparent',
+                            borderRadius: 2,
+                            '&:hover': {
+                              background: '#E8F5E9'
                             }
-                          )
-                          setEditTaskID(null)
-                          onRefresh()
-                        } else {
-                          fetchBinCodes()
-                          setEditedStatus(task.status)
-                          setEditedSourceBin(
-                            task.sourceBins?.[0]?.bin?.binCode || ''
-                          )
-                          setEditTaskID(task.taskID)
-                        }
-                      }}
-                      sx={{
-                        backgroundColor: isEditing ? '#3F72AF' : 'transparent',
-                        color: isEditing ? '#fff' : '#3F72AF',
-                        border: '1px solid #3F72AF',
-                        borderRadius: 2,
-                        fontWeight: 400,
-                        textTransform: 'uppercase',
-                        minWidth: 70,
-                        '&:hover': {
-                          backgroundColor: isEditing ? '#2d5e8c' : '#E8F5E9',
-                          borderColor: '#3F72AF'
-                        }
-                      }}
-                    >
-                      {isEditing ? 'Save' : 'Edit'}
-                    </Button>
+                          }}
+                        >
+                          <EditIcon fontSize='small' />
+                        </IconButton>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               )
