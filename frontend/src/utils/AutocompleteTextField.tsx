@@ -52,7 +52,7 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
         }
       }}
       sx={{
-        minWidth: 250,
+        minWidth: 100,
         ...sx
       }}
       renderInput={params => (

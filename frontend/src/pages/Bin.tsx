@@ -2,23 +2,17 @@ import React, { useState, useEffect } from 'react'
 import dayjs from 'dayjs'
 import {
   Box,
-  CircularProgress,
   Paper,
   Stack,
   Tab,
   Tabs,
-  Table,
-  TableBody,
   TableCell,
-  TableHead,
-  TablePagination,
   TableRow,
   Typography,
   Button,
   IconButton,
   Tooltip
 } from '@mui/material'
-import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import SaveIcon from '@mui/icons-material/CheckCircle'
@@ -30,7 +24,8 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
-import { tableRowStyle } from 'styles/tableRowStyle'
+
+import BinTable from 'components/bin/binTable'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
@@ -251,7 +246,6 @@ const Bin: React.FC = () => {
                 ? dayjs(binRows[idx].updatedAt).format('YYYY-MM-DD HH:mm')
                 : '--'}
             </TableCell>
-            {/* 最后一行合并action */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -303,7 +297,6 @@ const Bin: React.FC = () => {
             )}
           </TableRow>
         ))}
-        {/* 新增行 */}
         {newRow && (
           <TableRow sx={{ backgroundColor: '#eafce8' }}>
             <TableCell
@@ -402,179 +395,28 @@ const Bin: React.FC = () => {
           ))}
         </Tabs>
       </Stack>
-      <Paper elevation={3} sx={{ borderRadius: 3 }}>
-        <Table size='small'>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#f0f4f9', height: 24 }}>
-              <TableCell
-                align='center'
-                sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-              >
-                Type
-              </TableCell>
-              <TableCell
-                align='center'
-                sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-              >
-                Bin Code
-              </TableCell>
-              {binType === BinType.PICK_UP && (
-                <>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                  >
-                    Default Product Codes
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                  >
-                    Last Updated
-                  </TableCell>
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                  >
-                    Action
-                  </TableCell>
-                </>
-              )}
-              {binType !== BinType.PICK_UP && (
-                <TableCell
-                  align='center'
-                  sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                >
-                  Last Updated
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
-                  align='center'
-                >
-                  <CircularProgress size={32} sx={{ m: 2 }} />
-                </TableCell>
-              </TableRow>
-            ) : error ? (
-              <TableRow>
-                <TableCell
-                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
-                  align='center'
-                >
-                  <Typography color='error'>{error}</Typography>
-                </TableCell>
-              </TableRow>
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={binType === BinType.PICK_UP ? 5 : 3}
-                  align='center'
-                >
-                  <Typography color='text.secondary' sx={{ my: 2 }}>
-                    No bins found.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              (() => {
-                let render: any[] = []
-                let i = 0
-                while (i < rows.length) {
-                  const binID = rows[i].binID
-                  const binRows = rows.filter(r => r.binID === binID)
-                  const codes = binRows.map(r => r._code)
-                  const isEditing = editBinID === binID
-
-                  if (isEditing) {
-                    render.push(renderBinEditArea(binRows, binID))
-                    i += binRows.length
-                  } else {
-                    binRows.forEach((row, idx) => {
-                      render.push(
-                        <TableRow key={`${binID}-normal-${idx}`}>
-                          {idx === 0 && (
-                            <TableCell
-                              align='center'
-                              rowSpan={binRows.length}
-                              sx={{
-                                fontWeight: 700,
-                                border: '1px solid #e0e0e0',
-                                fontSize: 13
-                              }}
-                            >
-                              {row.type}
-                            </TableCell>
-                          )}
-                          {idx === 0 && (
-                            <TableCell
-                              align='center'
-                              rowSpan={binRows.length}
-                              sx={{
-                                fontWeight: 700,
-                                border: '1px solid #e0e0e0',
-                                fontSize: 13
-                              }}
-                            >
-                              {row.binCode}
-                            </TableCell>
-                          )}
-                          <TableCell
-                            align='center'
-                            sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                          >
-                            {row._code}
-                          </TableCell>
-                          <TableCell
-                            align='center'
-                            sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                          >
-                            {row.updatedAt
-                              ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
-                              : '--'}
-                          </TableCell>
-                          {idx === 0 && (
-                            <TableCell
-                              align='center'
-                              rowSpan={binRows.length}
-                              sx={{ border: '1px solid #e0e0e0', fontSize: 13 }}
-                            >
-                              <Tooltip title='Edit'>
-                                <span>
-                                  <IconButton
-                                    color='primary'
-                                    size='small'
-                                    onClick={() => handleEdit(binID, codes)}
-                                    disabled={!!editBinID}
-                                  >
-                                    <EditIcon />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )
-                    })
-                    i += binRows.length
-                  }
-                }
-                return render
-              })()
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component='div'
-          count={totalPages}
+      <Paper elevation={3} sx={{ borderRadius: 3, width: '100%' }}>
+        <BinTable
+          rows={rows}
+          binType={binType}
+          isLoading={isLoading}
+          error={error}
+          totalPages={totalPages}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={ROWS_PER_PAGE}
-          rowsPerPageOptions={[ROWS_PER_PAGE]}
+          editBinID={editBinID}
+          editProductCodes={editProductCodes}
+          newRow={newRow}
+          addProductValue={addProductValue}
+          updating={updating}
+          productCodes={productCodes}
+          handleEdit={handleEdit}
+          handleCancel={handleCancel}
+          handleSave={handleSave}
+          handleDeleteProduct={handleDeleteProduct}
+          handleAddRow={handleAddRow}
+          setEditProductCodes={setEditProductCodes}
+          setAddProductValue={setAddProductValue}
         />
       </Paper>
       <UploadBinModal
