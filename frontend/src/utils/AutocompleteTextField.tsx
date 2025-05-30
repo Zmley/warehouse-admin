@@ -10,6 +10,8 @@ interface AutocompleteTextFieldProps {
   options: string[]
   sx?: SxProps
   freeSolo?: boolean
+
+  disabled?: boolean
 }
 
 const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({

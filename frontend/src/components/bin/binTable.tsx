@@ -77,7 +77,6 @@ const BinTable: React.FC<BinTableProps> = ({
   setEditProductCodes,
   setAddProductValue
 }) => {
-  // 编辑行
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
       <>
@@ -86,7 +85,6 @@ const BinTable: React.FC<BinTableProps> = ({
             key={binID + '-edit-' + idx}
             sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
           >
-            {/* 1. Type */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -346,7 +344,6 @@ const BinTable: React.FC<BinTableProps> = ({
     )
   }
 
-  // 空行补全
   function renderEmptyRows(count: number) {
     return Array.from({ length: count }).map((_, idx) => (
       <TableRow key={'empty-row-' + idx} sx={{ height: rowHeight }}>
@@ -365,7 +362,6 @@ const BinTable: React.FC<BinTableProps> = ({
     ))
   }
 
-  // 主体内容
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (
@@ -453,6 +449,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   {row.binCode}
                 </TableCell>
               )}
+
               <TableCell
                 align='center'
                 sx={{
@@ -463,14 +460,15 @@ const BinTable: React.FC<BinTableProps> = ({
                   height: rowHeight,
                   p: 0,
                   color:
-                    binType === BinType.PICK_UP
+                    binType === 'PICK_UP'
                       ? undefined
                       : theme => theme.palette.action.disabled,
-                  fontStyle: binType === BinType.PICK_UP ? undefined : ''
+                  fontStyle: binType === 'PICK_UP' ? undefined : 'italic'
                 }}
               >
-                {binType === BinType.PICK_UP ? row._code : 'Not Applied'}
+                {binType === 'PICK_UP' ? row._code || 'None' : 'Not Applied'}
               </TableCell>
+
               <TableCell
                 align='center'
                 sx={{

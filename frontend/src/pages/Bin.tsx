@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import dayjs from 'dayjs'
-import {
-  Box,
-  Paper,
-  Stack,
-  Tab,
-  Tabs,
-  TableCell,
-  TableRow,
-  Typography,
-  Button,
-  IconButton,
-  Tooltip
-} from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
-import SaveIcon from '@mui/icons-material/CheckCircle'
-import CancelIcon from '@mui/icons-material/Cancel'
+import { Box, Paper, Stack, Tab, Tabs, Typography, Button } from '@mui/material'
+
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
@@ -24,7 +8,7 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
-
+import AddBinModal from 'components/bin/AddBinModal'
 import BinTable from 'components/bin/binTable'
 
 const ROWS_PER_PAGE = 10
@@ -36,7 +20,7 @@ function expandBins(bins: any[]) {
     const codes =
       bin.defaultProductCodes && bin.defaultProductCodes.trim() !== ''
         ? bin.defaultProductCodes.split(',').map((v: string) => v.trim())
-        : ['Not Required']
+        : ['None']
     codes.forEach((code: string, idx: number) => {
       result.push({
         ...bin,
@@ -78,6 +62,8 @@ const Bin: React.FC = () => {
   const [editProductCodes, setEditProductCodes] = useState<string[]>([])
   const [newRow, setNewRow] = useState(false)
   const [addProductValue, setAddProductValue] = useState<string>('')
+
+  const [isAddOpen, setIsAddOpen] = useState(false)
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
     setSearchParams({
@@ -180,163 +166,6 @@ const Bin: React.FC = () => {
     setAddProductValue('')
   }
 
-  function renderBinEditArea(binRows: any[], binID: string) {
-    return (
-      <>
-        {editProductCodes.map((code, idx) => (
-          <TableRow
-            key={binID + '-edit-' + idx}
-            sx={{ backgroundColor: '#e8f4fd' }}
-          >
-            {idx === 0 && (
-              <TableCell
-                align='center'
-                rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
-                sx={{ fontWeight: 700, border: '1px solid #e0e0e0' }}
-              >
-                {binRows[0].type}
-              </TableCell>
-            )}
-            {idx === 0 && (
-              <TableCell
-                align='center'
-                rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
-                sx={{ fontWeight: 700, border: '1px solid #e0e0e0' }}
-              >
-                {binRows[0].binCode}
-              </TableCell>
-            )}
-            <TableCell
-              align='center'
-              sx={{ border: '1px solid #e0e0e0', p: 0.5 }}
-            >
-              <Box display='flex' alignItems='center'>
-                <AutocompleteTextField
-                  label=''
-                  value={code}
-                  onChange={v =>
-                    setEditProductCodes(prev => {
-                      const copy = [...prev]
-                      copy[idx] = v
-                      return copy
-                    })
-                  }
-                  onSubmit={() => {}}
-                  options={productCodes}
-                  sx={{ width: 150 }}
-                  freeSolo={false}
-                />
-                <Tooltip title='Delete'>
-                  <span>
-                    <IconButton
-                      color='error'
-                      size='small'
-                      sx={{ ml: 1 }}
-                      onClick={() => handleDeleteProduct(idx)}
-                      disabled={editProductCodes.length <= 1}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </Box>
-            </TableCell>
-            <TableCell align='center' sx={{ border: '1px solid #e0e0e0' }}>
-              {binRows[idx]?.updatedAt
-                ? dayjs(binRows[idx].updatedAt).format('YYYY-MM-DD HH:mm')
-                : '--'}
-            </TableCell>
-            {idx === 0 && (
-              <TableCell
-                align='center'
-                rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
-                sx={{
-                  border: '1px solid #e0e0e0',
-                  minWidth: 200,
-                  verticalAlign: 'top'
-                }}
-              >
-                <Box display='flex' alignItems='center' gap={1} mt={1}>
-                  <Tooltip title='Save'>
-                    <span>
-                      <IconButton
-                        color='success'
-                        size='small'
-                        onClick={handleSave}
-                        disabled={updating}
-                      >
-                        <SaveIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title='Cancel'>
-                    <span>
-                      <IconButton
-                        color='secondary'
-                        size='small'
-                        onClick={handleCancel}
-                      >
-                        <CancelIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title='Add Product'>
-                    <span>
-                      <IconButton
-                        color='primary'
-                        size='small'
-                        onClick={handleAddRow}
-                        disabled={newRow}
-                      >
-                        <AddCircleOutlineIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Box>
-              </TableCell>
-            )}
-          </TableRow>
-        ))}
-        {newRow && (
-          <TableRow sx={{ backgroundColor: '#eafce8' }}>
-            <TableCell
-              align='center'
-              sx={{ border: '1px solid #e0e0e0', p: 0.5 }}
-            >
-              <Box display='flex' alignItems='center'>
-                <AutocompleteTextField
-                  label='New product code'
-                  value={addProductValue}
-                  onChange={setAddProductValue}
-                  onSubmit={() => {}}
-                  options={productCodes}
-                  sx={{ width: 150 }}
-                  freeSolo={false}
-                />
-                <Tooltip title='Delete'>
-                  <span>
-                    <IconButton
-                      color='error'
-                      size='small'
-                      sx={{ ml: 1 }}
-                      disabled
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </Box>
-            </TableCell>
-            <TableCell
-              align='center'
-              sx={{ border: '1px solid #e0e0e0' }}
-            ></TableCell>
-          </TableRow>
-        )}
-      </>
-    )
-  }
-
   return (
     <Box sx={{ pt: 0 }}>
       <Box
@@ -350,20 +179,36 @@ const Bin: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Bin Management
         </Typography>
-        <Button
-          variant='contained'
-          startIcon={<AddIcon />}
-          onClick={() => setIsUploadOpen(true)}
-          sx={{
-            fontWeight: 'bold',
-            borderRadius: '8px',
-            backgroundColor: '#3F72AF',
-            '&:hover': { backgroundColor: '#2d5e8c' },
-            textTransform: 'none'
-          }}
-        >
-          Upload Bins
-        </Button>
+        <Stack direction='row' spacing={2}>
+          <Button
+            variant='contained'
+            startIcon={<AddIcon />}
+            onClick={() => setIsAddOpen(true)}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              backgroundColor: '#2e7d32',
+              '&:hover': { backgroundColor: '#1b5e20' },
+              textTransform: 'none'
+            }}
+          >
+            Add Bin
+          </Button>
+          <Button
+            variant='contained'
+            startIcon={<AddIcon />}
+            onClick={() => setIsUploadOpen(true)}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              backgroundColor: '#3F72AF',
+              '&:hover': { backgroundColor: '#2d5e8c' },
+              textTransform: 'none'
+            }}
+          >
+            Upload Bins
+          </Button>
+        </Stack>
       </Box>
       <Stack direction='row' spacing={2} mb={2} alignItems='center'>
         <AutocompleteTextField
@@ -422,6 +267,19 @@ const Bin: React.FC = () => {
       <UploadBinModal
         open={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
+      />
+      <AddBinModal
+        open={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        onSuccess={() => {
+          fetchBins({
+            warehouseID: warehouseID!,
+            type: binType === 'ALL' ? undefined : binType,
+            keyword: keywordParam || undefined,
+            page: page + 1,
+            limit: ROWS_PER_PAGE
+          })
+        }}
       />
     </Box>
   )

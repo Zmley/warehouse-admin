@@ -16,7 +16,6 @@ import {
   Box,
   CircularProgress
 } from '@mui/material'
-
 interface UploadDialogProps<T> {
   open: boolean
   title: string
