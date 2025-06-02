@@ -44,7 +44,9 @@ const Bin: React.FC = () => {
     totalPages,
     fetchBinCodes,
     updateBin,
-    isLoading: updating
+    isLoading: updating,
+
+    deleteBin
   } = useBin()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -166,6 +168,23 @@ const Bin: React.FC = () => {
     setAddProductValue('')
   }
 
+  const handleDeleteBin = async (binID: string) => {
+    const confirm = window.confirm('Are you sure you want to delete this bin?')
+    if (!confirm) return
+
+    const res = await deleteBin(binID)
+    if (res?.success) {
+      setEditBinID(null)
+      fetchBins({
+        warehouseID: warehouseID!,
+        type: binType === 'ALL' ? undefined : binType,
+        keyword: keywordParam || undefined,
+        page: page + 1,
+        limit: ROWS_PER_PAGE
+      })
+    }
+  }
+
   return (
     <Box sx={{ pt: 0 }}>
       <Box
@@ -262,6 +281,7 @@ const Bin: React.FC = () => {
           handleAddRow={handleAddRow}
           setEditProductCodes={setEditProductCodes}
           setAddProductValue={setAddProductValue}
+          handleDeleteBin={handleDeleteBin}
         />
       </Paper>
       <UploadBinModal

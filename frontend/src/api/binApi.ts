@@ -51,3 +51,15 @@ export const updateBinDefaultProductCodes = async (
   })
   return res.data
 }
+
+export const deleteBinByBinID = async (binID: string) => {
+  try {
+    const res = await apiClient.delete(`/bins/${binID}`)
+    return res.data
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.response?.data?.error || 'Failed to delete bin'
+    }
+  }
+}

@@ -6,8 +6,17 @@ import {
   DialogActions,
   TextField,
   Button,
-  Typography
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Box
 } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { BinType } from 'constants/binTypes'
 import { useBin } from 'hooks/useBin'
@@ -18,6 +27,11 @@ interface AddBinModalProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+}
+
+interface BinRow {
+  binCode: string
+  defaultProductCode: string
 }
 
 const AddBinModal: React.FC<AddBinModalProps> = ({
@@ -31,8 +45,9 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
   const [searchParams] = useSearchParams()
   const binType = (searchParams.get('type') as BinType) || BinType.PICK_UP
 
-  const [binCode, setBinCode] = useState('')
-  const [defaultProductCode, setDefaultProductCode] = useState<string>('')
+  const [rows, setRows] = useState<BinRow[]>([
+    { binCode: '', defaultProductCode: '' }
+  ])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -42,70 +57,118 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
     }
   }, [binType, fetchProductCodes])
 
+  const handleAddRow = () => {
+    setRows([...rows, { binCode: '', defaultProductCode: '' }])
+  }
+
+  const handleDeleteRow = (index: number) => {
+    setRows(rows.filter((_, i) => i !== index))
+  }
+
+  const handleChange = (index: number, key: keyof BinRow, value: string) => {
+    const updated = [...rows]
+    updated[index][key] = value
+    setRows(updated)
+  }
+
   const handleSubmit = async () => {
-    if (!binCode.trim()) {
-      setError('Bin Code is required')
+    const invalidRow = rows.find(
+      row =>
+        !row.binCode.trim() ||
+        (binType === BinType.PICK_UP && !row.defaultProductCode.trim())
+    )
+
+    if (invalidRow) {
+      setError('❌ Please fill all required fields.')
       return
     }
 
-    if (binType === BinType.PICK_UP && !defaultProductCode) {
-      setError('Product Code is required for PICK_UP bins')
-      return
-    }
+    const payload = rows.map(row => ({
+      binCode: row.binCode.trim(),
+      type: binType,
+      defaultProductCodes:
+        binType === BinType.PICK_UP ? [row.defaultProductCode.trim()] : [],
+      warehouseID
+    }))
 
     setLoading(true)
     setError('')
 
-    const payload = [
-      {
-        binCode,
-        type: binType,
-        defaultProductCodes:
-          binType === BinType.PICK_UP ? [defaultProductCode] : [],
-        warehouseID
-      }
-    ]
-
     const res = await uploadBinList(payload)
-
     setLoading(false)
 
     if (res?.success) {
       onClose()
       onSuccess()
-      setBinCode('')
-      setDefaultProductCode('')
+      setRows([{ binCode: '', defaultProductCode: '' }])
     } else {
-      setError(res?.error || 'Failed to create bin')
+      setError(res?.error || 'Upload failed.')
     }
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
-      <DialogTitle>Add New Bin</DialogTitle>
-      <DialogContent sx={{ mt: 1 }}>
-        <TextField
-          label='Bin Code'
-          fullWidth
-          value={binCode}
-          onChange={e => setBinCode(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-
-        {binType === BinType.PICK_UP && (
-          <AutocompleteTextField
-            label='Default Product Code'
-            value={defaultProductCode}
-            onChange={setDefaultProductCode}
-            onSubmit={() => {}}
-            options={productCodes}
-            freeSolo={false}
-            sx={{ mb: 2 }}
-          />
-        )}
-
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth='md'>
+      <DialogTitle>Add New Bins</DialogTitle>
+      <DialogContent>
+        <Table size='small'>
+          <TableHead>
+            <TableRow>
+              <TableCell>Bin Code</TableCell>
+              {binType === BinType.PICK_UP && (
+                <TableCell>Default Product Code</TableCell>
+              )}
+              <TableCell align='center'>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <TextField
+                    fullWidth
+                    value={row.binCode}
+                    onChange={e =>
+                      handleChange(index, 'binCode', e.target.value)
+                    }
+                  />
+                </TableCell>
+                {binType === BinType.PICK_UP && (
+                  <TableCell>
+                    <AutocompleteTextField
+                      label=''
+                      value={row.defaultProductCode}
+                      onChange={v =>
+                        handleChange(index, 'defaultProductCode', v)
+                      }
+                      onSubmit={() => {}}
+                      options={productCodes}
+                      freeSolo={false}
+                    />
+                  </TableCell>
+                )}
+                <TableCell align='center'>
+                  <IconButton
+                    onClick={() => handleDeleteRow(index)}
+                    disabled={rows.length === 1}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Box display='flex' justifyContent='flex-end' mt={2}>
+          <Button
+            variant='outlined'
+            startIcon={<AddCircleOutlineIcon />}
+            onClick={handleAddRow}
+          >
+            Add Row
+          </Button>
+        </Box>
         {error && (
-          <Typography color='error' variant='body2'>
+          <Typography color='error' variant='body2' mt={2}>
             {error}
           </Typography>
         )}
@@ -114,8 +177,8 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
         <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button variant='contained' onClick={handleSubmit} disabled={loading}>
-          {loading ? 'Creating...' : 'Create Bin'}
+        <Button onClick={handleSubmit} variant='contained' disabled={loading}>
+          {loading ? 'Submitting...' : 'Submit Bins'}
         </Button>
       </DialogActions>
     </Dialog>

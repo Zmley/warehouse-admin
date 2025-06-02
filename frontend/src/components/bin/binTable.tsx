@@ -42,6 +42,7 @@ interface BinTableProps {
   handleAddRow: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
   setAddProductValue: React.Dispatch<React.SetStateAction<string>>
+  handleDeleteBin: (binID: string) => void
 }
 
 const ROWS_PER_PAGE = 10
@@ -75,7 +76,8 @@ const BinTable: React.FC<BinTableProps> = ({
   handleDeleteProduct,
   handleAddRow,
   setEditProductCodes,
-  setAddProductValue
+  setAddProductValue,
+  handleDeleteBin
 }) => {
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
@@ -258,6 +260,19 @@ const BinTable: React.FC<BinTableProps> = ({
                           disabled={newRow}
                         >
                           <AddCircleOutlineIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+
+                    <Tooltip title='Delete Bin'>
+                      <span>
+                        <IconButton
+                          color='error'
+                          size='small'
+                          sx={{ height: 32, width: 32, p: 0 }}
+                          onClick={() => handleDeleteBin(binID)}
+                        >
+                          <DeleteIcon />
                         </IconButton>
                       </span>
                     </Tooltip>

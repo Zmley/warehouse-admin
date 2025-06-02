@@ -5,7 +5,8 @@ import {
   getBinCodesByProductCode,
   getBins,
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
-  updateBinDefaultProductCodes
+  updateBinDefaultProductCodes,
+  deleteBinByBinID
 } from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
@@ -170,7 +171,27 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }
 
+  const deleteBin = useCallback(async (binID: string) => {
+    if (!binID) return { success: false, error: 'Bin ID is missing' }
+
+    try {
+      const res = await deleteBinByBinID(binID)
+      if (!res.success) {
+        setError(res.error || '❌ Failed to delete bin')
+        return { success: false, error: res.error }
+      }
+
+      setBins(prev => prev.filter(b => b.binID !== binID))
+
+      return { success: true }
+    } catch (err: any) {
+      setError(err?.message || '❌ Deletion error')
+      return { success: false, error: err?.message }
+    }
+  }, [])
+
   return {
+    deleteBin,
     pickupBinCode,
     setPickupBinCode,
     getPickUpBinByProductCode,
