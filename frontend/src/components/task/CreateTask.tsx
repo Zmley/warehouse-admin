@@ -26,6 +26,10 @@ const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [productCode, setProductCode] = useState('')
   const [quantity, setQuantity] = useState('1')
 
+  const [inputSource, setInputSource] = useState('')
+  const [inputDestination, setInputDestination] = useState('')
+  const [inputProduct, setInputProduct] = useState('')
+
   const { fetchBinCodes, binCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const { createTask, error } = useTask()
@@ -62,6 +66,9 @@ const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         setDestinationBinCode('')
         setProductCode('')
         setQuantity('1')
+        setInputSource('')
+        setInputDestination('')
+        setInputProduct('')
       }
     } catch (err: any) {
       alert('❌ An unexpected error occurred.')
@@ -94,29 +101,64 @@ const CreateTask: React.FC<Props> = ({ onSuccess, onClose }) => {
       </Box>
 
       <Stack spacing={3} mt={2}>
+        {/* Source Bin */}
         <Autocomplete
           options={binCodes}
           value={sourceBinCode}
-          onChange={(event, newValue) => setSourceBinCode(newValue || '')}
+          inputValue={inputSource}
+          onInputChange={(_, newInput) => setInputSource(newInput)}
+          onChange={(_, newValue) => setSourceBinCode(newValue || '')}
+          filterOptions={options =>
+            inputSource.trim() === ''
+              ? []
+              : options.filter(opt =>
+                  opt.toLowerCase().startsWith(inputSource.toLowerCase())
+                )
+          }
           renderInput={params => (
             <TextField {...params} label='Source Bin Code' fullWidth />
           )}
+          noOptionsText={inputSource.trim() === '' ? '' : 'No options'}
         />
+
+        {/* Destination Bin */}
         <Autocomplete
           options={binCodes}
           value={destinationBinCode}
-          onChange={(event, newValue) => setDestinationBinCode(newValue || '')}
+          inputValue={inputDestination}
+          onInputChange={(_, newInput) => setInputDestination(newInput)}
+          onChange={(_, newValue) => setDestinationBinCode(newValue || '')}
+          filterOptions={options =>
+            inputDestination.trim() === ''
+              ? []
+              : options.filter(opt =>
+                  opt.toLowerCase().startsWith(inputDestination.toLowerCase())
+                )
+          }
           renderInput={params => (
             <TextField {...params} label='Destination Bin Code' fullWidth />
           )}
+          noOptionsText={inputDestination.trim() === '' ? '' : 'No options'}
         />
+
+        {/* Product Code */}
         <Autocomplete
           options={extendedProductCodes}
           value={productCode}
-          onChange={(event, newValue) => setProductCode(newValue || '')}
+          inputValue={inputProduct}
+          onInputChange={(_, newInput) => setInputProduct(newInput)}
+          onChange={(_, newValue) => setProductCode(newValue || '')}
+          filterOptions={options =>
+            inputProduct.trim() === ''
+              ? []
+              : options.filter(opt =>
+                  opt.toLowerCase().startsWith(inputProduct.toLowerCase())
+                )
+          }
           renderInput={params => (
             <TextField {...params} label='Product Code' fullWidth />
           )}
+          noOptionsText={inputProduct.trim() === '' ? '' : 'No options'}
         />
 
         {productCode !== 'ALL' && (

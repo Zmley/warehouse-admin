@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import ProductTable from 'components/product/ProductTable'
+import { useParams } from 'react-router-dom'
 
 const ROWS_PER_PAGE = 10
 
@@ -15,6 +16,8 @@ const Product: React.FC = () => {
 
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
+
+  const { warehouseID } = useParams<{ warehouseID: string }>()
 
   const {
     products,
@@ -45,7 +48,7 @@ const Product: React.FC = () => {
     })
     fetchProductCodes()
     // eslint-disable-next-line
-  }, [keywordParam, page])
+  }, [keywordParam, page, warehouseID])
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)

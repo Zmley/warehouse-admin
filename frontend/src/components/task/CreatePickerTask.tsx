@@ -24,6 +24,7 @@ interface Props {
 
 const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
   const [productCode, setProductCode] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const [quantity, setQuantity] = useState<number>(1)
   const [loadingSourceBins, setLoadingSourceBins] = useState(false)
   const [selectedSourceBins, setSelectedSourceBins] = useState<string[]>([])
@@ -66,7 +67,6 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
 
         if (!pickupRes.success || !pickupRes.data?.length) {
           console.error(pickupRes.error || '❌ No pickup bin found')
-        } else {
         }
       } catch (err) {
         console.error('❌ Failed to fetch bins:', err)
@@ -88,6 +88,7 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
 
   const resetForm = () => {
     setProductCode('')
+    setInputValue('')
     setQuantity(1)
     setSelectedSourceBins([])
     setSourceBinCodes([])
@@ -167,9 +168,21 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
 
       <Autocomplete
         freeSolo
-        options={[...productCodes]}
         value={productCode}
-        onChange={(_, val) => setProductCode(val || '')}
+        inputValue={inputValue}
+        onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+        onChange={(_, val) => {
+          setProductCode(val || '')
+          setInputValue(val || '')
+        }}
+        options={
+          inputValue.length === 0
+            ? []
+            : productCodes.filter(code =>
+                code.toLowerCase().startsWith(inputValue.toLowerCase())
+              )
+        }
+        noOptionsText=''
         renderInput={params => (
           <TextField
             {...params}

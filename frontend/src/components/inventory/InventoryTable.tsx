@@ -174,7 +174,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
       </Table>
       <TablePagination
         component='div'
-        count={totalPages * 10}
+        count={totalPages}
         page={page}
         onPageChange={onPageChange}
         rowsPerPage={10}

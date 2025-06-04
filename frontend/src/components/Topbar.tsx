@@ -1,25 +1,39 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import {
   Box,
   Typography,
   IconButton,
   Popover,
   Avatar,
-  Chip,
   Tooltip,
-  Divider
+  Divider,
+  Menu,
+  MenuItem
 } from '@mui/material'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { ArrowBack } from '@mui/icons-material'
 import { deepPurple } from '@mui/material/colors'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from 'contexts/auth'
+import useWarehouses from 'hooks/useWarehouse'
 import Profile from './Profile'
 
 const Topbar: React.FC = () => {
   const { userProfile } = useContext(AuthContext)!
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
   const navigate = useNavigate()
-  const { warehouseCode } = useParams()
+  const { warehouseID, warehouseCode } = useParams()
+
+  const { warehouses, fetchWarehouses } = useWarehouses()
+
+  useEffect(() => {
+    fetchWarehouses()
+  }, [])
+
+  const handleBack = () => {
+    navigate('/')
+  }
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -29,8 +43,13 @@ const Topbar: React.FC = () => {
     setAnchorEl(null)
   }
 
-  const handleBack = () => {
-    navigate('/')
+  const handleWarehouseMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget)
+  }
+
+  const handleWarehouseSelect = (id: string, code: string) => {
+    setMenuAnchor(null)
+    navigate(`/${id}/${code}/task`)
   }
 
   return (
@@ -58,24 +77,58 @@ const Topbar: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Center: optional content */}
+      {/* Center: optional */}
       <Box />
 
-      {/* Right: Warehouse & Avatar */}
+      {/* Right: Warehouse selector & Avatar */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {warehouseCode ? (
-          <Chip
-            label={`Warehouse: ${warehouseCode}`}
-            color='primary'
-            sx={{
-              fontWeight: 500,
-              backgroundColor: '#dce8ff',
-              color: '#2a3e5c',
-              px: 2,
-              height: 32,
-              fontSize: 14
-            }}
-          />
+          <>
+            <Tooltip title='Click to switch warehouse'>
+              <Box
+                onClick={handleWarehouseMenuOpen}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  border: '1px solid #b0c4de',
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.5,
+                  cursor: 'pointer',
+                  backgroundColor: '#e3edfd',
+                  '&:hover': {
+                    backgroundColor: '#d1e2fc'
+                  }
+                }}
+              >
+                <Typography
+                  variant='body2'
+                  sx={{ fontWeight: 500, color: '#2a3e5c', mr: 1 }}
+                >
+                  Warehouse: {warehouseCode}
+                </Typography>
+                <ArrowDropDownIcon sx={{ fontSize: 20, opacity: 0.6 }} />
+              </Box>
+            </Tooltip>
+
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={() => setMenuAnchor(null)}
+            >
+              {warehouses.map(w => (
+                <MenuItem
+                  key={w.warehouseID}
+                  onClick={() =>
+                    handleWarehouseSelect(w.warehouseID, w.warehouseCode)
+                  }
+                  selected={w.warehouseCode === warehouseCode}
+                >
+                  {w.warehouseCode}
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
         ) : (
           <Typography variant='body2' sx={{ color: '#999' }}>
             No Warehouse Selected

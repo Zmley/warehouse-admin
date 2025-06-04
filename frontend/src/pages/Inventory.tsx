@@ -28,7 +28,6 @@ const Inventory: React.FC = () => {
   const [isCreateInventoryModalOpen, setCreateInventoryModalOpen] =
     useState(false)
   const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
-
   const { binCodes, fetchBinCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const combinedOptions = [...binCodes, ...productCodes]
@@ -47,7 +46,7 @@ const Inventory: React.FC = () => {
     fetchBinCodes()
     fetchProductCodes()
     // eslint-disable-next-line
-  }, [])
+  }, [warehouseID])
 
   useEffect(() => {
     fetchInventories(undefined, page + 1, ROWS_PER_PAGE, keyword || undefined)

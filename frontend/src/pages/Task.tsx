@@ -64,7 +64,7 @@ const Task: React.FC = () => {
       fetchBinCodes()
       fetchProductCodes()
     }
-  }, [status, keyword])
+  }, [status, keyword, warehouseID])
 
   const handleRefresh = () => {
     if (warehouseID) {

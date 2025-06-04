@@ -74,9 +74,8 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
       if (res.success) {
         setInventories([])
         setSuccessMessage(
-          `✅ Uploaded ${res.result.insertedCount} inventory item(s). Skipped ${res.result.skippedCount} items.`
+          `✅ Inserted ${res.insertedCount}, Updated ${res.updatedCount} inventory item(s).`
         )
-        setSkippedItems(res.result.skipped || [])
       } else {
         setError(res.message || 'Upload failed.')
       }
@@ -157,8 +156,12 @@ export const UploadProductModal: React.FC<Props> = ({ open, onClose }) => {
     try {
       const res = await uploadProductList(products)
       if (res.success) {
+        const inserted = res.result.insertedCount || 0
+        const updated = res.result.updatedCount || 0
+        const skipped = res.result.skippedCount || 0
+
         setSuccessMessage(
-          `✅ Uploaded ${res.result.insertedCount} product(s). Skipped ${res.result.skippedCount}.`
+          `✅ Inserted: ${inserted}, Updated: ${updated}, Skipped: ${skipped}`
         )
         setSkippedCodes(res.result.duplicatedProductCodes || [])
         setProducts([])
@@ -241,8 +244,12 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
     try {
       const res = await uploadBinList(bins)
       if (res.success) {
+        const inserted = res.insertedCount || 0
+        const updated = res.updatedCount || 0
+        const skipped = res.skippedCount || 0
+
         setSuccessMessage(
-          `✅ Uploaded ${res.insertedCount} bin(s). Skipped ${res.skippedCount} duplicates.`
+          `✅ Inserted: ${inserted}, Updated: ${updated}, Skipped: ${skipped}`
         )
         setSkippedCodes(res.duplicatedBinCodes || [])
         setBins([])
