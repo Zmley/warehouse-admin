@@ -14,7 +14,7 @@ import { InventoryItem } from 'types/InventoryItem'
 const ROWS_PER_PAGE = 10
 
 const Inventory: React.FC = () => {
-  const { warehouseID, warehouseCode } = useParams<{
+  const { warehouseID } = useParams<{
     warehouseID: string
     warehouseCode: string
   }>()

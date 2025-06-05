@@ -24,7 +24,7 @@ import { printTask } from 'utils/printTask'
 const ROWS_PER_PAGE = 10
 
 const Task: React.FC = () => {
-  const { tasks, isLoading, error, cancelTask, fetchTasks } = useTask()
+  const { tasks, isLoading, cancelTask, fetchTasks } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 

@@ -23,7 +23,7 @@ const Topbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
   const navigate = useNavigate()
-  const { warehouseID, warehouseCode } = useParams()
+  const { warehouseCode } = useParams()
 
   const { warehouses, fetchWarehouses } = useWarehouses()
 
