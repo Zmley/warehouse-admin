@@ -93,12 +93,12 @@ export const useTask = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const result = await createPickerTask(
+      const result = await createPickerTask({
         productCode,
         quantity,
         warehouseID,
         destinationBinCode
-      )
+      })
 
       if (!result.success) {
         throw new Error(result.error || '❌ Pick task creation failed')

@@ -33,12 +33,7 @@ export const parseInventoryRows = (
     if (binRaw) lastBinCode = binRaw
 
     if (!binCode || !productRaw || !quantityRaw) return
-    if (
-      hasChinese(binCode) ||
-      hasChinese(productRaw) ||
-      hasChinese(quantityRaw)
-    )
-      return
+    if (hasChinese(quantityRaw)) return
 
     const quantity = parseInt(quantityRaw)
     if (!isNaN(quantity)) {
@@ -115,7 +110,7 @@ export const parseBinUploadRows = (
         const binRaw = row[0]
         const binCode =
           typeof binRaw === 'string' ? binRaw.trim() : binRaw?.toString().trim()
-        return binCode && !hasChinese(binCode) ? { binCode, type } : null
+        return binCode ? { binCode, type } : null
       })
       .filter(Boolean) as BinUploadType[]
 
