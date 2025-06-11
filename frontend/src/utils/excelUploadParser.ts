@@ -73,20 +73,14 @@ export const parseProductRows = (
     .filter(row => {
       const productCode = row[productCodeIndex]?.toString().trim()
       const barCode = row[barCodeIndex]?.toString().trim()
-      const boxType = row[boxTypeIndex]?.toString().trim()
       return (
-        productCode &&
-        barCode &&
-        boxType &&
-        productCode !== '#N/A' &&
-        barCode !== '#N/A' &&
-        boxType !== '#N/A'
+        productCode && barCode && productCode !== '#N/A' && barCode !== '#N/A'
       )
     })
     .map(row => ({
       productCode: row[productCodeIndex]!.toString().trim(),
       barCode: row[barCodeIndex]!.toString().trim(),
-      boxType: row[boxTypeIndex]!.toString().trim()
+      boxType: row[boxTypeIndex]?.toString().trim() || '' // fallback
     }))
 
   return { products: parsed }
