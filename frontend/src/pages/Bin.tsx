@@ -235,10 +235,14 @@ const Bin: React.FC = () => {
         <AutocompleteTextField
           label='Search binCode'
           value={searchKeyword}
-          onChange={setSearchKeyword}
-          onSubmit={handleKeywordSubmit}
+          onChange={value => {
+            setSearchKeyword(value)
+            updateQueryParams(binType, value, 0)
+          }}
+          onSubmit={() => {}}
           options={combinedOptions}
           sx={{ width: 250 }}
+          freeSolo={false}
         />
         <Tabs
           value={binType}

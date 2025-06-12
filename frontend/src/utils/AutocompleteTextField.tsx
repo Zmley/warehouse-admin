@@ -6,7 +6,7 @@ interface AutocompleteTextFieldProps {
   label: string
   value: string
   onChange: (newValue: string) => void
-  onSubmit: () => void
+  onSubmit?: () => void
   options: string[]
   sx?: SxProps
   freeSolo?: boolean
@@ -49,7 +49,7 @@ const AutocompleteTextField: React.FC<AutocompleteTextFieldProps> = ({
       onKeyDown={e => {
         if (e.key === 'Enter') {
           setOpen(false)
-          onSubmit()
+          onSubmit?.()
           if (inputRef.current) inputRef.current.blur()
         }
       }}
