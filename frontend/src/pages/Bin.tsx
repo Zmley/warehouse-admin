@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { Box, Paper, Stack, Tab, Tabs, Typography, Button } from '@mui/material'
-
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
@@ -78,10 +77,6 @@ const Bin: React.FC = () => {
 
   const handleChangePage = (_: unknown, newPage: number) => {
     updateQueryParams(binType, searchKeyword, newPage)
-  }
-
-  const handleKeywordSubmit = () => {
-    updateQueryParams(binType, searchKeyword, 0)
   }
 
   useEffect(() => {
