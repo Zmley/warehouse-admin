@@ -628,7 +628,7 @@ const BinTable: React.FC<BinTableProps> = ({
                           size='small'
                           sx={{ height: 32, width: 32, p: 0 }}
                           onClick={() => handleEdit(binID, codes)}
-                          disabled={!!editBinID}
+                          //   disabled={!!editBinID}
                         >
                           <EditIcon />
                         </IconButton>
