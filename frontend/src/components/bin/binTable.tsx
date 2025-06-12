@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
 import {
   Table,
@@ -12,8 +12,11 @@ import {
   Tooltip,
   Box,
   Typography,
-  Button,
-  Stack
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -22,7 +25,6 @@ import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { BinType } from 'constants/binTypes'
-import { useState } from 'react'
 
 export interface FetchParams {
   warehouseID: string
@@ -102,8 +104,70 @@ const BinTable: React.FC<BinTableProps> = ({
   navigate,
   binCodes
 }) => {
-  const [transferIdx, setTransferIdx] = useState<number | null>(null)
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [transferTargetCode, setTransferTargetCode] = useState('')
+  const [transferCodeIdx, setTransferCodeIdx] = useState<number | null>(null)
+
+  const handleTransferConfirm = async () => {
+    if (transferCodeIdx === null) return
+
+    const code = editProductCodes[transferCodeIdx]
+    const targetBinCode = transferTargetCode.trim()
+    if (!code || !targetBinCode) {
+      alert('Please provide a valid product code and target bin.')
+      return
+    }
+
+    const warehouseID = rows.find(r => r.binID === editBinID)?.warehouseID
+    if (!warehouseID) {
+      alert('Warehouse ID not found.')
+      return
+    }
+
+    const result = await fetchBins({
+      warehouseID,
+      keyword: targetBinCode,
+      type: binType === 'ALL' ? undefined : binType,
+      page: 1,
+      limit: 1
+    })
+
+    const targetBin = result?.[0]
+    if (!targetBin) {
+      alert('❌ Target bin not found')
+      return
+    }
+
+    const existingCodes = targetBin.defaultProductCodes
+      ? targetBin.defaultProductCodes
+          .split(',')
+          .map((c: string) => c.trim())
+          .filter(Boolean)
+      : []
+
+    if (existingCodes.includes(code)) {
+      alert('⚠️ Code already exists in target bin')
+      return
+    }
+
+    const success = await updateBin(
+      targetBin.binID,
+      [...existingCodes, code].join(',')
+    )
+    if (!success) return
+
+    const newCodes = [...editProductCodes]
+    newCodes.splice(transferCodeIdx, 1)
+    const sourceSuccess = await updateBin(editBinID!, newCodes.join(','))
+    if (!sourceSuccess) return
+
+    setEditProductCodes(newCodes)
+    setIsTransferModalOpen(false)
+
+    navigate(
+      `/${warehouseID}/${warehouseCode}/bin?type=${binType}&keyword=${targetBinCode}&page=1`
+    )
+  }
 
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
@@ -202,63 +266,10 @@ const BinTable: React.FC<BinTableProps> = ({
                       size='small'
                       color='info'
                       sx={{ ml: 1, height: 32, width: 32, p: 0 }}
-                      onClick={async () => {
-                        const targetBinCode = prompt(
-                          'Enter target bin code to transfer:'
-                        )
-                        if (!targetBinCode || !code.trim()) return
-
-                        const warehouseID = binRows[0]?.warehouseID
-                        if (!warehouseID) {
-                          alert('Warehouse ID not found.')
-                          return
-                        }
-
-                        const result = await fetchBins({
-                          warehouseID,
-                          keyword: targetBinCode.trim(),
-                          type: binType === 'ALL' ? undefined : binType,
-                          page: 1,
-                          limit: 1
-                        })
-
-                        const targetBin = result?.[0]
-                        if (!targetBin) {
-                          alert('❌ Target bin not found')
-                          return
-                        }
-
-                        const existingCodes = targetBin.defaultProductCodes
-                          ? targetBin.defaultProductCodes
-                              .split(',')
-                              .map((c: string) => c.trim())
-                              .filter(Boolean)
-                          : []
-
-                        if (existingCodes.includes(code)) {
-                          alert('⚠️ Code already exists in target bin')
-                          return
-                        }
-
-                        const success = await updateBin(
-                          targetBin.binID,
-                          [...existingCodes, code].join(',')
-                        )
-                        if (!success) return
-
-                        const newCodes = [...editProductCodes]
-                        newCodes.splice(idx, 1)
-                        const sourceSuccess = await updateBin(
-                          binID,
-                          newCodes.join(',')
-                        )
-                        if (!sourceSuccess) return
-
-                        setEditProductCodes(newCodes)
-
-                        navigate(
-                          `/${warehouseID}/${warehouseCode}/bin?type=${binType}&keyword=${targetBinCode.trim()}&page=1`
-                        )
+                      onClick={() => {
+                        setTransferCodeIdx(idx) // 记录要 transfer 的 productCode 是哪一个
+                        setTransferTargetCode('') // 清空上次输入
+                        setIsTransferModalOpen(true) // ✅ 打开 modal
                       }}
                     >
                       🔁
@@ -752,6 +763,32 @@ const BinTable: React.FC<BinTableProps> = ({
           backIconButtonProps={{ sx: { mx: 1 } }}
           nextIconButtonProps={{ sx: { mx: 1 } }}
         />
+
+        <Dialog
+          open={isTransferModalOpen}
+          onClose={() => setIsTransferModalOpen(false)}
+        >
+          <DialogTitle>Transfer to another bin</DialogTitle>
+          <DialogContent>
+            <AutocompleteTextField
+              label='Target Bin Code'
+              value={transferTargetCode}
+              onChange={setTransferTargetCode}
+              onSubmit={() => {}}
+              options={binCodes}
+              sx={{ mt: 1, width: 300 }}
+              freeSolo={false}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsTransferModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant='contained' onClick={handleTransferConfirm}>
+              Confirm Transfer
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   )
