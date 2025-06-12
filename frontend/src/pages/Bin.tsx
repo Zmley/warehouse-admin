@@ -9,6 +9,7 @@ import { BinType } from 'constants/binTypes'
 import { useProduct } from 'hooks/useProduct'
 import AddBinModal from 'components/bin/AddBinModal'
 import BinTable from 'components/bin/binTable'
+import { useNavigate } from 'react-router-dom'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
@@ -47,7 +48,10 @@ const Bin: React.FC = () => {
 
     deleteBin
   } = useBin()
-  const { warehouseID } = useParams<{ warehouseID: string }>()
+  const { warehouseID, warehouseCode } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const typeParam = searchParams.get('type') || BinType.PICK_UP
   const keywordParam = searchParams.get('keyword') || ''
@@ -65,6 +69,8 @@ const Bin: React.FC = () => {
   const [addProductValue, setAddProductValue] = useState<string>('')
 
   const [isAddOpen, setIsAddOpen] = useState(false)
+
+  const navigate = useNavigate()
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
     setSearchParams({
@@ -283,6 +289,12 @@ const Bin: React.FC = () => {
           setEditProductCodes={setEditProductCodes}
           setAddProductValue={setAddProductValue}
           handleDeleteBin={handleDeleteBin}
+          updateBin={updateBin}
+          bins={bins}
+          fetchBins={fetchBins}
+          warehouseCode={warehouseCode!}
+          navigate={navigate}
+          binCodes={binCodes}
         />
       </Paper>
       <UploadBinModal

@@ -11,7 +11,9 @@ import {
   IconButton,
   Tooltip,
   Box,
-  Typography
+  Typography,
+  Button,
+  Stack
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -20,6 +22,15 @@ import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { BinType } from 'constants/binTypes'
+import { useState } from 'react'
+
+export interface FetchParams {
+  warehouseID: string
+  type?: string
+  keyword?: string
+  page?: number
+  limit?: number
+}
 
 interface BinTableProps {
   rows: any[]
@@ -43,6 +54,13 @@ interface BinTableProps {
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
   setAddProductValue: React.Dispatch<React.SetStateAction<string>>
   handleDeleteBin: (binID: string) => void
+  updateBin: (binID: string, newCodes: string) => Promise<any>
+  bins: any[]
+  fetchBins: (params: FetchParams) => Promise<any>
+  warehouseCode: string
+  navigate: (path: string) => void
+
+  binCodes: string[]
 }
 
 const ROWS_PER_PAGE = 10
@@ -77,8 +95,16 @@ const BinTable: React.FC<BinTableProps> = ({
   handleAddRow,
   setEditProductCodes,
   setAddProductValue,
-  handleDeleteBin
+  handleDeleteBin,
+  updateBin,
+  fetchBins,
+  warehouseCode,
+  navigate,
+  binCodes
 }) => {
+  const [transferIdx, setTransferIdx] = useState<number | null>(null)
+  const [transferTargetCode, setTransferTargetCode] = useState('')
+
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
       <>
@@ -169,6 +195,77 @@ const BinTable: React.FC<BinTableProps> = ({
                   }}
                   freeSolo={false}
                 />
+
+                <Tooltip title='Transfer'>
+                  <span>
+                    <IconButton
+                      size='small'
+                      color='info'
+                      sx={{ ml: 1, height: 32, width: 32, p: 0 }}
+                      onClick={async () => {
+                        const targetBinCode = prompt(
+                          'Enter target bin code to transfer:'
+                        )
+                        if (!targetBinCode || !code.trim()) return
+
+                        const warehouseID = binRows[0]?.warehouseID
+                        if (!warehouseID) {
+                          alert('Warehouse ID not found.')
+                          return
+                        }
+
+                        const result = await fetchBins({
+                          warehouseID,
+                          keyword: targetBinCode.trim(),
+                          type: binType === 'ALL' ? undefined : binType,
+                          page: 1,
+                          limit: 1
+                        })
+
+                        const targetBin = result?.[0]
+                        if (!targetBin) {
+                          alert('❌ Target bin not found')
+                          return
+                        }
+
+                        const existingCodes = targetBin.defaultProductCodes
+                          ? targetBin.defaultProductCodes
+                              .split(',')
+                              .map((c: string) => c.trim())
+                              .filter(Boolean)
+                          : []
+
+                        if (existingCodes.includes(code)) {
+                          alert('⚠️ Code already exists in target bin')
+                          return
+                        }
+
+                        const success = await updateBin(
+                          targetBin.binID,
+                          [...existingCodes, code].join(',')
+                        )
+                        if (!success) return
+
+                        const newCodes = [...editProductCodes]
+                        newCodes.splice(idx, 1)
+                        const sourceSuccess = await updateBin(
+                          binID,
+                          newCodes.join(',')
+                        )
+                        if (!sourceSuccess) return
+
+                        setEditProductCodes(newCodes)
+
+                        navigate(
+                          `/${warehouseID}/${warehouseCode}/bin?type=${binType}&keyword=${targetBinCode.trim()}&page=1`
+                        )
+                      }}
+                    >
+                      🔁
+                    </IconButton>
+                  </span>
+                </Tooltip>
+
                 <Tooltip title='Delete'>
                   <span>
                     <IconButton
@@ -328,6 +425,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   }}
                   freeSolo={false}
                 />
+
                 <Tooltip title='Delete'>
                   <span>
                     <IconButton

@@ -84,6 +84,7 @@ export const useBin = (autoLoad: boolean = false) => {
         })
         setBins(res.data)
         setTotalPages(res.total)
+        return res.data
       } catch (err) {
         console.error('❌ Error fetching bins:', err)
         setError('Failed to fetch bins')
