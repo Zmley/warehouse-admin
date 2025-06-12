@@ -54,7 +54,7 @@ const COL_WIDTH = {
   updated: 150,
   action: 110
 }
-const rowHeight = 44 // px
+const rowHeight = 34 // px
 
 const BinTable: React.FC<BinTableProps> = ({
   rows,
@@ -342,7 +342,6 @@ const BinTable: React.FC<BinTableProps> = ({
                 </Tooltip>
               </Box>
             </TableCell>
-            {/* Last Updated 列: 空cell */}
             <TableCell
               align='center'
               sx={{
@@ -481,7 +480,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   fontStyle: binType === 'PICK_UP' ? undefined : 'italic'
                 }}
               >
-                {binType === 'PICK_UP' ? row._code || 'None' : 'Not Applied'}
+                {binType === 'PICK_UP' ? row._code || '' : 'Not Applied'}{' '}
               </TableCell>
 
               <TableCell

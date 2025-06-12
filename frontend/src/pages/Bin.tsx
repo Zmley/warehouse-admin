@@ -20,7 +20,7 @@ function expandBins(bins: any[]) {
     const codes =
       bin.defaultProductCodes && bin.defaultProductCodes.trim() !== ''
         ? bin.defaultProductCodes.split(',').map((v: string) => v.trim())
-        : ['None']
+        : ['']
     codes.forEach((code: string, idx: number) => {
       result.push({
         ...bin,
@@ -125,6 +125,7 @@ const Bin: React.FC = () => {
     if (!editBinID) return
 
     let codes = [...editProductCodes]
+
     if (
       newRow &&
       addProductValue &&
@@ -137,18 +138,19 @@ const Bin: React.FC = () => {
     const uniqueCodes = Array.from(
       new Set(codes.map(x => x.trim()).filter(x => x))
     )
-    if (
-      uniqueCodes.length === 0 ||
-      uniqueCodes.some(code => !productCodes.includes(code))
-    ) {
-      return
-    }
+
+    const hasInvalidCode = uniqueCodes.some(
+      code => !productCodes.includes(code)
+    )
+    if (hasInvalidCode) return
 
     await updateBin(editBinID, uniqueCodes.join(','))
+
     setEditBinID(null)
     setEditProductCodes([])
     setAddProductValue('')
     setNewRow(false)
+
     fetchBins({
       warehouseID: warehouseID!,
       type: binType === 'ALL' ? undefined : binType,
