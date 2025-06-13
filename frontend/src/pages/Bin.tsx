@@ -209,26 +209,31 @@ const Bin: React.FC = () => {
             sx={{
               fontWeight: 'bold',
               borderRadius: '8px',
-              backgroundColor: '#2e7d32',
-              '&:hover': { backgroundColor: '#1b5e20' },
-              textTransform: 'none'
-            }}
-          >
-            Add Bin
-          </Button>
-          <Button
-            variant='contained'
-            startIcon={<AddIcon />}
-            onClick={() => setIsUploadOpen(true)}
-            sx={{
-              fontWeight: 'bold',
-              borderRadius: '8px',
               backgroundColor: '#3F72AF',
               '&:hover': { backgroundColor: '#2d5e8c' },
               textTransform: 'none'
             }}
           >
-            Upload Excel
+            CREATE BIN
+          </Button>
+
+          <Button
+            variant='outlined'
+            startIcon={<AddIcon />}
+            onClick={() => setIsUploadOpen(true)}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              borderColor: '#3F72AF',
+              color: '#3F72AF',
+              '&:hover': {
+                borderColor: '#2d5e8c',
+                backgroundColor: '#e3f2fd'
+              },
+              textTransform: 'none'
+            }}
+          >
+            UPLOAD EXCEL
           </Button>
         </Stack>
       </Box>

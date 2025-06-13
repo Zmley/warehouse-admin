@@ -20,6 +20,7 @@ import TaskTable from 'components/task/TaskTable'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import IconButton from '@mui/material/IconButton'
 import { printTask } from 'utils/printTask'
+import AddIcon from '@mui/icons-material/Add'
 
 const ROWS_PER_PAGE = 10
 
@@ -90,6 +91,7 @@ const Task: React.FC = () => {
           <Button
             variant='contained'
             onClick={handleOpen}
+            startIcon={<AddIcon />}
             sx={{
               borderRadius: '8px',
               backgroundColor: '#3F72AF',
@@ -102,6 +104,7 @@ const Task: React.FC = () => {
           <Button
             variant='outlined'
             onClick={() => setPickerDialogOpen(true)}
+            startIcon={<AddIcon />}
             sx={{
               borderRadius: '8px',
               fontWeight: 'bold',

@@ -23,6 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
+import MoveDownIcon from '@mui/icons-material/MoveDown'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { BinType } from 'constants/binTypes'
 
@@ -267,12 +268,12 @@ const BinTable: React.FC<BinTableProps> = ({
                       color='info'
                       sx={{ ml: 1, height: 32, width: 32, p: 0 }}
                       onClick={() => {
-                        setTransferCodeIdx(idx) // 记录要 transfer 的 productCode 是哪一个
-                        setTransferTargetCode('') // 清空上次输入
-                        setIsTransferModalOpen(true) // ✅ 打开 modal
+                        setTransferCodeIdx(idx)
+                        setTransferTargetCode('')
+                        setIsTransferModalOpen(true)
                       }}
                     >
-                      🔁
+                      <MoveDownIcon fontSize='small' />
                     </IconButton>
                   </span>
                 </Tooltip>

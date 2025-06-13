@@ -10,6 +10,7 @@ import QuantityEdit from 'components/inventory/QuantityEdit'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import { InventoryItem } from 'types/InventoryItem'
+import AddIcon from '@mui/icons-material/Add'
 
 const ROWS_PER_PAGE = 10
 
@@ -106,36 +107,48 @@ const Inventory: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Inventory Management
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant='contained'
-            onClick={() => setUploadInventoryOpen(true)}
-            sx={{
-              borderRadius: '8px',
-              backgroundColor: '#3F72AF',
-              '&:hover': { backgroundColor: '#2d5e8c' },
-              fontWeight: 'bold',
-              textTransform: 'none'
-            }}
-          >
-            ⬆ Import
-          </Button>
-          <Button
-            variant='outlined'
-            onClick={handleCreateInventoryOpen}
-            sx={{
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              borderColor: '#3F72AF',
-              color: '#3F72AF',
-              '&:hover': {
-                borderColor: '#2d5e8c',
-                backgroundColor: '#e3f2fd'
-              }
-            }}
-          >
-            Create Inventory
-          </Button>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant='contained'
+              onClick={handleCreateInventoryOpen}
+              startIcon={<AddIcon />}
+              sx={{
+                borderRadius: '8px',
+                backgroundColor: '#3F72AF',
+                '&:hover': { backgroundColor: '#2d5e8c' },
+                fontWeight: 'bold',
+                textTransform: 'none'
+              }}
+            >
+              CREATE INVENTORY
+            </Button>
+
+            <Button
+              variant='outlined'
+              onClick={() => setUploadInventoryOpen(true)}
+              startIcon={<AddIcon />}
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                borderColor: '#3F72AF',
+                color: '#3F72AF',
+                '&:hover': {
+                  borderColor: '#2d5e8c',
+                  backgroundColor: '#e3f2fd'
+                }
+              }}
+            >
+              UPLOAD EXCEL
+            </Button>
+          </Box>
         </Box>
       </Box>
 
