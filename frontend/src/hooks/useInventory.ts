@@ -97,12 +97,23 @@ export const useInventory = () => {
     try {
       const result = await addInventories([newItem])
 
-      if (result.success && result.result?.insertedCount > 0) {
-        return { success: true }
+      console.log('test: ' + result.insertedCount)
+
+      const inserted = result.insertedCount || 0
+      const updated = result.updatedCount || 0
+
+      if (result.success && (inserted > 0 || updated > 0)) {
+        return {
+          success: true,
+          message:
+            inserted > 0
+              ? '✅ Inventory added successfully.'
+              : '✅ Existing inventory updated successfully.'
+        }
       } else {
-        const message =
-          '⚠️ Product already exists in the bin. Please update or delete it manually.'
-        return { success: false, message }
+        return {
+          success: false
+        }
       }
     } catch (err: any) {
       const message =

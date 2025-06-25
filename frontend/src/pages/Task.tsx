@@ -67,6 +67,16 @@ const Task: React.FC = () => {
     }
   }, [status, keyword, warehouseID])
 
+  useEffect(() => {
+    if (!warehouseID) return
+
+    const interval = setInterval(() => {
+      fetchTasks({ warehouseID, status, keyword })
+    }, 300_000)
+
+    return () => clearInterval(interval)
+  }, [warehouseID, status, keyword])
+
   const handleRefresh = () => {
     if (warehouseID) {
       fetchTasks({ warehouseID, status, keyword })

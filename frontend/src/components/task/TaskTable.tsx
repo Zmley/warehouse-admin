@@ -12,7 +12,8 @@ import {
   Select,
   MenuItem,
   Box,
-  Typography
+  Typography,
+  Tooltip
 } from '@mui/material'
 import dayjs from 'dayjs'
 import PrintIcon from '@mui/icons-material/Print'
@@ -24,6 +25,7 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useTask } from 'hooks/useTask'
 import { useNavigate, useParams } from 'react-router-dom'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 
 interface TaskTableProps {
   tasks: any[]
@@ -42,7 +44,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
   page,
   rowsPerPage,
   onPageChange,
-  onCancel,
   onPrint,
   onRefresh
 }) => {
@@ -126,12 +127,28 @@ const TaskTable: React.FC<TaskTableProps> = ({
             paginatedTasks.map(task => {
               const isEditing = editTaskID === task.taskID
 
+              //
+              const isOutOfStock =
+                !task.sourceBins || task.sourceBins.length === 0
+
               return (
+                // <TableRow
+                //   key={task.taskID}
+                //   sx={{
+                //     ...tableRowStyle,
+                //     backgroundColor: isEditing ? '#e8f4fd' : undefined
+                //   }}
+                // >
+
                 <TableRow
                   key={task.taskID}
                   sx={{
                     ...tableRowStyle,
-                    backgroundColor: isEditing ? '#e8f4fd' : undefined
+                    backgroundColor: isOutOfStock
+                      ? '#fff3e0'
+                      : isEditing
+                      ? '#e8f4fd'
+                      : undefined
                   }}
                 >
                   <TableCell
@@ -152,7 +169,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   <TableCell align='center' sx={cellStyle}>
                     {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                   </TableCell>
-                  <TableCell align='center' sx={cellStyle}>
+                  {/* <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <AutocompleteTextField
@@ -169,18 +186,76 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         ?.map((s: any) => s.bin?.binCode)
                         .join(' / ') || '--'
                     )}
+                  </TableCell> */}
+
+                  <TableCell align='center' sx={cellStyle}>
+                    {isEditing ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <AutocompleteTextField
+                          label=''
+                          value={editedSourceBin}
+                          onChange={setEditedSourceBin}
+                          onSubmit={() => {}}
+                          options={binCodes}
+                          sx={{ minWidth: 140 }}
+                        />
+                      </Box>
+                    ) : isOutOfStock ? (
+                      <Box
+                        display='flex'
+                        justifyContent='center'
+                        alignItems='center'
+                        gap={0.5}
+                      >
+                        <ErrorOutlineIcon
+                          fontSize='small'
+                          sx={{ color: '#d32f2f', mb: '1px' }}
+                        />
+                        <Typography
+                          fontSize={14}
+                          fontWeight='medium'
+                          sx={{ color: '#d32f2f' }}
+                        >
+                          Out of Stock
+                        </Typography>
+                      </Box>
+                    ) : (
+                      (() => {
+                        const bins =
+                          task.sourceBins?.map((s: any) => s.bin?.binCode) || []
+                        const visible = bins.slice(0, 4).join(' / ')
+                        const hiddenCount = bins.length - 2
+                        const full = bins.join(' / ')
+
+                        return (
+                          <Tooltip title={full} arrow>
+                            <Typography
+                              fontSize={14}
+                              sx={{
+                                maxWidth: 240,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                mx: 'auto'
+                              }}
+                            >
+                              {visible}
+                              {hiddenCount > 0 && ` / ...`}
+                            </Typography>
+                          </Tooltip>
+                        )
+                      })()
+                    )}
                   </TableCell>
                   <TableCell align='center' sx={cellStyle}>
                     {task.destinationBinCode || '--'}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
                   </TableCell>
                   <TableCell align='center' sx={cellStyle}>
                     {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -200,7 +275,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       task.status
                     )}
                   </TableCell>
-
                   <TableCell
                     align='center'
                     sx={{
@@ -214,7 +288,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         }`.trim() || '--'
                       : 'TBD'}
                   </TableCell>
-
                   <TableCell align='center' sx={cellStyle}>
                     <IconButton
                       onClick={() => onPrint(task)}
