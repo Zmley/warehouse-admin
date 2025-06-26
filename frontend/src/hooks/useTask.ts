@@ -122,7 +122,6 @@ export const useTask = () => {
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)
-      await fetchTasks(params)
     } catch (err: any) {
       console.error('Update task failed:', err)
     }

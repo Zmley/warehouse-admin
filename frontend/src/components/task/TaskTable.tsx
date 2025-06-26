@@ -44,6 +44,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
   page,
   rowsPerPage,
   onPageChange,
+  onCancel,
   onPrint,
   onRefresh
 }) => {
@@ -90,32 +91,23 @@ const TaskTable: React.FC<TaskTableProps> = ({
         <TableHead>
           <TableRow>
             {[
-              { label: 'Product', minWidth: 120 },
-              { label: 'Qty', width: 80 },
-              { label: 'Source Bin', minWidth: 140 },
-              { label: 'Target Bin', minWidth: 120 },
-              { label: 'Created', minWidth: 160 },
-              { label: 'Updated', minWidth: 160 },
-              { label: 'Status', minWidth: 130 },
-              { label: 'Accepter', minWidth: 130 },
-              { label: 'Print', width: 60 },
-              { label: 'Action', width: 110 }
-            ].map(col => (
-              <TableCell
-                key={col.label}
-                align='center'
-                sx={{
-                  ...headStyle,
-                  minWidth: col.minWidth,
-                  width: col.width
-                }}
-              >
-                <Typography variant='body2'>{col.label}</Typography>
+              'Product',
+              'Qty',
+              'Source Bin',
+              'Target Bin',
+              'Created',
+              'Updated',
+              'Status',
+              'Accepter',
+              'Print',
+              'Action'
+            ].map(label => (
+              <TableCell key={label} align='center' sx={{ ...headStyle }}>
+                <Typography variant='body2'>{label}</Typography>
               </TableCell>
             ))}
           </TableRow>
         </TableHead>
-
         <TableBody>
           {isLoading ? (
             <TableRow>
@@ -126,20 +118,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
           ) : (
             paginatedTasks.map(task => {
               const isEditing = editTaskID === task.taskID
-
-              //
               const isOutOfStock =
                 !task.sourceBins || task.sourceBins.length === 0
-
               return (
-                // <TableRow
-                //   key={task.taskID}
-                //   sx={{
-                //     ...tableRowStyle,
-                //     backgroundColor: isEditing ? '#e8f4fd' : undefined
-                //   }}
-                // >
-
                 <TableRow
                   key={task.taskID}
                   sx={{
@@ -153,11 +134,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 >
                   <TableCell
                     align='center'
-                    sx={{
-                      ...cellStyle,
-                      cursor: 'pointer',
-                      color: '#3F72AF'
-                    }}
+                    sx={{ ...cellStyle, cursor: 'pointer', color: '#3F72AF' }}
                     onClick={() =>
                       navigate(
                         `/${warehouseID}/${warehouseCode}/product?keyword=${task.productCode}`
@@ -169,25 +146,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   <TableCell align='center' sx={cellStyle}>
                     {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                   </TableCell>
-                  {/* <TableCell align='center' sx={cellStyle}>
-                    {isEditing ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <AutocompleteTextField
-                          label=''
-                          value={editedSourceBin}
-                          onChange={setEditedSourceBin}
-                          onSubmit={() => {}}
-                          options={binCodes}
-                          sx={{ minWidth: 140 }}
-                        />
-                      </Box>
-                    ) : (
-                      task.sourceBins
-                        ?.map((s: any) => s.bin?.binCode)
-                        .join(' / ') || '--'
-                    )}
-                  </TableCell> */}
-
                   <TableCell align='center' sx={cellStyle}>
                     {isEditing ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -226,7 +184,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         const visible = bins.slice(0, 4).join(' / ')
                         const hiddenCount = bins.length - 2
                         const full = bins.join(' / ')
-
                         return (
                           <Tooltip title={full} arrow>
                             <Typography
@@ -266,7 +223,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           sx={{ minWidth: 120 }}
                         >
                           <MenuItem value='PENDING'>PENDING</MenuItem>
-                          <MenuItem value='IN_PROCESS'>IN_PROCESS</MenuItem>
+                          {!(isOutOfStock && task.status === 'PENDING') && (
+                            <MenuItem value='IN_PROCESS'>IN_PROCESS</MenuItem>
+                          )}
                           <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
                           <MenuItem value='CANCELED'>CANCELED</MenuItem>
                         </Select>
@@ -302,12 +261,20 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       {isEditing ? (
                         <>
                           <IconButton
-                            onClick={() => {
-                              updateTask(
+                            onClick={async () => {
+                              let finalSourceBin = editedSourceBin
+                              if (isOutOfStock) {
+                                if (editedStatus === 'COMPLETED') {
+                                  finalSourceBin = 'Transfer-in'
+                                } else if (editedStatus === 'CANCELED') {
+                                  finalSourceBin = 'Out of Stock'
+                                }
+                              }
+                              await updateTask(
                                 task.taskID,
                                 {
                                   status: editedStatus,
-                                  sourceBinCode: editedSourceBin
+                                  sourceBinCode: finalSourceBin
                                 },
                                 {
                                   warehouseID: task.warehouseID,
@@ -323,9 +290,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                               color: 'success.main',
                               background: '#e9fbe7',
                               borderRadius: 2,
-                              '&:hover': {
-                                background: '#e1f9db'
-                              }
+                              '&:hover': { background: '#e1f9db' }
                             }}
                           >
                             <SaveIcon fontSize='small' />
@@ -338,9 +303,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                               borderRadius: 2,
                               background: '#f5f2fc',
                               ml: 0.5,
-                              '&:hover': {
-                                background: '#ede7f6'
-                              }
+                              '&:hover': { background: '#ede7f6' }
                             }}
                           >
                             <CancelIcon fontSize='small' />
@@ -361,9 +324,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                             color: '#3F72AF',
                             background: 'transparent',
                             borderRadius: 2,
-                            '&:hover': {
-                              background: '#E8F5E9'
-                            }
+                            '&:hover': { background: '#E8F5E9' }
                           }}
                         >
                           <EditIcon fontSize='small' />
@@ -377,7 +338,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
           )}
         </TableBody>
       </Table>
-
       <TablePagination
         component='div'
         count={tasks.length}
