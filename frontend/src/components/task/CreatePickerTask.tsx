@@ -136,7 +136,11 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         alert('❌ No pickup bin found.')
         return
       }
-      const result = await createPickTask(productCode, quantity, pickupBinCode)
+      const result = await createPickTask(
+        productCode,
+        selectedSourceBins.length === sourceBinCodes.length ? 0 : quantity,
+        pickupBinCode
+      )
       if (result) {
         alert('✅ Pick task created successfully.')
         onSuccess?.()
@@ -198,8 +202,8 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
         sx={{ mb: 2 }}
       />
 
-      {productCode !== 'ALL' && (
-        <>
+      {productCode !== 'ALL' &&
+        selectedSourceBins.length !== sourceBinCodes.length && (
           <TextField
             label='Quantity'
             type='number'
@@ -216,111 +220,103 @@ const CreatePickerTask: React.FC<Props> = ({ onSuccess, onClose }) => {
                 : ''
             }
           />
+        )}
 
-          {pickupBinCode && (
-            <Typography sx={{ mt: 1.5, fontWeight: 'bold', color: '#1976d2' }}>
-              Pick Up Bin:{' '}
-              <span style={{ fontWeight: 600 }}>{pickupBinCode}</span>
-            </Typography>
-          )}
+      {pickupBinCode && (
+        <Typography sx={{ mt: 1.5, fontWeight: 'bold', color: '#1976d2' }}>
+          Pick Up Bin: <span style={{ fontWeight: 600 }}>{pickupBinCode}</span>
+        </Typography>
+      )}
 
-          {loadingSourceBins ? (
-            <Box display='flex' justifyContent='center' mt={2}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : (
-            <RadioGroup
-              value={
-                selectedSourceBins.length === sourceBinCodes.length
-                  ? 'ALL'
-                  : selectedSourceBins[0] || ''
-              }
-              onChange={e => {
-                const val = e.target.value
-                if (val === 'ALL') {
-                  setSelectedSourceBins(sourceBinCodes.map(b => b.binCode))
-                } else {
-                  setSelectedSourceBins([val])
-                  const matched = sourceBinCodes.find(b => b.binCode === val)
-                  if (matched) setQuantity(matched.quantity)
-                }
-              }}
-            >
-              {sourceBinCodes.length > 1 && (
-                <Box sx={{ px: 1, mb: 1 }}>
-                  <FormControlLabel
-                    value='ALL'
-                    control={<Radio size='small' />}
-                    label='🌐 Select All'
-                    sx={{
-                      width: '100%',
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 1,
-                      backgroundColor:
-                        selectedSourceBins.length === sourceBinCodes.length
-                          ? '#e3f2fd'
-                          : 'transparent',
-                      '&:hover': { backgroundColor: '#f5f5f5' },
-                      '& .MuiFormControlLabel-label': {
-                        fontSize: '0.85rem',
-                        fontWeight: 500,
-                        lineHeight: 1.3,
-                        color: '#1976d2'
-                      }
-                    }}
-                  />
-                </Box>
-              )}
-
-              <Box
+      {loadingSourceBins ? (
+        <Box display='flex' justifyContent='center' mt={2}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : (
+        <RadioGroup
+          value={
+            selectedSourceBins.length === sourceBinCodes.length
+              ? 'ALL'
+              : selectedSourceBins[0] || ''
+          }
+          onChange={e => {
+            const val = e.target.value
+            if (val === 'ALL') {
+              setSelectedSourceBins(sourceBinCodes.map(b => b.binCode))
+            } else {
+              setSelectedSourceBins([val])
+              const matched = sourceBinCodes.find(b => b.binCode === val)
+              if (matched) setQuantity(matched.quantity)
+            }
+          }}
+        >
+          {sourceBinCodes.length > 1 && (
+            <Box sx={{ px: 1, mb: 1 }}>
+              <FormControlLabel
+                value='ALL'
+                control={<Radio size='small' />}
+                label='🌐 Select All'
                 sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 0.75,
-                  mt: 1,
-                  px: 1
+                  width: '100%',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  backgroundColor:
+                    selectedSourceBins.length === sourceBinCodes.length
+                      ? '#e3f2fd'
+                      : 'transparent',
+                  '&:hover': { backgroundColor: '#f5f5f5' },
+                  '& .MuiFormControlLabel-label': {
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    lineHeight: 1.3,
+                    color: '#1976d2'
+                  }
                 }}
-              >
-                {sourceBinCodes.map(({ binCode, quantity }) => (
-                  <FormControlLabel
-                    key={binCode}
-                    value={binCode}
-                    control={
-                      <Radio
-                        size='small'
-                        checked={selectedSourceBins.includes(binCode)}
-                        onChange={() => {
-                          setSelectedSourceBins([binCode])
-                          setQuantity(quantity)
-                        }}
-                      />
-                    }
-                    label={`${binCode} · Total: ${quantity}`}
-                    sx={{
-                      m: 0,
-                      px: 0.5,
-                      py: 0.25,
-                      minHeight: '26px',
-                      height: '26px',
-                      borderRadius: 1,
-                      backgroundColor: selectedSourceBins.includes(binCode)
-                        ? '#e3f2fd'
-                        : 'transparent',
-                      '&:hover': { backgroundColor: '#f0f0f0' },
-                      '& .MuiFormControlLabel-label': {
-                        fontSize: '0.78rem',
-                        lineHeight: 1,
-                        padding: 0,
-                        margin: 0
-                      }
+              />
+            </Box>
+          )}
+
+          <Box
+            sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1, px: 1 }}
+          >
+            {sourceBinCodes.map(({ binCode, quantity }) => (
+              <FormControlLabel
+                key={binCode}
+                value={binCode}
+                control={
+                  <Radio
+                    size='small'
+                    checked={selectedSourceBins.includes(binCode)}
+                    onChange={() => {
+                      setSelectedSourceBins([binCode])
+                      setQuantity(quantity)
                     }}
                   />
-                ))}
-              </Box>
-            </RadioGroup>
-          )}
-        </>
+                }
+                label={`${binCode} · Total: ${quantity}`}
+                sx={{
+                  m: 0,
+                  px: 0.5,
+                  py: 0.25,
+                  minHeight: '26px',
+                  height: '26px',
+                  borderRadius: 1,
+                  backgroundColor: selectedSourceBins.includes(binCode)
+                    ? '#e3f2fd'
+                    : 'transparent',
+                  '&:hover': { backgroundColor: '#f0f0f0' },
+                  '& .MuiFormControlLabel-label': {
+                    fontSize: '0.78rem',
+                    lineHeight: 1,
+                    padding: 0,
+                    margin: 0
+                  }
+                }}
+              />
+            ))}
+          </Box>
+        </RadioGroup>
       )}
 
       <Button
