@@ -17,7 +17,7 @@ import {
   Snackbar
 } from '@mui/material'
 import dayjs from 'dayjs'
-import PrintIcon from '@mui/icons-material/Print'
+// import PrintIcon from '@mui/icons-material/Print'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -34,7 +34,7 @@ interface TaskTableProps {
   rowsPerPage: number
   onPageChange: (event: unknown, newPage: number) => void
   onCancel: (taskID: string) => void
-  onPrint: (task: any) => void
+  // onPrint: (task: any) => void
   onRefresh: () => void
 }
 
@@ -44,8 +44,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
   page,
   rowsPerPage,
   onPageChange,
-  onCancel,
-  onPrint,
+  // onPrint,
   onRefresh
 }) => {
   const [editTaskID, setEditTaskID] = useState<string | null>(null)
@@ -144,7 +143,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 'Updated',
                 'Status',
                 'Accepter',
-                'Print',
                 'Action'
               ].map(label => (
                 <TableCell
@@ -328,11 +326,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           }`.trim()
                         : 'TBD'}
                     </TableCell>
-                    <TableCell align='center' sx={cellStyle}>
+                    {/* <TableCell align='center' sx={cellStyle}>
                       <IconButton onClick={() => onPrint(task)} size='small'>
                         <PrintIcon fontSize='small' />
                       </IconButton>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell align='center' sx={cellStyle}>
                       {isEditing ? (
                         <>
