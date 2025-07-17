@@ -31,10 +31,15 @@ const Task: React.FC = () => {
   const [status, setStatus] = useState<TaskStatusFilter>(
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   )
+
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [isDialogOpen, setOpenDialog] = useState(false)
   const [isPickerDialogOpen, setPickerDialogOpen] = useState(false)
   const [page, setPage] = useState(0)
+
+  const { binCodes, fetchBinCodes } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
+  const combinedOptions = [...binCodes, ...productCodes]
 
   const handleOpen = () => setOpenDialog(true)
   const handleClose = () => setOpenDialog(false)
@@ -53,10 +58,6 @@ const Task: React.FC = () => {
       updateQueryParams(status, keyword)
     }
   }
-
-  const { binCodes, fetchBinCodes } = useBin()
-  const { productCodes, fetchProductCodes } = useProduct()
-  const combinedOptions = [...binCodes, ...productCodes]
 
   useEffect(() => {
     if (warehouseID) {

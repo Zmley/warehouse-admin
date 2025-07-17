@@ -17,7 +17,6 @@ import {
   Snackbar
 } from '@mui/material'
 import dayjs from 'dayjs'
-// import PrintIcon from '@mui/icons-material/Print'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -34,7 +33,6 @@ interface TaskTableProps {
   rowsPerPage: number
   onPageChange: (event: unknown, newPage: number) => void
   onCancel: (taskID: string) => void
-  // onPrint: (task: any) => void
   onRefresh: () => void
 }
 
@@ -79,13 +77,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
     const sourceBinCount = task.sourceBins?.length || 0
     const isOutOfStock = sourceBinCount === 0
 
-    // ✅ COMPLETED 状态：必须手动选择 bin（有库存）
     if (editedStatus === 'COMPLETED' && sourceBinCount > 0 && !sourceBin) {
       setSnackOpen(true)
       return
     }
 
-    // ✅ 没有库存（Out of stock）：根据状态设定
     if (isOutOfStock) {
       if (editedStatus === 'COMPLETED') {
         sourceBin = 'Transfer-in'
@@ -94,7 +90,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
     }
 
-    // ✅ PENDING → CANCELED：自动选择 sourceBin，不允许手动
     if (task.status === 'PENDING' && editedStatus === 'CANCELED') {
       if (sourceBinCount > 1) {
         sourceBin = 'Expired'
@@ -103,12 +98,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
     }
 
-    // ✅ 非 COMPLETED 且只有一个 bin，且未手动选择
     if (sourceBinCount === 1 && !sourceBin && editedStatus !== 'COMPLETED') {
       sourceBin = task.sourceBins[0]?.bin?.binCode || ''
     }
 
-    // 🔄 发请求更新任务
     await updateTask(
       task.taskID,
       {
@@ -326,11 +319,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           }`.trim()
                         : 'TBD'}
                     </TableCell>
-                    {/* <TableCell align='center' sx={cellStyle}>
-                      <IconButton onClick={() => onPrint(task)} size='small'>
-                        <PrintIcon fontSize='small' />
-                      </IconButton>
-                    </TableCell> */}
+
                     <TableCell align='center' sx={cellStyle}>
                       {isEditing ? (
                         <>
