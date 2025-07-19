@@ -3,7 +3,7 @@ name: Deploy to S3
 on:
   push:
     branches:
-      - creat-test-quantity-with-client-feedback-change
+      - admin-pendingTaskrefactor
 
 jobs:
   deploy:
