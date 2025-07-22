@@ -71,7 +71,7 @@ const Task: React.FC = () => {
 
     const interval = setInterval(() => {
       fetchTasks({ warehouseID, status, keyword })
-    }, 300_000)
+    }, 180_000)
 
     return () => clearInterval(interval)
   }, [warehouseID, status, keyword])

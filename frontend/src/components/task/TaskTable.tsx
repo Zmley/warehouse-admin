@@ -142,6 +142,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 'Created',
                 'Updated',
                 'Status',
+                'Creator',
                 'Accepter',
                 'Action'
               ].map(label => (
@@ -319,6 +320,15 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         task.status
                       )}
                     </TableCell>
+
+                    <TableCell align='center' sx={cellStyle}>
+                      {task.creator
+                        ? `${task.creator.firstName || ''} ${
+                            task.creator.lastName || ''
+                          }`.trim()
+                        : 'TBD'}
+                    </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {task.accepter
                         ? `${task.accepter.firstName || ''} ${
@@ -326,11 +336,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           }`.trim()
                         : 'TBD'}
                     </TableCell>
-                    {/* <TableCell align='center' sx={cellStyle}>
-                      <IconButton onClick={() => onPrint(task)} size='small'>
-                        <PrintIcon fontSize='small' />
-                      </IconButton>
-                    </TableCell> */}
+
                     <TableCell align='center' sx={cellStyle}>
                       {isEditing ? (
                         <>
