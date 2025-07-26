@@ -6,7 +6,8 @@ import {
   Stack,
   Tab,
   Tabs,
-  Typography
+  Typography,
+  IconButton
 } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
@@ -18,7 +19,6 @@ import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import TaskTable from 'components/task/TaskTable'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import IconButton from '@mui/material/IconButton'
 import AddIcon from '@mui/icons-material/Add'
 
 const ROWS_PER_PAGE = 10
@@ -28,7 +28,7 @@ const Task: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [status, setStatus] = useState<TaskStatusFilter>(
+  const [status, setStatus] = useState<TaskStatusFilter | 'OUT_OF_STOCK'>(
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   )
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
@@ -39,7 +39,10 @@ const Task: React.FC = () => {
   const handleOpen = () => setOpenDialog(true)
   const handleClose = () => setOpenDialog(false)
 
-  const updateQueryParams = (status: TaskStatusFilter, keyword: string) => {
+  const updateQueryParams = (
+    status: TaskStatusFilter | 'OUT_OF_STOCK',
+    keyword: string
+  ) => {
     setSearchParams({ status, keyword })
   }
 
@@ -60,7 +63,11 @@ const Task: React.FC = () => {
 
   useEffect(() => {
     if (warehouseID) {
-      fetchTasks({ warehouseID, status, keyword })
+      fetchTasks({
+        warehouseID,
+        status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
+        keyword
+      })
       fetchBinCodes()
       fetchProductCodes()
     }
@@ -70,7 +77,11 @@ const Task: React.FC = () => {
     if (!warehouseID) return
 
     const interval = setInterval(() => {
-      fetchTasks({ warehouseID, status, keyword })
+      fetchTasks({
+        warehouseID,
+        status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
+        keyword
+      })
     }, 180_000)
 
     return () => clearInterval(interval)
@@ -78,9 +89,27 @@ const Task: React.FC = () => {
 
   const handleRefresh = () => {
     if (warehouseID) {
-      fetchTasks({ warehouseID, status, keyword })
+      fetchTasks({
+        warehouseID,
+        status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
+        keyword
+      })
     }
   }
+
+  const filteredTasks = tasks.filter(task => {
+    if (status === 'OUT_OF_STOCK') {
+      return !task.sourceBins || task.sourceBins.length === 0
+    }
+    if (status === TaskStatusFilter.PENDING) {
+      return (
+        task.status === 'PENDING' &&
+        task.sourceBins &&
+        task.sourceBins.length > 0
+      )
+    }
+    return task.status === status
+  })
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -169,7 +198,7 @@ const Task: React.FC = () => {
 
         <Tabs
           value={status}
-          onChange={(_, newStatus: TaskStatusFilter) => {
+          onChange={(_, newStatus: TaskStatusFilter | 'OUT_OF_STOCK') => {
             setStatus(newStatus)
             setKeyword('')
             setPage(0)
@@ -185,7 +214,12 @@ const Task: React.FC = () => {
             sx={{ fontWeight: 'bold' }}
           />
           <Tab
-            label='IN Process'
+            label='Out of Stock'
+            value='OUT_OF_STOCK'
+            sx={{ fontWeight: 'bold' }}
+          />
+          <Tab
+            label='In Process'
             value={TaskStatusFilter.IN_PROCESS}
             sx={{ fontWeight: 'bold' }}
           />
@@ -207,9 +241,8 @@ const Task: React.FC = () => {
       </Stack>
 
       {/* Task Table */}
-
       <TaskTable
-        tasks={tasks}
+        tasks={filteredTasks}
         isLoading={isLoading}
         page={page}
         rowsPerPage={ROWS_PER_PAGE}
@@ -217,7 +250,8 @@ const Task: React.FC = () => {
         onCancel={taskID =>
           cancelTask(taskID, {
             warehouseID: warehouseID!,
-            status,
+            status:
+              status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
             keyword
           })
         }
