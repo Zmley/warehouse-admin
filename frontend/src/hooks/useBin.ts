@@ -1,5 +1,13 @@
 import { useCallback, useState } from 'react'
-import { addBins, getBinCodes, getBins } from 'api/binApi'
+import {
+  addBins,
+  getBinCodes,
+  getBinCodesByProductCode,
+  getBins,
+  getPickupBinsByProductCodeApi as getPickBinByProductCode,
+  updateBinDefaultProductCodes,
+  deleteBinByBinID
+} from 'api/binApi'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
 import { BinUploadType } from 'types/BinUploadType'
@@ -24,6 +32,8 @@ export const useBin = (autoLoad: boolean = false) => {
   const [totalPages, setTotalPages] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const { warehouseID } = useParams()
+
+  const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
 
   const location = useLocation()
 
@@ -74,6 +84,7 @@ export const useBin = (autoLoad: boolean = false) => {
         })
         setBins(res.data)
         setTotalPages(res.total)
+        return res.data
       } catch (err) {
         console.error('❌ Error fetching bins:', err)
         setError('Failed to fetch bins')
@@ -116,7 +127,75 @@ export const useBin = (autoLoad: boolean = false) => {
     [warehouseID, type]
   )
 
+  const fetchAvailableBinCodes = useCallback(
+    (productCode: string): Promise<{ binCode: string; quantity: number }[]> =>
+      getBinCodesByProductCode(productCode),
+    []
+  )
+
+  const getPickUpBinByProductCode = useCallback(async (productCode: string) => {
+    try {
+      const res = await getPickBinByProductCode(productCode)
+
+      if (!res.data || res.data.length === 0) {
+        return {
+          success: false,
+          error: `❌ No ${productCode} in current warehouse!`
+        }
+      }
+
+      setPickupBinCode(res.data.binCode)
+
+      return {
+        success: true,
+        data: res.data
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.response?.data?.error || '❌ Failed to fetch pickup bin'
+      }
+    }
+  }, [])
+
+  const updateBin = async (binID: string, newCodes: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      await updateBinDefaultProductCodes(binID, newCodes)
+      setIsLoading(false)
+      return true
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err.message)
+      setIsLoading(false)
+      return false
+    }
+  }
+
+  const deleteBin = useCallback(async (binID: string) => {
+    if (!binID) return { success: false, error: 'Bin ID is missing' }
+
+    try {
+      const res = await deleteBinByBinID(binID)
+      if (!res.success) {
+        setError(res.error || '❌ Failed to delete bin')
+        return { success: false, error: res.error }
+      }
+
+      setBins(prev => prev.filter(b => b.binID !== binID))
+
+      return { success: true }
+    } catch (err: any) {
+      setError(err?.message || '❌ Deletion error')
+      return { success: false, error: err?.message }
+    }
+  }, [])
+
   return {
+    deleteBin,
+    pickupBinCode,
+    setPickupBinCode,
+    getPickUpBinByProductCode,
     uploadBinList,
     totalPages,
     fetchBins,
@@ -124,6 +203,8 @@ export const useBin = (autoLoad: boolean = false) => {
     bins,
     binCodes,
     error,
-    fetchBinCodes
+    fetchBinCodes,
+    fetchAvailableBinCodes,
+    updateBin
   }
 }

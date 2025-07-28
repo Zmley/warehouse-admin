@@ -15,7 +15,6 @@ export const getAccessToken = (): string | null => {
 export const clearTokens = () => {
   localStorage.clear()
 }
-
 export const areTokensValid = (): boolean => {
   return !!(
     localStorage.getItem('accessToken') &&

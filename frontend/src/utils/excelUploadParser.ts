@@ -33,12 +33,7 @@ export const parseInventoryRows = (
     if (binRaw) lastBinCode = binRaw
 
     if (!binCode || !productRaw || !quantityRaw) return
-    if (
-      hasChinese(binCode) ||
-      hasChinese(productRaw) ||
-      hasChinese(quantityRaw)
-    )
-      return
+    if (hasChinese(quantityRaw)) return
 
     const quantity = parseInt(quantityRaw)
     if (!isNaN(quantity)) {
@@ -78,20 +73,14 @@ export const parseProductRows = (
     .filter(row => {
       const productCode = row[productCodeIndex]?.toString().trim()
       const barCode = row[barCodeIndex]?.toString().trim()
-      const boxType = row[boxTypeIndex]?.toString().trim()
       return (
-        productCode &&
-        barCode &&
-        boxType &&
-        productCode !== '#N/A' &&
-        barCode !== '#N/A' &&
-        boxType !== '#N/A'
+        productCode && barCode && productCode !== '#N/A' && barCode !== '#N/A'
       )
     })
     .map(row => ({
       productCode: row[productCodeIndex]!.toString().trim(),
       barCode: row[barCodeIndex]!.toString().trim(),
-      boxType: row[boxTypeIndex]!.toString().trim()
+      boxType: row[boxTypeIndex]?.toString().trim() || '' // fallback
     }))
 
   return { products: parsed }
@@ -115,7 +104,7 @@ export const parseBinUploadRows = (
         const binRaw = row[0]
         const binCode =
           typeof binRaw === 'string' ? binRaw.trim() : binRaw?.toString().trim()
-        return binCode && !hasChinese(binCode) ? { binCode, type } : null
+        return binCode ? { binCode, type } : null
       })
       .filter(Boolean) as BinUploadType[]
 

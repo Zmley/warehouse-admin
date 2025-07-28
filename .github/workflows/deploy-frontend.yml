@@ -1,9 +1,8 @@
 name: Deploy to S3
 
 on:
-  push:
-    branches:
-      - (pending)
+  release:
+    types: [published]
 
 jobs:
   deploy:

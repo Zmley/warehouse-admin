@@ -2,11 +2,13 @@ import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
 import { TaskStatusFilter } from 'types/TaskStatusFilter'
 import { useParams } from 'react-router-dom'
+import { createPickerTask } from 'api/taskApi'
 
 interface CreateTaskPayload {
   sourceBinCode: string
   destinationBinCode: string
   productCode: string
+  quantity?: number
 }
 
 interface FetchParams {
@@ -20,7 +22,7 @@ export const useTask = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { warehouseID } = useParams()
+  const warehouseID = useParams().warehouseID as string
 
   const fetchTasks = useCallback(
     async ({ warehouseID, status, keyword }: FetchParams) => {
@@ -64,14 +66,64 @@ export const useTask = () => {
         ...payload,
         warehouseID
       })
+
       setError(null)
+
+      if (!result.success) {
+        throw new Error(result.error || '❌ Task creation failed')
+      }
+
       return result
     } catch (err: any) {
-      console.error('❌ Failed to create task:', err)
-      setError('Failed to create task')
-      throw err
+      const message =
+        err?.response?.data?.error || err?.message || '❌ Unknown error'
+
+      setError(message)
+      return null
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const createPickTask = async (
+    productCode: string,
+    quantity: number,
+    destinationBinCode: string
+  ): Promise<CreateTaskPayload | null> => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await createPickerTask({
+        productCode,
+        quantity,
+        warehouseID,
+        destinationBinCode
+      })
+
+      if (!result.success) {
+        throw new Error(result.error || '❌ Pick task creation failed')
+      }
+
+      return result.task
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error || err?.message || '❌ Failed to create task'
+      setError(message)
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateTask = async (
+    taskID: string,
+    payload: { sourceBinCode?: string; status?: string },
+    params: { warehouseID: string; status?: string; keyword?: string }
+  ) => {
+    try {
+      await taskApi.updateTask(taskID, payload)
+    } catch (err: any) {
+      console.error('Update task failed:', err)
     }
   }
 
@@ -79,8 +131,11 @@ export const useTask = () => {
     tasks,
     isLoading,
     error,
+    setError,
     cancelTask,
     fetchTasks,
-    createTask
+    createTask,
+    createPickTask,
+    updateTask
   }
 }

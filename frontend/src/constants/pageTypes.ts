@@ -1,4 +1,3 @@
-// runtime-safe value
 export const PageValues = {
   TASK: 'task',
   INVENTORY: 'inventory',

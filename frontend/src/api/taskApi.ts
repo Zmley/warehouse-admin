@@ -15,11 +15,29 @@ export const createTask = async (payload: {
   productCode: string
   warehouseID?: string
 }) => {
-  const response = await apiClient.post('/tasks', payload)
+  const response = await apiClient.post('/tasks', { payload })
   return response.data
 }
 
 export const cancelTask = async (taskID: string) => {
   const response = await apiClient.post(`/tasks/${taskID}/cancel`)
+  return response.data
+}
+
+export const createPickerTask = async (payload: {
+  productCode: string
+  quantity: number
+  warehouseID: string
+  destinationBinCode: string
+}) => {
+  const response = await apiClient.post('/tasks', { payload })
+  return response.data
+}
+
+export const updateTask = async (
+  taskID: string,
+  payload: { sourceBinCode?: string; status?: string }
+) => {
+  const response = await apiClient.patch(`/tasks/${taskID}`, payload)
   return response.data
 }
