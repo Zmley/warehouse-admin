@@ -170,9 +170,12 @@ const Inventory: React.FC = () => {
         page={page}
         totalPages={totalPages}
         isLoading={isLoading}
-        onPageChange={handleChangePage}
-        onDelete={handleDelete}
-        onEdit={handleOpenModal}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onDelete={removeInventory}
+        onEditBin={binCode => {
+          console.log('Edit bin clicked:', binCode)
+          // ✅ 以后可以在这里打开编辑 modal
+        }}
       />
 
       {/* 弹窗等其他功能 */}
