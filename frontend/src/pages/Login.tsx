@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        bgcolor: 'rgba(0,0,0,0.4)'
+        bgcolor: '#00000066'
       }}
     >
       <Box
@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
           maxWidth: '420px',
           backgroundColor: '#fff',
           borderRadius: '16px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          boxShadow: '0 8px 24px #00000033',
           padding: '40px 32px',
           textAlign: 'center'
         }}

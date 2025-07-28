@@ -43,7 +43,7 @@ const Sidebar: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'space-around',
         py: 4,
-        boxShadow: '4px 0 10px rgba(0,0,0,0.1)'
+        boxShadow: '4px 0 10px #0000001A'
       }}
     >
       {sidebarItems.map(item => {
@@ -62,9 +62,7 @@ const Sidebar: React.FC = () => {
                 mb: 1,
                 cursor: 'pointer',
                 color: selected ? '#1976d2' : '#fff',
-                backgroundColor: selected
-                  ? 'rgba(25, 118, 210, 0.1)'
-                  : 'transparent',
+                backgroundColor: selected ? '#1976D21A' : 'transparent',
                 position: 'relative',
                 fontWeight: selected ? 700 : 400,
                 transition: 'all 0.18s cubic-bezier(.45,2,.55,.9)',

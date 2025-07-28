@@ -59,7 +59,7 @@ const Topbar: React.FC = () => {
         px: 4,
         background: 'linear-gradient(to right, #e8f0fe, #f5f7fa)',
         borderBottom: '1px solid #d0d7de',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+        boxShadow: '0 2px 6px #0000000D',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
