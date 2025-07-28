@@ -172,9 +172,16 @@ const Inventory: React.FC = () => {
         isLoading={isLoading}
         onPageChange={(_, newPage) => setPage(newPage)}
         onDelete={removeInventory}
-        onEditBin={binCode => {
-          console.log('Edit bin clicked:', binCode)
-          // ✅ 以后可以在这里打开编辑 modal
+        onEditBin={() =>
+          fetchInventories(
+            undefined,
+            page + 1,
+            ROWS_PER_PAGE,
+            keyword || undefined
+          )
+        }
+        onUpdateQuantity={async (inventoryID, newQty) => {
+          await editInventory(inventoryID, { quantity: newQty })
         }}
       />
 

@@ -10,7 +10,8 @@ import {
   Typography,
   IconButton,
   CircularProgress,
-  Box
+  Box,
+  TextField
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
@@ -27,11 +28,11 @@ interface InventoryTableProps {
   totalPages: number
   isLoading: boolean
   onPageChange: (event: unknown, newPage: number) => void
-  onDelete: (inventoryID: string) => Promise<void> // ✅ 单个 inventory 删除
-  onEditBin: (binCode: string) => void // ✅ 编辑整个 bin
+  onDelete: (inventoryID: string) => Promise<void>
+  onEditBin: (binCode: string) => void
+  onUpdateQuantity: (inventoryID: string, newQty: number) => Promise<void>
 }
 
-/** ✅ 按 Bin Code 分组 */
 const groupByBinCode = (list: InventoryItem[]) => {
   const map: Record<string, InventoryItem[]> = {}
   list.forEach(item => {
@@ -49,7 +50,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   isLoading,
   onPageChange,
   onDelete,
-  onEditBin
+  onEditBin,
+  onUpdateQuantity
 }) => {
   const navigate = useNavigate()
   const { warehouseID, warehouseCode } = useParams<{
@@ -57,17 +59,18 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     warehouseCode: string
   }>()
 
-  /** ✅ 当前正在编辑的 binCode */
   const [editBinCode, setEditBinCode] = useState<string | null>(null)
+  const [quantityDraft, setQuantityDraft] = useState<
+    Record<string, number | ''>
+  >({})
+  const [saving, setSaving] = useState<string | null>(null)
 
-  /** ✅ 将数据按 Bin Code 分组 */
   const grouped = groupByBinCode(inventories)
   const binCodes = Object.keys(grouped)
 
   return (
     <Paper elevation={3} sx={{ borderRadius: 3 }}>
       <Table>
-        {/* ✅ 表头 */}
         <TableHead>
           <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
             {[
@@ -89,7 +92,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </TableHead>
 
         <TableBody>
-          {/* ✅ Loading 状态 */}
           {isLoading ? (
             <TableRow>
               <TableCell colSpan={5} align='center'>
@@ -105,15 +107,14 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            /** ✅ 遍历分组数据 */
             binCodes.map(binCode => {
               const items = grouped[binCode]
               const isEditing = editBinCode === binCode
 
               return items.map((item, idx) => (
                 <TableRow key={item.inventoryID} sx={tableRowStyle}>
-                  {/* ✅ Bin Code（首行显示 + rowSpan） */}
-                  {idx === 0 ? (
+                  {/* ✅ Bin Code */}
+                  {idx === 0 && (
                     <TableCell
                       align='center'
                       sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
@@ -121,7 +122,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     >
                       {binCode}
                     </TableCell>
-                  ) : null}
+                  )}
 
                   {/* ✅ Product Code + DeleteIcon */}
                   <TableCell
@@ -144,7 +145,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         {item.productCode}
                       </Typography>
 
-                      {/* ✅ 只有在当前 bin 编辑模式下才显示 DeleteIcon */}
                       {isEditing && (
                         <IconButton
                           color='error'
@@ -155,7 +155,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 `Are you sure you want to delete this inventory item?`
                               )
                             ) {
-                              onDelete(item.inventoryID) // ✅ 传 inventoryID
+                              onDelete(item.inventoryID)
                             }
                           }}
                         >
@@ -165,14 +165,35 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     </Box>
                   </TableCell>
 
-                  {/* ✅ Quantity */}
+                  {/* ✅ Quantity —> 变成数字输入框（编辑模式） */}
                   <TableCell
                     align='center'
                     sx={{ border: '1px solid #e0e0e0' }}
                   >
-                    <Typography sx={{ fontWeight: 500, color: '#3F72AF' }}>
-                      {item.quantity}
-                    </Typography>
+                    {isEditing ? (
+                      <TextField
+                        type='number'
+                        size='small'
+                        value={
+                          quantityDraft[item.inventoryID] !== undefined
+                            ? quantityDraft[item.inventoryID]
+                            : item.quantity
+                        }
+                        onChange={e => {
+                          const value = e.target.value
+                          setQuantityDraft(prev => ({
+                            ...prev,
+                            [item.inventoryID]:
+                              value === '' ? '' : Number(value) // ✅ 允许空字符串
+                          }))
+                        }}
+                        sx={{ width: 80 }}
+                      />
+                    ) : (
+                      <Typography sx={{ fontWeight: 500, color: '#3F72AF' }}>
+                        {item.quantity}
+                      </Typography>
+                    )}
                   </TableCell>
 
                   {/* ✅ Updated At */}
@@ -183,8 +204,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                   </TableCell>
 
-                  {/* ✅ Action（只在首行显示，保留 Edit 逻辑） */}
-                  {idx === 0 ? (
+                  {/* ✅ Action（只在首行显示） */}
+                  {idx === 0 && (
                     <TableCell
                       align='center'
                       sx={{ border: '1px solid #e0e0e0' }}
@@ -196,9 +217,44 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           <IconButton
                             size='small'
                             sx={{ color: 'green' }}
-                            onClick={() => {
-                              onEditBin(binCode)
-                              setEditBinCode(null)
+                            disabled={saving !== null}
+                            onClick={async () => {
+                              setSaving(binCode)
+                              try {
+                                // 🚨 检查有没有 空 或 0
+                                const invalid = items.some(i => {
+                                  const newQty =
+                                    quantityDraft[i.inventoryID] !== undefined
+                                      ? quantityDraft[i.inventoryID]
+                                      : i.quantity
+                                  return newQty === '' || newQty === 0
+                                })
+
+                                if (invalid) {
+                                  alert('❌ 数量不能为空或 0，请修改后再保存。')
+                                  setSaving(null)
+                                  return
+                                }
+
+                                // ✅ 遍历 bin 下所有 item，如果数量有变化就更新
+                                for (const i of items) {
+                                  if (
+                                    quantityDraft[i.inventoryID] !==
+                                      undefined &&
+                                    quantityDraft[i.inventoryID] !== i.quantity
+                                  ) {
+                                    await onUpdateQuantity(
+                                      i.inventoryID,
+                                      quantityDraft[i.inventoryID] as number
+                                    )
+                                  }
+                                }
+
+                                onEditBin(binCode)
+                                setEditBinCode(null)
+                              } finally {
+                                setSaving(null)
+                              }
                             }}
                           >
                             <SaveIcon fontSize='small' />
@@ -208,7 +264,10 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           <IconButton
                             size='small'
                             sx={{ color: 'gray' }}
-                            onClick={() => setEditBinCode(null)}
+                            onClick={() => {
+                              setEditBinCode(null)
+                              setQuantityDraft({})
+                            }}
                           >
                             <CancelIcon fontSize='small' />
                           </IconButton>
@@ -226,7 +285,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         </>
                       )}
                     </TableCell>
-                  ) : null}
+                  )}
                 </TableRow>
               ))
             })
@@ -234,7 +293,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </TableBody>
       </Table>
 
-      {/* ✅ 分页组件 */}
       <TablePagination
         component='div'
         count={totalPages}
