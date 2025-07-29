@@ -23,7 +23,6 @@ const Inventory: React.FC = () => {
 
   const [page, setPage] = useState(initialPage)
   const [keyword, setKeyword] = useState(initialKeyword)
-  useState(false)
   const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
 
   const { binCodes, fetchBinCodes } = useBin()
@@ -36,7 +35,7 @@ const Inventory: React.FC = () => {
     isLoading,
     error,
     removeInventory,
-    editInventory,
+    editInventoriesBulk,
     fetchInventories,
     addInventory
   } = useInventory()
@@ -44,12 +43,10 @@ const Inventory: React.FC = () => {
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
   useEffect(() => {
     fetchInventories(undefined, page + 1, ROWS_PER_PAGE, keyword || undefined)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, page, keyword])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -86,34 +83,23 @@ const Inventory: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Inventory Management
         </Typography>
-        <Box
+        <Button
+          variant='outlined'
+          onClick={() => setUploadInventoryOpen(true)}
+          startIcon={<AddIcon />}
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            borderColor: '#3F72AF',
+            color: '#3F72AF',
+            '&:hover': {
+              borderColor: '#2d5e8c',
+              backgroundColor: '#e3f2fd'
+            }
           }}
         >
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant='outlined'
-              onClick={() => setUploadInventoryOpen(true)}
-              startIcon={<AddIcon />}
-              sx={{
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                borderColor: '#3F72AF',
-                color: '#3F72AF',
-                '&:hover': {
-                  borderColor: '#2d5e8c',
-                  backgroundColor: '#e3f2fd'
-                }
-              }}
-            >
-              UPLOAD EXCEL
-            </Button>
-          </Box>
-        </Box>
+          UPLOAD EXCEL
+        </Button>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -142,8 +128,14 @@ const Inventory: React.FC = () => {
             keyword || undefined
           )
         }
-        onUpdateQuantity={async (inventoryID, newQty) => {
-          await editInventory(inventoryID, { quantity: newQty })
+        onBulkUpdate={async updates => {
+          await editInventoriesBulk(updates)
+          await fetchInventories(
+            undefined,
+            page + 1,
+            ROWS_PER_PAGE,
+            keyword || undefined
+          )
         }}
         onAddNewItem={async (binCode, productCode, quantity) => {
           const result = await addInventory({ binCode, productCode, quantity })
@@ -160,11 +152,13 @@ const Inventory: React.FC = () => {
         productOptions={productCodes}
       />
 
+      {/* ✅ 上传弹窗 */}
       <UploadInventoryModal
         open={isUploadInventoryOpen}
         onClose={() => setUploadInventoryOpen(false)}
       />
 
+      {/* ✅ 错误提示 */}
       {error && (
         <Typography color='error' align='center' sx={{ mt: 2 }}>
           {error}

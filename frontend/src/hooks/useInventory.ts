@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react'
 import {
   getInventories,
   deleteInventory,
-  updateInventory,
-  addInventories
+  addInventories,
+  bulkUpdateInventory
 } from 'api/inventoryApi'
 import { InventoryItem } from 'types/InventoryItem'
 import { useParams } from 'react-router-dom'
@@ -68,25 +68,34 @@ export const useInventory = () => {
     }
   }, [])
 
-  const editInventory = useCallback(
-    async (id: string, updatedData: Partial<InventoryItem>) => {
+  const editInventoriesBulk = useCallback(
+    async (
+      updates: {
+        inventoryID: string
+        quantity?: number
+        productCode?: string
+      }[]
+    ) => {
       try {
-        const result = await updateInventory(id, updatedData)
-
+        const result = await bulkUpdateInventory(updates)
         if (result.success) {
           setInventories(prev =>
-            prev.map(item =>
-              item.inventoryID === id ? { ...item, ...updatedData } : item
-            )
+            prev.map(item => {
+              const update = updates.find(
+                u => u.inventoryID === item.inventoryID
+              )
+              return update ? { ...item, ...update } : item
+            })
           )
           setError(null)
           return result
         } else {
-          throw new Error('Failed to update inventory item')
+          throw new Error('Failed to bulk update inventory items')
         }
       } catch (err: any) {
         const message =
-          err?.response?.data?.message || '❌ Failed to update inventory item'
+          err?.response?.data?.message ||
+          '❌ Failed to bulk update inventory items'
         setError(message)
       }
     },
@@ -143,7 +152,7 @@ export const useInventory = () => {
     totalPages,
     fetchInventories,
     removeInventory,
-    editInventory,
+    editInventoriesBulk,
     addInventory
   }
 }

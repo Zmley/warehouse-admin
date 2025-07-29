@@ -21,18 +21,15 @@ export const deleteInventory = async (inventoryID: string) => {
   return response.data
 }
 
-export const updateInventory = async (
-  inventoryID: string,
-  updatedFields: {
+export const bulkUpdateInventory = async (
+  updates: {
+    inventoryID: string
     quantity?: number
     productCode?: string
     binID?: string
-  }
+  }[]
 ) => {
-  const response = await apiClient.put(
-    `/inventories/${inventoryID}`,
-    updatedFields
-  )
+  const response = await apiClient.put(`/inventories`, { updates })
   return response.data
 }
 

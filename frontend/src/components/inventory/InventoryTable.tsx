@@ -38,7 +38,9 @@ interface InventoryTableProps {
   onPageChange: (event: unknown, newPage: number) => void
   onDelete: (inventoryID: string) => Promise<void>
   onEditBin: (binCode: string) => void
-  onUpdateQuantity: (inventoryID: string, newQty: number) => Promise<void>
+  onBulkUpdate: (
+    updates: { inventoryID: string; quantity: number; productCode: string }[]
+  ) => Promise<void>
   onAddNewItem: (
     binCode: string,
     productCode: string,
@@ -67,7 +69,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   onPageChange,
   onDelete,
   onEditBin,
-  onUpdateQuantity,
+  onBulkUpdate,
   onAddNewItem,
   productOptions
 }) => {
@@ -81,6 +83,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const [quantityDraft, setQuantityDraft] = useState<
     Record<string, number | ''>
   >({})
+  const [productDraft, setProductDraft] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
 
   const [newRows, setNewRows] = useState<
@@ -94,8 +97,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     open: false,
     productCode: ''
   })
-
   const [quantityDialogOpen, setQuantityDialogOpen] = useState(false)
+
+  const [emptyProductDialogOpen, setEmptyProductDialogOpen] = useState(false)
 
   const grouped = groupByBinCode(inventories)
   const binCodes = Object.keys(grouped)
@@ -186,6 +190,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         </TableCell>
                       )}
 
+                      {/* ✅ Product Code */}
                       <TableCell
                         align='center'
                         sx={{
@@ -194,24 +199,48 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           p: 0
                         }}
                       >
-                        <Box
-                          display='flex'
-                          justifyContent='center'
-                          alignItems='center'
-                          gap={1}
-                        >
-                          <Typography
-                            sx={{ color: '#1976d2', cursor: 'pointer' }}
-                            onClick={() =>
-                              navigate(
-                                `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
-                              )
-                            }
+                        {isEditing ? (
+                          <Box
+                            display='flex'
+                            alignItems='center'
+                            justifyContent='center'
+                            gap={1}
                           >
-                            {item.productCode}
-                          </Typography>
-
-                          {isEditing && (
+                            <Autocomplete
+                              size='small'
+                              options={productOptions}
+                              value={
+                                productDraft[item.inventoryID] ??
+                                item.productCode
+                              }
+                              onChange={(_, newValue) =>
+                                setProductDraft(prev => ({
+                                  ...prev,
+                                  [item.inventoryID]: newValue || ''
+                                }))
+                              }
+                              renderInput={params => (
+                                <TextField
+                                  {...params}
+                                  placeholder='ProductCode'
+                                  size='small'
+                                  sx={{
+                                    '& .MuiInputBase-root': {
+                                      height: 32,
+                                      fontSize: 13,
+                                      padding: 0
+                                    },
+                                    '& .MuiOutlinedInput-input': {
+                                      padding: '0 !important',
+                                      height: '32px !important',
+                                      lineHeight: '32px !important',
+                                      textAlign: 'center'
+                                    }
+                                  }}
+                                />
+                              )}
+                              sx={{ width: 150 }}
+                            />
                             <Tooltip title='Delete Item'>
                               <span>
                                 <IconButton
@@ -232,10 +261,22 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 </IconButton>
                               </span>
                             </Tooltip>
-                          )}
-                        </Box>
+                          </Box>
+                        ) : (
+                          <Typography
+                            sx={{ color: '#1976d2', cursor: 'pointer' }}
+                            onClick={() =>
+                              navigate(
+                                `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
+                              )
+                            }
+                          >
+                            {item.productCode}
+                          </Typography>
+                        )}
                       </TableCell>
 
+                      {/* ✅ Quantity */}
                       <TableCell
                         align='center'
                         sx={{
@@ -283,6 +324,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         )}
                       </TableCell>
 
+                      {/* ✅ Updated At */}
                       <TableCell
                         align='center'
                         sx={{
@@ -294,6 +336,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                       </TableCell>
 
+                      {/* ✅ Action */}
                       {idx === 0 && (
                         <TableCell
                           align='center'
@@ -316,24 +359,51 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                     sx={{ height: 32, width: 32, p: 0 }}
                                     disabled={saving !== null}
                                     onClick={async () => {
-                                      const existingCodes = items.map(
-                                        i => i.productCode
+                                      const updatedOldCodes = items.map(
+                                        i =>
+                                          productDraft[i.inventoryID] ??
+                                          i.productCode
                                       )
                                       const newCodes = (newRows[binCode] || [])
                                         .map(r => r.productCode)
                                         .filter(Boolean)
 
-                                      const duplicate = newCodes.find(code =>
-                                        existingCodes.includes(code)
+                                      const allCodes = [
+                                        ...updatedOldCodes,
+                                        ...newCodes
+                                      ]
+                                      const hasDuplicate = allCodes.some(
+                                        (code, idx) =>
+                                          allCodes.indexOf(code) !== idx
                                       )
-                                      if (duplicate) {
+
+                                      if (hasDuplicate) {
                                         setDuplicateDialog({
                                           open: true,
-                                          productCode: duplicate
+                                          productCode:
+                                            'Duplicate ProductCode detected'
                                         })
                                         return
                                       }
 
+                                      // ✅ 检查 ProductCode 是否为空
+                                      const invalidProduct =
+                                        items.some(i => {
+                                          const prod =
+                                            productDraft[i.inventoryID] ??
+                                            i.productCode
+                                          return prod.trim() === ''
+                                        }) ||
+                                        (newRows[binCode] || []).some(
+                                          r => r.productCode.trim() === ''
+                                        )
+
+                                      if (invalidProduct) {
+                                        setEmptyProductDialogOpen(true)
+                                        return
+                                      }
+
+                                      // ✅ 检查 Quantity 是否为空或 0
                                       const invalidOld = items.some(i => {
                                         const draftQty =
                                           quantityDraft[i.inventoryID]
@@ -345,7 +415,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                         r =>
                                           r.quantity === 0 || r.quantity === ''
                                       )
-
                                       if (invalidOld || invalidNew) {
                                         setQuantityDialogOpen(true)
                                         return
@@ -353,22 +422,47 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
                                       setSaving(binCode)
                                       try {
-                                        for (const i of items) {
-                                          if (
-                                            quantityDraft[i.inventoryID] !==
-                                              undefined &&
-                                            quantityDraft[i.inventoryID] !==
+                                        // ✅ 更新旧数据
+                                        const updates = items
+                                          .map(i => {
+                                            const qty =
+                                              quantityDraft[i.inventoryID] ??
                                               i.quantity
-                                          ) {
-                                            await onUpdateQuantity(
-                                              i.inventoryID,
-                                              quantityDraft[
-                                                i.inventoryID
-                                              ] as number
-                                            )
-                                          }
+                                            const prod =
+                                              productDraft[i.inventoryID] ??
+                                              i.productCode
+
+                                            if (
+                                              qty === '' ||
+                                              isNaN(Number(qty))
+                                            ) {
+                                              setQuantityDialogOpen(true)
+                                              return null
+                                            }
+
+                                            if (
+                                              Number(qty) !== i.quantity ||
+                                              prod !== i.productCode
+                                            ) {
+                                              return {
+                                                inventoryID: i.inventoryID,
+                                                quantity: Number(qty),
+                                                productCode: prod
+                                              }
+                                            }
+                                            return null
+                                          })
+                                          .filter(Boolean) as {
+                                          inventoryID: string
+                                          quantity: number
+                                          productCode: string
+                                        }[]
+
+                                        if (updates.length > 0) {
+                                          await onBulkUpdate(updates)
                                         }
 
+                                        // ✅ 新增数据
                                         for (const row of newRows[binCode] ||
                                           []) {
                                           await onAddNewItem(
@@ -394,6 +488,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 </span>
                               </Tooltip>
 
+                              {/* ✅ Cancel */}
                               <Tooltip title='Cancel'>
                                 <span>
                                   <IconButton
@@ -403,6 +498,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                     onClick={() => {
                                       setEditBinCode(null)
                                       setQuantityDraft({})
+                                      setProductDraft({})
                                       setNewRows(prev => ({
                                         ...prev,
                                         [binCode]: []
@@ -414,6 +510,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 </span>
                               </Tooltip>
 
+                              {/* ✅ Add Product */}
                               <Tooltip title='Add Product'>
                                 <span>
                                   <IconButton
@@ -446,6 +543,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     </TableRow>
                   ))}
 
+                  {/* ✅ 新增行 */}
                   {isEditing &&
                     (newRows[binCode] || []).map((row, index) => (
                       <TableRow
@@ -499,7 +597,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                               )}
                               sx={{ width: 150 }}
                             />
-
                             <Tooltip title='Delete'>
                               <span>
                                 <IconButton
@@ -517,6 +614,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           </Box>
                         </TableCell>
 
+                        {/* ✅ Quantity */}
                         <TableCell
                           align='center'
                           sx={{
@@ -555,6 +653,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           />
                         </TableCell>
 
+                        {/* ✅ Updated At */}
                         <TableCell
                           align='center'
                           sx={{
@@ -574,14 +673,15 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </TableBody>
       </Table>
 
+      {/* ✅ Duplicate Dialog */}
       <Dialog
         open={duplicateDialog.open}
         onClose={() => setDuplicateDialog({ open: false, productCode: '' })}
       >
         <DialogTitle>Duplicate Product</DialogTitle>
         <DialogContent>
-          Product <b>{duplicateDialog.productCode}</b> already exists in this
-          BinCode and cannot be added again.
+          Product <b>{duplicateDialog.productCode}</b> already exists or is
+          duplicated in this Bin.
         </DialogContent>
         <DialogActions>
           <Button
@@ -606,6 +706,26 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         <DialogActions>
           <Button
             onClick={() => setQuantityDialogOpen(false)}
+            variant='contained'
+            color='primary'
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ✅ Product Code 为空的 Dialog */}
+      <Dialog
+        open={emptyProductDialogOpen}
+        onClose={() => setEmptyProductDialogOpen(false)}
+      >
+        <DialogTitle>Invalid Product Code</DialogTitle>
+        <DialogContent>
+          Product Code cannot be <b>empty</b>. Please select a product.
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setEmptyProductDialogOpen(false)}
             variant='contained'
             color='primary'
           >
