@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import dayjs from 'dayjs'
 import {
   Table,
   TableBody,
@@ -11,13 +12,20 @@ import {
   IconButton,
   CircularProgress,
   Box,
-  TextField
+  TextField,
+  Autocomplete,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
-import dayjs from 'dayjs'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InventoryItem } from 'types/InventoryItem'
 import { tableRowStyle } from 'styles/tableRowStyle'
@@ -31,7 +39,15 @@ interface InventoryTableProps {
   onDelete: (inventoryID: string) => Promise<void>
   onEditBin: (binCode: string) => void
   onUpdateQuantity: (inventoryID: string, newQty: number) => Promise<void>
+  onAddNewItem: (
+    binCode: string,
+    productCode: string,
+    quantity: number
+  ) => Promise<void>
+  productOptions: string[]
 }
+
+const ROW_HEIGHT = 34
 
 const groupByBinCode = (list: InventoryItem[]) => {
   const map: Record<string, InventoryItem[]> = {}
@@ -51,7 +67,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   onPageChange,
   onDelete,
   onEditBin,
-  onUpdateQuantity
+  onUpdateQuantity,
+  onAddNewItem,
+  productOptions
 }) => {
   const navigate = useNavigate()
   const { warehouseID, warehouseCode } = useParams<{
@@ -65,14 +83,42 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   >({})
   const [saving, setSaving] = useState<string | null>(null)
 
+  const [newRows, setNewRows] = useState<
+    Record<string, { productCode: string; quantity: number | '' }[]>
+  >({})
+
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    open: boolean
+    productCode: string
+  }>({
+    open: false,
+    productCode: ''
+  })
+
+  const [quantityDialogOpen, setQuantityDialogOpen] = useState(false)
+
   const grouped = groupByBinCode(inventories)
   const binCodes = Object.keys(grouped)
 
+  const handleAddRow = (binCode: string) => {
+    setNewRows(prev => ({
+      ...prev,
+      [binCode]: [...(prev[binCode] || []), { productCode: '', quantity: '' }]
+    }))
+  }
+
+  const handleDeleteNewRow = (binCode: string, index: number) => {
+    setNewRows(prev => ({
+      ...prev,
+      [binCode]: (prev[binCode] || []).filter((_, i) => i !== index)
+    }))
+  }
+
   return (
     <Paper elevation={3} sx={{ borderRadius: 3 }}>
-      <Table>
+      <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
         <TableHead>
-          <TableRow sx={{ backgroundColor: '#f0f4f9' }}>
+          <TableRow sx={{ backgroundColor: '#f0f4f9', height: ROW_HEIGHT }}>
             {[
               'Bin Code',
               'Product Code',
@@ -83,7 +129,12 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               <TableCell
                 key={header}
                 align='center'
-                sx={{ border: '1px solid #e0e0e0' }}
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  height: ROW_HEIGHT,
+                  p: 0,
+                  fontWeight: 600
+                }}
               >
                 {header}
               </TableCell>
@@ -93,13 +144,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
         <TableBody>
           {isLoading ? (
-            <TableRow>
+            <TableRow sx={{ height: ROW_HEIGHT }}>
               <TableCell colSpan={5} align='center'>
                 <CircularProgress size={32} sx={{ m: 2 }} />
               </TableCell>
             </TableRow>
           ) : inventories.length === 0 ? (
-            <TableRow>
+            <TableRow sx={{ height: ROW_HEIGHT }}>
               <TableCell colSpan={5} align='center'>
                 <Typography color='text.secondary' sx={{ my: 3 }}>
                   No inventory found.
@@ -111,187 +162,457 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               const items = grouped[binCode]
               const isEditing = editBinCode === binCode
 
-              return items.map((item, idx) => (
-                <TableRow key={item.inventoryID} sx={tableRowStyle}>
-                  {/* ✅ Bin Code */}
-                  {idx === 0 && (
-                    <TableCell
-                      align='center'
-                      sx={{ border: '1px solid #e0e0e0', fontWeight: 700 }}
-                      rowSpan={items.length}
+              return (
+                <React.Fragment key={binCode}>
+                  {items.map((item, idx) => (
+                    <TableRow
+                      key={item.inventoryID}
+                      sx={{ ...tableRowStyle, height: ROW_HEIGHT }}
                     >
-                      {binCode}
-                    </TableCell>
-                  )}
-
-                  {/* ✅ Product Code + DeleteIcon */}
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    <Box
-                      display='flex'
-                      justifyContent='center'
-                      alignItems='center'
-                    >
-                      <Typography
-                        sx={{ color: '#1976d2', cursor: 'pointer', mr: 1 }}
-                        onClick={() =>
-                          navigate(
-                            `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
-                          )
-                        }
-                      >
-                        {item.productCode}
-                      </Typography>
-
-                      {isEditing && (
-                        <IconButton
-                          color='error'
-                          size='small'
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Are you sure you want to delete this inventory item?`
-                              )
-                            ) {
-                              onDelete(item.inventoryID)
-                            }
+                      {idx === 0 && (
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            fontWeight: 700,
+                            height: ROW_HEIGHT,
+                            p: 0
                           }}
+                          rowSpan={
+                            items.length + (newRows[binCode]?.length || 0)
+                          }
                         >
-                          <DeleteIcon fontSize='small' />
-                        </IconButton>
+                          {binCode}
+                        </TableCell>
                       )}
-                    </Box>
-                  </TableCell>
 
-                  {/* ✅ Quantity —> 变成数字输入框（编辑模式） */}
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {isEditing ? (
-                      <TextField
-                        type='number'
-                        size='small'
-                        value={
-                          quantityDraft[item.inventoryID] !== undefined
-                            ? quantityDraft[item.inventoryID]
-                            : item.quantity
-                        }
-                        onChange={e => {
-                          const value = e.target.value
-                          setQuantityDraft(prev => ({
-                            ...prev,
-                            [item.inventoryID]:
-                              value === '' ? '' : Number(value) // ✅ 允许空字符串
-                          }))
+                      <TableCell
+                        align='center'
+                        sx={{
+                          border: '1px solid #e0e0e0',
+                          height: ROW_HEIGHT,
+                          p: 0
                         }}
-                        sx={{ width: 80 }}
-                      />
-                    ) : (
-                      <Typography sx={{ fontWeight: 500, color: '#3F72AF' }}>
-                        {item.quantity}
-                      </Typography>
-                    )}
-                  </TableCell>
+                      >
+                        <Box
+                          display='flex'
+                          justifyContent='center'
+                          alignItems='center'
+                          gap={1}
+                        >
+                          <Typography
+                            sx={{ color: '#1976d2', cursor: 'pointer' }}
+                            onClick={() =>
+                              navigate(
+                                `/${warehouseID}/${warehouseCode}/product?keyword=${item.productCode}`
+                              )
+                            }
+                          >
+                            {item.productCode}
+                          </Typography>
 
-                  {/* ✅ Updated At */}
-                  <TableCell
-                    align='center'
-                    sx={{ border: '1px solid #e0e0e0' }}
-                  >
-                    {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                  </TableCell>
+                          {isEditing && (
+                            <Tooltip title='Delete Item'>
+                              <span>
+                                <IconButton
+                                  color='error'
+                                  size='small'
+                                  sx={{ height: 32, width: 32, p: 0 }}
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        'Are you sure you want to delete this inventory item?'
+                                      )
+                                    ) {
+                                      onDelete(item.inventoryID)
+                                    }
+                                  }}
+                                >
+                                  <DeleteIcon fontSize='small' />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
 
-                  {/* ✅ Action（只在首行显示） */}
-                  {idx === 0 && (
-                    <TableCell
-                      align='center'
-                      sx={{ border: '1px solid #e0e0e0' }}
-                      rowSpan={items.length}
-                    >
-                      {isEditing ? (
-                        <>
-                          {/* ✅ Save 按钮 */}
-                          <IconButton
+                      <TableCell
+                        align='center'
+                        sx={{
+                          border: '1px solid #e0e0e0',
+                          height: ROW_HEIGHT,
+                          p: 0
+                        }}
+                      >
+                        {isEditing ? (
+                          <TextField
+                            type='number'
                             size='small'
-                            sx={{ color: 'green' }}
-                            disabled={saving !== null}
-                            onClick={async () => {
-                              setSaving(binCode)
-                              try {
-                                // 🚨 检查有没有 空 或 0
-                                const invalid = items.some(i => {
-                                  const newQty =
-                                    quantityDraft[i.inventoryID] !== undefined
-                                      ? quantityDraft[i.inventoryID]
-                                      : i.quantity
-                                  return newQty === '' || newQty === 0
-                                })
-
-                                if (invalid) {
-                                  alert('❌ 数量不能为空或 0，请修改后再保存。')
-                                  setSaving(null)
-                                  return
-                                }
-
-                                // ✅ 遍历 bin 下所有 item，如果数量有变化就更新
-                                for (const i of items) {
-                                  if (
-                                    quantityDraft[i.inventoryID] !==
-                                      undefined &&
-                                    quantityDraft[i.inventoryID] !== i.quantity
-                                  ) {
-                                    await onUpdateQuantity(
-                                      i.inventoryID,
-                                      quantityDraft[i.inventoryID] as number
-                                    )
-                                  }
-                                }
-
-                                onEditBin(binCode)
-                                setEditBinCode(null)
-                              } finally {
-                                setSaving(null)
+                            value={
+                              quantityDraft[item.inventoryID] ?? item.quantity
+                            }
+                            onChange={e => {
+                              const value = e.target.value
+                              setQuantityDraft(prev => ({
+                                ...prev,
+                                [item.inventoryID]:
+                                  value === '' ? '' : Number(value)
+                              }))
+                            }}
+                            sx={{
+                              width: 80,
+                              '& .MuiInputBase-root': {
+                                height: 32,
+                                fontSize: 13,
+                                padding: 0
+                              },
+                              '& .MuiOutlinedInput-input': {
+                                padding: '0 !important',
+                                height: '32px !important',
+                                lineHeight: '32px !important',
+                                textAlign: 'center'
                               }
                             }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{ fontWeight: 500, color: '#3F72AF' }}
                           >
-                            <SaveIcon fontSize='small' />
-                          </IconButton>
+                            {item.quantity}
+                          </Typography>
+                        )}
+                      </TableCell>
 
-                          {/* ❌ Cancel 按钮 */}
-                          <IconButton
-                            size='small'
-                            sx={{ color: 'gray' }}
-                            onClick={() => {
-                              setEditBinCode(null)
-                              setQuantityDraft({})
-                            }}
-                          >
-                            <CancelIcon fontSize='small' />
-                          </IconButton>
-                        </>
-                      ) : (
-                        <>
-                          {/* ✏️ Edit Bin 按钮 */}
-                          <IconButton
-                            size='small'
-                            sx={{ color: '#1976d2' }}
-                            onClick={() => setEditBinCode(binCode)}
-                          >
-                            <EditIcon fontSize='small' />
-                          </IconButton>
-                        </>
+                      <TableCell
+                        align='center'
+                        sx={{
+                          border: '1px solid #e0e0e0',
+                          height: ROW_HEIGHT,
+                          p: 0
+                        }}
+                      >
+                        {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                      </TableCell>
+
+                      {idx === 0 && (
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            height: ROW_HEIGHT,
+                            p: 0
+                          }}
+                          rowSpan={
+                            items.length + (newRows[binCode]?.length || 0)
+                          }
+                        >
+                          {isEditing ? (
+                            <Box display='flex' justifyContent='center' gap={1}>
+                              <Tooltip title='Save'>
+                                <span>
+                                  <IconButton
+                                    color='success'
+                                    size='small'
+                                    sx={{ height: 32, width: 32, p: 0 }}
+                                    disabled={saving !== null}
+                                    onClick={async () => {
+                                      const existingCodes = items.map(
+                                        i => i.productCode
+                                      )
+                                      const newCodes = (newRows[binCode] || [])
+                                        .map(r => r.productCode)
+                                        .filter(Boolean)
+
+                                      const duplicate = newCodes.find(code =>
+                                        existingCodes.includes(code)
+                                      )
+                                      if (duplicate) {
+                                        setDuplicateDialog({
+                                          open: true,
+                                          productCode: duplicate
+                                        })
+                                        return
+                                      }
+
+                                      const invalidOld = items.some(i => {
+                                        const draftQty =
+                                          quantityDraft[i.inventoryID]
+                                        return draftQty === 0 || draftQty === ''
+                                      })
+                                      const invalidNew = (
+                                        newRows[binCode] || []
+                                      ).some(
+                                        r =>
+                                          r.quantity === 0 || r.quantity === ''
+                                      )
+
+                                      if (invalidOld || invalidNew) {
+                                        setQuantityDialogOpen(true)
+                                        return
+                                      }
+
+                                      setSaving(binCode)
+                                      try {
+                                        for (const i of items) {
+                                          if (
+                                            quantityDraft[i.inventoryID] !==
+                                              undefined &&
+                                            quantityDraft[i.inventoryID] !==
+                                              i.quantity
+                                          ) {
+                                            await onUpdateQuantity(
+                                              i.inventoryID,
+                                              quantityDraft[
+                                                i.inventoryID
+                                              ] as number
+                                            )
+                                          }
+                                        }
+
+                                        for (const row of newRows[binCode] ||
+                                          []) {
+                                          await onAddNewItem(
+                                            binCode,
+                                            row.productCode,
+                                            row.quantity as number
+                                          )
+                                        }
+
+                                        onEditBin(binCode)
+                                        setEditBinCode(null)
+                                        setNewRows(prev => ({
+                                          ...prev,
+                                          [binCode]: []
+                                        }))
+                                      } finally {
+                                        setSaving(null)
+                                      }
+                                    }}
+                                  >
+                                    <SaveIcon />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+
+                              <Tooltip title='Cancel'>
+                                <span>
+                                  <IconButton
+                                    color='secondary'
+                                    size='small'
+                                    sx={{ height: 32, width: 32, p: 0 }}
+                                    onClick={() => {
+                                      setEditBinCode(null)
+                                      setQuantityDraft({})
+                                      setNewRows(prev => ({
+                                        ...prev,
+                                        [binCode]: []
+                                      }))
+                                    }}
+                                  >
+                                    <CancelIcon />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+
+                              <Tooltip title='Add Product'>
+                                <span>
+                                  <IconButton
+                                    color='primary'
+                                    size='small'
+                                    sx={{ height: 32, width: 32, p: 0 }}
+                                    onClick={() => handleAddRow(binCode)}
+                                  >
+                                    <AddCircleOutlineIcon />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            </Box>
+                          ) : (
+                            <Tooltip title='Edit'>
+                              <span>
+                                <IconButton
+                                  color='primary'
+                                  size='small'
+                                  sx={{ height: 32, width: 32, p: 0 }}
+                                  onClick={() => setEditBinCode(binCode)}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                        </TableCell>
                       )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))
+                    </TableRow>
+                  ))}
+
+                  {isEditing &&
+                    (newRows[binCode] || []).map((row, index) => (
+                      <TableRow
+                        key={`new-${binCode}-${index}`}
+                        sx={{ height: ROW_HEIGHT }}
+                      >
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            height: ROW_HEIGHT,
+                            p: 0
+                          }}
+                        >
+                          <Box
+                            display='flex'
+                            justifyContent='center'
+                            alignItems='center'
+                            gap={1}
+                          >
+                            <Autocomplete
+                              size='small'
+                              options={productOptions}
+                              value={row.productCode}
+                              onChange={(_, newValue) => {
+                                setNewRows(prev => {
+                                  const updated = [...(prev[binCode] || [])]
+                                  updated[index].productCode = newValue || ''
+                                  return { ...prev, [binCode]: updated }
+                                })
+                              }}
+                              renderInput={params => (
+                                <TextField
+                                  {...params}
+                                  placeholder='ProductCode'
+                                  size='small'
+                                  sx={{
+                                    '& .MuiInputBase-root': {
+                                      height: 32,
+                                      fontSize: 13,
+                                      padding: 0
+                                    },
+                                    '& .MuiOutlinedInput-input': {
+                                      padding: '0 !important',
+                                      height: '32px !important',
+                                      lineHeight: '32px !important',
+                                      textAlign: 'center'
+                                    }
+                                  }}
+                                />
+                              )}
+                              sx={{ width: 150 }}
+                            />
+
+                            <Tooltip title='Delete'>
+                              <span>
+                                <IconButton
+                                  color='error'
+                                  size='small'
+                                  sx={{ height: 32, width: 32, p: 0 }}
+                                  onClick={() =>
+                                    handleDeleteNewRow(binCode, index)
+                                  }
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            height: ROW_HEIGHT,
+                            p: 0
+                          }}
+                        >
+                          <TextField
+                            type='number'
+                            size='small'
+                            value={row.quantity}
+                            onChange={e => {
+                              const value = e.target.value
+                              setNewRows(prev => {
+                                const updated = [...(prev[binCode] || [])]
+                                updated[index].quantity =
+                                  value === '' ? '' : Number(value)
+                                return { ...prev, [binCode]: updated }
+                              })
+                            }}
+                            sx={{
+                              width: 80,
+                              '& .MuiInputBase-root': {
+                                height: 32,
+                                fontSize: 13,
+                                padding: 0
+                              },
+                              '& .MuiOutlinedInput-input': {
+                                padding: '0 !important',
+                                height: '32px !important',
+                                lineHeight: '32px !important',
+                                textAlign: 'center'
+                              }
+                            }}
+                          />
+                        </TableCell>
+
+                        <TableCell
+                          align='center'
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            height: ROW_HEIGHT,
+                            p: 0
+                          }}
+                        >
+                          ---
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </React.Fragment>
+              )
             })
           )}
         </TableBody>
       </Table>
+
+      <Dialog
+        open={duplicateDialog.open}
+        onClose={() => setDuplicateDialog({ open: false, productCode: '' })}
+      >
+        <DialogTitle>Duplicate Product</DialogTitle>
+        <DialogContent>
+          Product <b>{duplicateDialog.productCode}</b> already exists in this
+          BinCode and cannot be added again.
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDuplicateDialog({ open: false, productCode: '' })}
+            variant='contained'
+            color='primary'
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ✅ Quantity Dialog */}
+      <Dialog
+        open={quantityDialogOpen}
+        onClose={() => setQuantityDialogOpen(false)}
+      >
+        <DialogTitle>Invalid Quantity</DialogTitle>
+        <DialogContent>
+          Quantity cannot be <b>0</b> or empty.
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setQuantityDialogOpen(false)}
+            variant='contained'
+            color='primary'
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <TablePagination
         component='div'

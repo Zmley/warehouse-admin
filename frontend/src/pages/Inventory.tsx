@@ -5,11 +5,8 @@ import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import InventoryTable from 'components/inventory/InventoryTable'
-import CreateInventory from 'components/inventory/CreateInventory'
-import QuantityEdit from 'components/inventory/QuantityEdit'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
-import { InventoryItem } from 'types/InventoryItem'
 import AddIcon from '@mui/icons-material/Add'
 
 const ROWS_PER_PAGE = 10
@@ -19,16 +16,16 @@ const Inventory: React.FC = () => {
     warehouseID: string
     warehouseCode: string
   }>()
+
   const [searchParams, setSearchParams] = useSearchParams()
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
   const initialKeyword = searchParams.get('keyword') || ''
+
   const [page, setPage] = useState(initialPage)
   const [keyword, setKeyword] = useState(initialKeyword)
-  const [isQuantityModalOpen, setQuantityModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
-  const [isCreateInventoryModalOpen, setCreateInventoryModalOpen] =
-    useState(false)
+  useState(false)
   const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
+
   const { binCodes, fetchBinCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const combinedOptions = [...binCodes, ...productCodes]
@@ -40,18 +37,19 @@ const Inventory: React.FC = () => {
     error,
     removeInventory,
     editInventory,
-    fetchInventories
+    fetchInventories,
+    addInventory
   } = useInventory()
 
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
   useEffect(() => {
     fetchInventories(undefined, page + 1, ROWS_PER_PAGE, keyword || undefined)
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, page, keyword])
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -70,32 +68,13 @@ const Inventory: React.FC = () => {
     setPage(0)
   }
 
-  const handleOpenModal = (item: InventoryItem) => {
-    setSelectedItem(item)
-    setQuantityModalOpen(true)
-  }
-  const handleCloseModal = () => {
-    setQuantityModalOpen(false)
-    setSelectedItem(null)
-  }
-  const handleSaveQuantity = async (newQuantity: number) => {
-    if (!selectedItem) return
-    await editInventory(selectedItem.inventoryID, { quantity: newQuantity })
-    fetchInventories(undefined, page + 1, ROWS_PER_PAGE, keyword || undefined)
-    handleCloseModal()
-  }
-
   const handleDelete = async (id: string) => {
     await removeInventory(id)
     fetchInventories(undefined, page + 1, ROWS_PER_PAGE, keyword || undefined)
   }
 
-  const handleCreateInventoryOpen = () => setCreateInventoryModalOpen(true)
-  const handleCreateInventoryClose = () => setCreateInventoryModalOpen(false)
-
   return (
     <Box sx={{ height: '100%', overflowY: 'auto' }}>
-      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -117,21 +96,6 @@ const Inventory: React.FC = () => {
         >
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
-              variant='contained'
-              onClick={handleCreateInventoryOpen}
-              startIcon={<AddIcon />}
-              sx={{
-                borderRadius: '8px',
-                backgroundColor: '#3F72AF',
-                '&:hover': { backgroundColor: '#2d5e8c' },
-                fontWeight: 'bold',
-                textTransform: 'none'
-              }}
-            >
-              CREATE INVENTORY
-            </Button>
-
-            <Button
               variant='outlined'
               onClick={() => setUploadInventoryOpen(true)}
               startIcon={<AddIcon />}
@@ -152,10 +116,9 @@ const Inventory: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 搜索栏 */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <AutocompleteTextField
-          label='Search binCode / productCode'
+          label=''
           value={keyword}
           onChange={setKeyword}
           onSubmit={handleKeywordSubmit}
@@ -164,14 +127,13 @@ const Inventory: React.FC = () => {
         />
       </Box>
 
-      {/* 只让 Table 控制 loading */}
       <InventoryTable
         inventories={inventories}
         page={page}
         totalPages={totalPages}
         isLoading={isLoading}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        onDelete={removeInventory}
+        onPageChange={handleChangePage}
+        onDelete={handleDelete}
         onEditBin={() =>
           fetchInventories(
             undefined,
@@ -183,45 +145,26 @@ const Inventory: React.FC = () => {
         onUpdateQuantity={async (inventoryID, newQty) => {
           await editInventory(inventoryID, { quantity: newQty })
         }}
+        onAddNewItem={async (binCode, productCode, quantity) => {
+          const result = await addInventory({ binCode, productCode, quantity })
+          if (!result.success) {
+            alert(result.message)
+          }
+          await fetchInventories(
+            undefined,
+            page + 1,
+            ROWS_PER_PAGE,
+            keyword || undefined
+          )
+        }}
+        productOptions={productCodes}
       />
 
-      {/* 弹窗等其他功能 */}
-      {selectedItem && (
-        <QuantityEdit
-          open={isQuantityModalOpen}
-          onClose={handleCloseModal}
-          inventoryID={selectedItem.inventoryID}
-          initialQuantity={selectedItem.quantity}
-          onSuccess={() =>
-            fetchInventories(
-              undefined,
-              page + 1,
-              ROWS_PER_PAGE,
-              keyword || undefined
-            )
-          }
-          onQuantityUpdated={handleSaveQuantity}
-        />
-      )}
-      <Box sx={{ p: 3 }}>
-        <CreateInventory
-          open={isCreateInventoryModalOpen}
-          onClose={handleCreateInventoryClose}
-          onSuccess={() =>
-            fetchInventories(
-              undefined,
-              page + 1,
-              ROWS_PER_PAGE,
-              keyword || undefined
-            )
-          }
-          binCode={selectedItem?.bin?.binCode || ''}
-        />
-      </Box>
       <UploadInventoryModal
         open={isUploadInventoryOpen}
         onClose={() => setUploadInventoryOpen(false)}
       />
+
       {error && (
         <Typography color='error' align='center' sx={{ mt: 2 }}>
           {error}
