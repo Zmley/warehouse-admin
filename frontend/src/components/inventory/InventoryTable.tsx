@@ -29,6 +29,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InventoryItem } from 'types/InventoryItem'
 import { tableRowStyle } from 'styles/tableRowStyle'
+import CreateInventory from 'components/inventory/CreateInventory'
 
 interface InventoryTableProps {
   inventories: InventoryItem[]
@@ -104,6 +105,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const grouped = groupByBinCode(inventories)
   const binCodes = Object.keys(grouped)
 
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+
   const handleAddRow = (binCode: string) => {
     setNewRows(prev => ({
       ...prev,
@@ -156,9 +159,32 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           ) : inventories.length === 0 ? (
             <TableRow sx={{ height: ROW_HEIGHT }}>
               <TableCell colSpan={5} align='center'>
-                <Typography color='text.secondary' sx={{ my: 3 }}>
+                <Typography color='text.secondary' sx={{ my: 2 }}>
                   No inventory found.
                 </Typography>
+
+                {/* ✅ Add Inventory Button */}
+                <Tooltip title='Add Inventory'>
+                  <IconButton
+                    color='primary'
+                    size='large'
+                    sx={{ mt: 1 }}
+                    onClick={() => setCreateDialogOpen(true)}
+                  >
+                    <AddCircleOutlineIcon fontSize='large' />
+                  </IconButton>
+                </Tooltip>
+
+                {/* ✅ Create Inventory Dialog */}
+                <CreateInventory
+                  open={createDialogOpen}
+                  onClose={() => setCreateDialogOpen(false)}
+                  onSuccess={() => {
+                    setCreateDialogOpen(false)
+                    window.location.reload() // 🔄 也可以换成 fetchInventories() 刷新
+                  }}
+                  binCode=''
+                />
               </TableCell>
             </TableRow>
           ) : (
