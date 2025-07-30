@@ -190,7 +190,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         </TableCell>
                       )}
 
-                      {/* ✅ Product Code */}
                       <TableCell
                         align='center'
                         sx={{
