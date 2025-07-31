@@ -150,15 +150,22 @@ const Inventory: React.FC = () => {
           )
         }}
         productOptions={productCodes}
+        searchedBinCode={keyword}
+        onRefresh={() =>
+          fetchInventories(
+            undefined,
+            page + 1,
+            ROWS_PER_PAGE,
+            keyword || undefined
+          )
+        }
       />
 
-      {/* ✅ 上传弹窗 */}
       <UploadInventoryModal
         open={isUploadInventoryOpen}
         onClose={() => setUploadInventoryOpen(false)}
       />
 
-      {/* ✅ 错误提示 */}
       {error && (
         <Typography color='error' align='center' sx={{ mt: 2 }}>
           {error}

@@ -1,158 +1,267 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Button,
   TextField,
-  Alert,
-  Stack,
-  Paper
+  Autocomplete,
+  Typography,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
+  IconButton,
+  Tooltip
 } from '@mui/material'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import SaveIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { useInventory } from 'hooks/useInventory'
 import { useProduct } from 'hooks/useProduct'
-import { useBin } from 'hooks/useBin'
-import AutocompleteTextField from 'utils/AutocompleteTextField'
 
 interface CreateInventoryProps {
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   binCode: string
 }
 
+const ROW_HEIGHT = 40
+
 const CreateInventory: React.FC<CreateInventoryProps> = ({
-  open,
   onClose,
-  onSuccess
+  onSuccess,
+  binCode
 }) => {
   const { productCodes, fetchProductCodes } = useProduct()
-  const { binCodes, fetchBinCodes } = useBin()
-  const { addInventory } = useInventory()
+  const { editInventoriesBulk, addInventory } = useInventory()
 
-  const [selectedProductCode, setProductCode] = useState('')
-  const [selectedBinCode, setSelectedBinCode] = useState('')
-  const [quantity, setQuantity] = useState<string>('') // ✅ 初始值设为空字符串
-  const [successMessage, setSuccessMessage] = useState('')
+  const [rows, setRows] = useState([
+    { inventoryID: '', productCode: '', quantity: '' }
+  ])
+
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
   useEffect(() => {
-    if (open) {
-      fetchProductCodes()
-      fetchBinCodes()
-      setProductCode('')
-      setSelectedBinCode('')
-      setQuantity('')
-      setSuccessMessage('')
-    }
-  }, [open, fetchProductCodes, fetchBinCodes])
+    fetchProductCodes()
+  }, [fetchProductCodes])
 
-  const handleSubmit = async () => {
-    // ✅ 检查 Bin Code 是否有效
-    if (!binCodes.includes(selectedBinCode)) {
-      alert('⚠️ Please select a valid Bin Code.')
-      return
-    }
+  /** ✅ 保存逻辑：更新已有的，新增新的 */
+  const handleSave = async () => {
+    setErrorMessage('')
 
-    // ✅ 检查 Product Code 是否有效
-    if (!productCodes.includes(selectedProductCode)) {
-      alert('⚠️ Please select a valid Product Code.')
-      return
+    // ✅ 基本校验
+    for (const row of rows) {
+      if (!productCodes.includes(row.productCode)) {
+        setErrorMessage('Please select a valid Product Code.')
+        return
+      }
+      if (row.quantity === '' || Number(row.quantity) <= 0) {
+        setErrorMessage('Quantity cannot be empty or zero.')
+        return
+      }
     }
 
-    // ✅ 检查数量是否为空或 <= 0
-    if (quantity === '' || Number(quantity) <= 0) {
-      alert('⚠️ Quantity cannot be empty or zero.')
-      return
-    }
+    try {
+      const updateRows = rows.filter(r => r.inventoryID)
+      const newRows = rows.filter(r => !r.inventoryID)
 
-    // ✅ 提交
-    const result = await addInventory({
-      productCode: selectedProductCode,
-      binCode: selectedBinCode,
-      quantity: Number(quantity)
-    })
+      if (updateRows.length > 0) {
+        await editInventoriesBulk(
+          updateRows.map(r => ({
+            inventoryID: r.inventoryID,
+            productCode: r.productCode,
+            quantity: Number(r.quantity)
+          }))
+        )
+      }
 
-    if (result.success) {
-      alert('✅ Inventory item created successfully!')
-      onClose()
+      if (newRows.length > 0) {
+        for (const row of newRows) {
+          await addInventory({
+            binCode,
+            productCode: row.productCode,
+            quantity: Number(row.quantity)
+          })
+        }
+      }
+
       onSuccess()
-    } else {
-      alert(result.message)
+      onClose()
+    } catch (err) {
+      setErrorMessage('Save failed. Please try again.')
     }
   }
 
+  const handleAddRow = () => {
+    setRows(prev => [
+      ...prev,
+      { inventoryID: '', productCode: '', quantity: '' }
+    ])
+  }
+
+  const handleDeleteRow = (index: number) => {
+    setRows(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateRow = (
+    index: number,
+    field: 'productCode' | 'quantity',
+    value: string
+  ) => {
+    setRows(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
-      <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-        Create Inventory Item
-      </DialogTitle>
+    <Table
+      sx={{ tableLayout: 'fixed', width: '100%', border: '1px solid #e0e0e0' }}
+    >
+      <TableBody>
+        {rows.map((row, idx) => (
+          <TableRow key={idx} sx={{ height: ROW_HEIGHT }}>
+            <TableCell
+              align='center'
+              sx={{
+                border: '1px solid #e0e0e0',
+                fontWeight: 600,
+                width: '25%'
+              }}
+            >
+              {idx === 0 ? binCode : ''}
+            </TableCell>
 
-      <DialogContent sx={{ pb: 2 }}>
-        <Paper
-          elevation={4}
-          sx={{ p: 4, borderRadius: 3, backgroundColor: '#fdfdfd' }}
-        >
-          <Stack spacing={3}>
-            <AutocompleteTextField
-              label='Bin Code'
-              value={selectedBinCode}
-              onChange={setSelectedBinCode}
-              onSubmit={() => {}}
-              options={binCodes}
-              freeSolo={false} // ✅ 不允许用户输入不存在的值
-            />
+            {/* ✅ Product Code */}
+            <TableCell
+              align='center'
+              sx={{ border: '1px solid #e0e0e0', width: '25%' }}
+            >
+              <Autocomplete
+                size='small'
+                options={productCodes}
+                value={row.productCode}
+                onChange={(_, value) =>
+                  updateRow(idx, 'productCode', value || '')
+                }
+                sx={{ width: '90%' }}
+                renderInput={params => (
+                  <TextField {...params} placeholder='Select Product Code' />
+                )}
+              />
+            </TableCell>
 
-            <AutocompleteTextField
-              label='Product Code'
-              value={selectedProductCode}
-              onChange={setProductCode}
-              onSubmit={() => {}}
-              options={productCodes}
-              freeSolo={false} // ✅ 不允许用户输入不存在的值
-            />
+            {/* ✅ Quantity */}
+            <TableCell
+              align='center'
+              sx={{ border: '1px solid #e0e0e0', width: '25%' }}
+            >
+              <TextField
+                type='number'
+                size='small'
+                value={row.quantity}
+                onChange={e => updateRow(idx, 'quantity', e.target.value)}
+                placeholder='Quantity'
+                sx={{ width: '80%' }}
+              />
+            </TableCell>
 
-            <TextField
-              label='Quantity'
-              type='number'
-              value={quantity}
-              onChange={e => setQuantity(e.target.value)}
-              fullWidth
-              placeholder='Enter quantity'
-            />
+            {/* ✅ Action */}
+            {idx === 0 ? (
+              <TableCell
+                align='center'
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  width: '25%'
+                }}
+              >
+                {/* ✅ Save */}
+                <Tooltip title='Save'>
+                  <IconButton
+                    color='success'
+                    size='small'
+                    sx={{ height: 32, width: 32, p: 0, mr: 1 }}
+                    onClick={handleSave}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Tooltip>
 
-            {successMessage && (
-              <Alert severity='success' sx={{ fontWeight: 'bold' }}>
-                {successMessage}
-              </Alert>
+                {/* ✅ Cancel */}
+                <Tooltip title='Cancel'>
+                  <IconButton
+                    color='secondary'
+                    size='small'
+                    sx={{ height: 32, width: 32, p: 0, mr: 1 }}
+                    onClick={onClose}
+                  >
+                    <CancelIcon />
+                  </IconButton>
+                </Tooltip>
+
+                {/* ✅ Add Product (➕) */}
+                <Tooltip title='Add Product'>
+                  <IconButton
+                    color='primary'
+                    size='small'
+                    sx={{ height: 32, width: 32, p: 0 }}
+                    onClick={handleAddRow}
+                  >
+                    <AddCircleOutlineIcon />
+                  </IconButton>
+                </Tooltip>
+              </TableCell>
+            ) : (
+              <TableCell
+                align='center'
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  width: '25%'
+                }}
+              >
+                {/* ✅ Delete */}
+                <Tooltip title='Delete'>
+                  <IconButton
+                    color='error'
+                    size='small'
+                    sx={{ height: 32, width: 32, p: 0 }}
+                    onClick={() => handleDeleteRow(idx)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              </TableCell>
             )}
-          </Stack>
-        </Paper>
-      </DialogContent>
+          </TableRow>
+        ))}
 
-      <DialogActions sx={{ p: 3 }}>
-        <Button
-          onClick={onClose}
-          variant='outlined'
-          sx={{ width: 100, height: 45, fontWeight: 'bold' }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant='contained'
-          sx={{
-            width: 100,
-            height: 45,
-            fontWeight: 'bold',
-            backgroundColor: '#3f51b5',
-            '&:hover': { backgroundColor: '#303f9f' }
-          }}
-        >
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
+        {errorMessage && (
+          <TableRow>
+            <TableCell
+              colSpan={4}
+              sx={{
+                border: '1px solid #e0e0e0',
+                bgcolor: '#fff5f5',
+                p: 1
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <ErrorOutlineIcon style={{ color: 'red', marginRight: 6 }} />
+                <Typography color='red' fontWeight={500} fontSize={14}>
+                  {errorMessage}
+                </Typography>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   )
 }
 

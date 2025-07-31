@@ -48,6 +48,8 @@ interface InventoryTableProps {
     quantity: number
   ) => Promise<void>
   productOptions: string[]
+  searchedBinCode?: string
+  onRefresh: () => void
 }
 
 const ROW_HEIGHT = 34
@@ -72,7 +74,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   onEditBin,
   onBulkUpdate,
   onAddNewItem,
-  productOptions
+  productOptions,
+  searchedBinCode,
+  onRefresh
 }) => {
   const navigate = useNavigate()
   const { warehouseID, warehouseCode } = useParams<{
@@ -105,7 +109,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const grouped = groupByBinCode(inventories)
   const binCodes = Object.keys(grouped)
 
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
 
   const handleAddRow = (binCode: string) => {
     setNewRows(prev => ({
@@ -157,36 +161,51 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               </TableCell>
             </TableRow>
           ) : inventories.length === 0 ? (
-            <TableRow sx={{ height: ROW_HEIGHT }}>
-              <TableCell colSpan={5} align='center'>
-                <Typography color='text.secondary' sx={{ my: 2 }}>
-                  No inventory found.
-                </Typography>
-
-                {/* ✅ Add Inventory Button */}
-                <Tooltip title='Add Inventory'>
-                  <IconButton
-                    color='primary'
-                    size='large'
-                    sx={{ mt: 1 }}
-                    onClick={() => setCreateDialogOpen(true)}
+            <>
+              <TableRow sx={{ height: ROW_HEIGHT }}>
+                <TableCell colSpan={5} align='center'>
+                  <Box
+                    display='flex'
+                    alignItems='center'
+                    justifyContent='center'
+                    gap={1}
                   >
-                    <AddCircleOutlineIcon fontSize='large' />
-                  </IconButton>
-                </Tooltip>
+                    <Typography
+                      color='text.secondary'
+                      sx={{ my: 2, fontSize: 16 }}
+                    >
+                      No inventory found.
+                    </Typography>
 
-                {/* ✅ Create Inventory Dialog */}
-                <CreateInventory
-                  open={createDialogOpen}
-                  onClose={() => setCreateDialogOpen(false)}
-                  onSuccess={() => {
-                    setCreateDialogOpen(false)
-                    window.location.reload() // 🔄 也可以换成 fetchInventories() 刷新
-                  }}
-                  binCode=''
-                />
-              </TableCell>
-            </TableRow>
+                    {/* ✅ Add Inventory Button */}
+                    <Tooltip title='Add Inventory'>
+                      <IconButton
+                        color='primary'
+                        size='large'
+                        onClick={() => setShowCreate(true)}
+                      >
+                        <AddCircleOutlineIcon fontSize='large' />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </TableCell>
+              </TableRow>
+
+              {showCreate && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <CreateInventory
+                      onClose={() => setShowCreate(false)}
+                      onSuccess={() => {
+                        setShowCreate(false)
+                        onRefresh()
+                      }}
+                      binCode={searchedBinCode || ''}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
+            </>
           ) : (
             binCodes.map(binCode => {
               const items = grouped[binCode]
@@ -349,7 +368,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         )}
                       </TableCell>
 
-                      {/* ✅ Updated At */}
                       <TableCell
                         align='center'
                         sx={{
@@ -361,7 +379,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                       </TableCell>
 
-                      {/* ✅ Action */}
                       {idx === 0 && (
                         <TableCell
                           align='center'
@@ -411,7 +428,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                         return
                                       }
 
-                                      // ✅ 检查 ProductCode 是否为空
                                       const invalidProduct =
                                         items.some(i => {
                                           const prod =
@@ -428,7 +444,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                         return
                                       }
 
-                                      // ✅ 检查 Quantity 是否为空或 0
                                       const invalidOld = items.some(i => {
                                         const draftQty =
                                           quantityDraft[i.inventoryID]
@@ -447,7 +462,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
                                       setSaving(binCode)
                                       try {
-                                        // ✅ 更新旧数据
                                         const updates = items
                                           .map(i => {
                                             const qty =
@@ -487,7 +501,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                           await onBulkUpdate(updates)
                                         }
 
-                                        // ✅ 新增数据
                                         for (const row of newRows[binCode] ||
                                           []) {
                                           await onAddNewItem(
@@ -568,7 +581,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     </TableRow>
                   ))}
 
-                  {/* ✅ 新增行 */}
                   {isEditing &&
                     (newRows[binCode] || []).map((row, index) => (
                       <TableRow
@@ -639,7 +651,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           </Box>
                         </TableCell>
 
-                        {/* ✅ Quantity */}
                         <TableCell
                           align='center'
                           sx={{
@@ -698,7 +709,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </TableBody>
       </Table>
 
-      {/* ✅ Duplicate Dialog */}
       <Dialog
         open={duplicateDialog.open}
         onClose={() => setDuplicateDialog({ open: false, productCode: '' })}
@@ -719,7 +729,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* ✅ Quantity Dialog */}
       <Dialog
         open={quantityDialogOpen}
         onClose={() => setQuantityDialogOpen(false)}
@@ -739,7 +748,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* ✅ Product Code 为空的 Dialog */}
       <Dialog
         open={emptyProductDialogOpen}
         onClose={() => setEmptyProductDialogOpen(false)}
