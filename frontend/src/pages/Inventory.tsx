@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography, Button, Autocomplete, TextField } from '@mui/material'
 import { useSearchParams, useParams } from 'react-router-dom'
-import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import InventoryTable from 'components/inventory/InventoryTable'
@@ -40,6 +39,9 @@ const Inventory: React.FC = () => {
     addInventory
   } = useInventory()
 
+  const [open, setOpen] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
@@ -57,9 +59,9 @@ const Inventory: React.FC = () => {
     setSearchParams(newParams)
   }
 
-  const handleKeywordSubmit = () => {
+  const handleKeywordSubmit = (value: string) => {
     const newParams = new URLSearchParams(searchParams)
-    keyword ? newParams.set('keyword', keyword) : newParams.delete('keyword')
+    value ? newParams.set('keyword', value) : newParams.delete('keyword')
     newParams.set('page', '1')
     setSearchParams(newParams)
     setPage(0)
@@ -102,17 +104,65 @@ const Inventory: React.FC = () => {
         </Button>
       </Box>
 
+      {/* 🔵 Material UI Autocomplete */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <AutocompleteTextField
-          label=''
-          value={keyword}
-          onChange={setKeyword}
-          onSubmit={handleKeywordSubmit}
+        <Autocomplete
+          disablePortal
           options={combinedOptions}
+          value={keyword || null}
+          freeSolo={false}
+          open={open}
+          onOpen={() => {
+            if (inputValue.length >= 1) {
+              setOpen(true)
+            }
+          }}
+          onClose={() => setOpen(false)}
+          inputValue={inputValue}
+          onInputChange={(_, newInput) => {
+            setInputValue(newInput)
+            if (newInput.length >= 1) {
+              setOpen(true)
+            } else {
+              setOpen(false)
+            }
+          }}
+          onChange={(_, newValue) => {
+            setKeyword(newValue || '')
+            handleKeywordSubmit(newValue || '')
+          }}
           sx={{ width: 250 }}
+          renderInput={params => (
+            <TextField
+              {...params}
+              placeholder='Select Bin Code or Product Code'
+              size='small'
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
+              sx={{
+                backgroundColor: '#fff',
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#ccc'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#888'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#3F72AF'
+                  }
+                }
+              }}
+            />
+          )}
         />
       </Box>
 
+      {/* 库存表格 */}
       <InventoryTable
         inventories={inventories}
         page={page}
@@ -161,6 +211,7 @@ const Inventory: React.FC = () => {
         }
       />
 
+      {/* 上传 Excel 弹窗 */}
       <UploadInventoryModal
         open={isUploadInventoryOpen}
         onClose={() => setUploadInventoryOpen(false)}
