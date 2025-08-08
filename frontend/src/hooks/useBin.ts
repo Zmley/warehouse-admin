@@ -7,10 +7,10 @@ import {
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
   updateBinDefaultProductCodes,
   deleteBinByBinID
-} from 'api/binApi'
+} from 'api/bin'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
-import { BinUploadType } from 'types/BinUploadType'
+import { BinUploadType } from 'types/Bin'
 
 export interface FetchParams {
   warehouseID: string

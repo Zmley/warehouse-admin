@@ -1,6 +1,6 @@
-import { InventoryUploadType } from 'types/InventoryUploadType'
-import { BinUploadType } from 'types/BinUploadType'
-import { ProductsUploadType } from 'types/ProductsUploadType'
+import { InventoryUploadType } from 'types/Inventory'
+import { BinUploadType } from 'types/Bin'
+import { ProductsUploadType } from 'types/product'
 
 export const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
 

@@ -10,9 +10,9 @@ import {
   parseProductRows,
   parseBinUploadRows
 } from 'utils/excelUploadParser'
-import { InventoryUploadType } from 'types/InventoryUploadType'
-import { ProductsUploadType } from 'types/ProductsUploadType'
-import { BinUploadType } from 'types/BinUploadType'
+import { InventoryUploadType } from 'types/Inventory'
+import { ProductsUploadType } from 'types/product'
+import { BinUploadType } from 'types/Bin'
 
 interface Props {
   open: boolean
@@ -70,17 +70,20 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
   const handleConfirmUpload = async () => {
     setIsUploading(true)
     try {
-      const res = await uploadInventoryList(inventories)
-      if (res.success) {
+      const { data } = await uploadInventoryList(inventories)
+
+      if (data.success) {
         setInventories([])
         setSuccessMessage(
-          `✅ Inserted ${res.insertedCount}, Updated ${res.updatedCount} inventory item(s).`
+          `✅ Inserted ${data.insertedCount}, Updated ${data.updatedCount} inventory item(s).`
         )
       } else {
-        setError(res.message || 'Upload failed.')
+        setError(data.message || 'Upload failed.')
       }
     } catch (err: any) {
-      setError('Upload failed. Please try again.')
+      setError(
+        err?.response?.data?.message || 'Upload failed. Please try again.'
+      )
     } finally {
       setIsUploading(false)
     }

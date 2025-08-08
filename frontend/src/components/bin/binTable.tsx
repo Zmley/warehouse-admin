@@ -25,7 +25,7 @@ import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import MoveDownIcon from '@mui/icons-material/MoveDown'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
-import { BinType } from 'constants/binTypes'
+import { BinType } from 'constants/index'
 
 export interface FetchParams {
   warehouseID: string

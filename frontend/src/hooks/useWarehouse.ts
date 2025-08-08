@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { getWarehouses } from 'api/warehouseApi'
+import { getWarehouses } from 'api/warehouse'
 
 interface Warehouse {
   warehouseID: string

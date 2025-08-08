@@ -18,7 +18,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
-import { BinType } from 'constants/binTypes'
+import { BinType } from 'constants/index'
 import { useBin } from 'hooks/useBin'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'

@@ -5,7 +5,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
 import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
-import { PageType } from 'constants/pageTypes'
+import { PageType } from 'constants/index'
 
 const sidebarItems: {
   label: string

@@ -1,6 +1,6 @@
 import React, { createContext, useState } from 'react'
 import { areTokensValid, clearTokens } from 'utils/Storages'
-import { fetchUserProfile } from 'api/authApi'
+import { fetchUserProfile } from 'api/auth'
 
 interface UserProfile {
   firstName: string

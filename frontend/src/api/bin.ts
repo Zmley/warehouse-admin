@@ -1,6 +1,6 @@
 import { Bin } from 'types/Bin'
 import apiClient from './axiosClient.ts'
-import { BinUploadType } from 'types/BinUploadType'
+import { BinUploadType } from 'types/Bin.js'
 
 export const getBinCodes = async (warehouseID: string) => {
   const response = await apiClient.get('/bins/codes', {

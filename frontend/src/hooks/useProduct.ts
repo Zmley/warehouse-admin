@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
-import { addProducts, getProductCodes, getProducts } from '../api/productApi'
+import { addProducts, getProductCodes, getProducts } from '../api/product'
 import { Product } from 'types/product'
 import { useParams } from 'react-router-dom'
-import { ProductsUploadType } from 'types/ProductsUploadType'
+import { ProductsUploadType } from 'types/product'
 
 export interface FetchParams {
   keyword?: string

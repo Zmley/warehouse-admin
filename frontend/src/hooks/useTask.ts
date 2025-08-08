@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
-import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import { TaskStatusFilter } from 'constants/index'
 import { useParams } from 'react-router-dom'
 import { createPickerTask } from 'api/taskApi'
 

@@ -7,3 +7,9 @@ export interface Product {
   updatedAt: string
   totalQuantity: number
 }
+
+export interface ProductsUploadType {
+  productCode: string
+  barCode: string
+  boxType: string
+}

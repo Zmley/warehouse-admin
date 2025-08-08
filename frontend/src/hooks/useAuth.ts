@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from 'contexts/auth'
-import { loginUser } from 'api/authApi'
+import { loginUser } from 'api/auth'
 import { saveTokens, clearTokens } from 'utils/Storages'
 
 export const useAuth = () => {

@@ -27,7 +27,7 @@ import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import { useNavigate, useParams } from 'react-router-dom'
-import { InventoryItem } from 'types/InventoryItem'
+import { InventoryItem } from 'types/Inventory'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import CreateInventory from 'components/inventory/CreateInventory'
 

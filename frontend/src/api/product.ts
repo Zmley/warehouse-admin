@@ -1,4 +1,4 @@
-import { ProductsUploadType } from 'types/ProductsUploadType'
+import { ProductsUploadType } from 'types/product.js'
 import apiClient from './axiosClient.ts'
 
 export const getProductCodes = async (): Promise<{
