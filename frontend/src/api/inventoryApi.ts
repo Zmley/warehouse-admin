@@ -7,9 +7,10 @@ export const getInventories = async (params: {
   page?: number
   limit?: number
   keyword?: string
+  sortBy?: 'updatedAt' | 'binCode'
+  sort?: 'asc' | 'desc'
 }) => {
   const response = await apiClient.get('/inventories', { params })
-
   return {
     inventory: response.data.inventories,
     totalCount: response.data.totalCount

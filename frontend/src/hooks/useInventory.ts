@@ -16,31 +16,68 @@ export const useInventory = () => {
   const [totalPages, setTotalPages] = useState(0)
   const { warehouseID } = useParams()
 
+  // const fetchInventories = useCallback(
+  //   async (
+  //     binID?: string,
+  //     page: number = 1,
+  //     limit: number = 10,
+  //     keyword?: string
+  //   ) => {
+  //     try {
+  //       setIsLoading(true)
+  //       setError(null)
+
+  //       const { inventory, totalCount } = await getInventories({
+  //         warehouseID: warehouseID || '',
+  //         binID: binID === 'All' ? undefined : binID,
+  //         page,
+  //         limit,
+  //         keyword
+  //       })
+
+  //       setInventories(inventory)
+  //       setTotalPages(totalCount)
+  //       return { success: true }
+  //     } catch (err: any) {
+  //       const message =
+  //         err?.response?.data?.message || '❌ Failed to fetch inventories.'
+  //       setError(message)
+  //       return { success: false, message }
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   },
+  //   [warehouseID]
+  // )
+
   const fetchInventories = useCallback(
     async (
       binID?: string,
       page: number = 1,
       limit: number = 10,
-      keyword?: string
+      keyword?: string,
+      sort: 'asc' | 'desc' = 'desc',
+      sortBy: 'updatedAt' | 'binCode' = 'updatedAt'
     ) => {
+      setIsLoading(true)
+      setError(null)
       try {
-        setIsLoading(true)
-        setError(null)
-
         const { inventory, totalCount } = await getInventories({
-          warehouseID: warehouseID || '',
+          warehouseID: warehouseID || '', // <-- 关键
           binID: binID === 'All' ? undefined : binID,
           page,
           limit,
-          keyword
+          keyword,
+          sortBy,
+          sort
         })
-
         setInventories(inventory)
         setTotalPages(totalCount)
         return { success: true }
-      } catch (err: any) {
+      } catch (err: unknown) {
         const message =
-          err?.response?.data?.message || '❌ Failed to fetch inventories.'
+          (err as any)?.response?.data?.message ||
+          '❌ Failed to fetch inventories.'
         setError(message)
         return { success: false, message }
       } finally {
