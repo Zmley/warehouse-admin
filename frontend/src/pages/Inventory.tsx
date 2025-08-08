@@ -61,15 +61,19 @@ const Inventory: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
+  // 把当前筛选/分页条件的加载封装成一个函数，避免重复
+  const loadCurrent = () =>
+    fetchInventories({
+      page: page + 1,
+      limit: ROWS_PER_PAGE,
+      keyword: keyword || undefined,
+      sort: sortOrder,
+      sortBy: sortField
+    })
+
+  // 首次 & 依赖变更时加载
   useEffect(() => {
-    fetchInventories(
-      undefined,
-      page + 1,
-      ROWS_PER_PAGE,
-      keyword || undefined,
-      sortOrder, // ✅ 第5个参数是顺序
-      sortField // ✅ 第6个参数是字段
-    )
+    loadCurrent()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, page, keyword, sortOrder, sortField])
 
@@ -128,14 +132,7 @@ const Inventory: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     await removeInventory(id)
-    fetchInventories(
-      undefined,
-      page + 1,
-      ROWS_PER_PAGE,
-      keyword || undefined,
-      sortOrder, // ✅ 顺序
-      sortField // ✅ 字段
-    )
+    loadCurrent()
   }
 
   return (
@@ -198,51 +195,19 @@ const Inventory: React.FC = () => {
         isLoading={isLoading}
         onPageChange={handleChangePage}
         onDelete={handleDelete}
-        onEditBin={() =>
-          fetchInventories(
-            undefined,
-            page + 1,
-            ROWS_PER_PAGE,
-            keyword || undefined,
-            sortOrder, // ✅
-            sortField // ✅
-          )
-        }
+        onEditBin={() => loadCurrent()}
         onBulkUpdate={async updates => {
           await editInventoriesBulk(updates)
-          await fetchInventories(
-            undefined,
-            page + 1,
-            ROWS_PER_PAGE,
-            keyword || undefined,
-            sortOrder, // ✅
-            sortField // ✅
-          )
+          await loadCurrent()
         }}
         onAddNewItem={async (binCode, productCode, quantity) => {
           const result = await addInventory({ binCode, productCode, quantity })
           if (!result.success) alert(result.message)
-          await fetchInventories(
-            undefined,
-            page + 1,
-            ROWS_PER_PAGE,
-            keyword || undefined,
-            sortOrder, // ✅
-            sortField // ✅
-          )
+          await loadCurrent()
         }}
         productOptions={productCodes}
         searchedBinCode={keyword}
-        onRefresh={() =>
-          fetchInventories(
-            undefined,
-            page + 1,
-            ROWS_PER_PAGE,
-            keyword || undefined,
-            sortOrder, // ✅
-            sortField // ✅
-          )
-        }
+        onRefresh={() => loadCurrent()}
       />
 
       <UploadInventoryModal

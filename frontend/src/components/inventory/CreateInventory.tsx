@@ -44,11 +44,9 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
     fetchProductCodes()
   }, [fetchProductCodes])
 
-  /** ✅ 保存逻辑：更新已有的，新增新的 */
   const handleSave = async () => {
     setErrorMessage('')
 
-    // ✅ 基本校验
     for (const row of rows) {
       if (!productCodes.includes(row.productCode)) {
         setErrorMessage('Please select a valid Product Code.')
@@ -132,7 +130,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               {idx === 0 ? binCode : ''}
             </TableCell>
 
-            {/* ✅ Product Code */}
             <TableCell
               align='center'
               sx={{ border: '1px solid #e0e0e0', width: '25%' }}
@@ -151,7 +148,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               />
             </TableCell>
 
-            {/* ✅ Quantity */}
             <TableCell
               align='center'
               sx={{ border: '1px solid #e0e0e0', width: '25%' }}
@@ -166,7 +162,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
               />
             </TableCell>
 
-            {/* ✅ Action */}
             {idx === 0 ? (
               <TableCell
                 align='center'
@@ -175,7 +170,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
                   width: '25%'
                 }}
               >
-                {/* ✅ Save */}
                 <Tooltip title='Save'>
                   <IconButton
                     color='success'
@@ -187,7 +181,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
                   </IconButton>
                 </Tooltip>
 
-                {/* ✅ Cancel */}
                 <Tooltip title='Cancel'>
                   <IconButton
                     color='secondary'
@@ -199,7 +192,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
                   </IconButton>
                 </Tooltip>
 
-                {/* ✅ Add Product (➕) */}
                 <Tooltip title='Add Product'>
                   <IconButton
                     color='primary'
@@ -219,7 +211,6 @@ const CreateInventory: React.FC<CreateInventoryProps> = ({
                   width: '25%'
                 }}
               >
-                {/* ✅ Delete */}
                 <Tooltip title='Delete'>
                   <IconButton
                     color='error'

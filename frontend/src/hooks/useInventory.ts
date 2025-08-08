@@ -5,10 +5,13 @@ import {
   addInventories,
   bulkUpdateInventory
 } from 'api/inventory'
-import { InventoryItem } from 'types/Inventory'
+import {
+  InventoryItem,
+  InventoryUploadType,
+  InventoryUpdate,
+  GetInventoriesParams
+} from 'types/Inventory'
 import { useParams } from 'react-router-dom'
-import { InventoryUploadType } from 'types/Inventory'
-import { InventoryUpdate } from 'types/Inventory'
 
 export const useInventory = () => {
   const [inventories, setInventories] = useState<InventoryItem[]>([])
@@ -19,16 +22,20 @@ export const useInventory = () => {
 
   const fetchInventories = useCallback(
     async (
-      binID?: string,
-      page: number = 1,
-      limit: number = 10,
-      keyword?: string,
-      sort: 'asc' | 'desc' = 'desc',
-      sortBy: 'updatedAt' | 'binCode' = 'updatedAt'
+      options: Partial<Omit<GetInventoriesParams, 'warehouseID'>> = {}
     ) => {
       setIsLoading(true)
       setError(null)
       try {
+        const {
+          binID,
+          page = 1,
+          limit = 10,
+          keyword,
+          sort = 'desc',
+          sortBy = 'updatedAt'
+        } = options
+
         const { data } = await getInventories({
           warehouseID: warehouseID || '',
           binID: binID === 'All' ? undefined : binID,
@@ -38,13 +45,13 @@ export const useInventory = () => {
           sortBy,
           sort
         })
+
         setInventories(data.inventories)
         setTotalPages(data.totalCount)
         return { success: true }
-      } catch (err: unknown) {
+      } catch (err: any) {
         const message =
-          (err as any)?.response?.data?.message ||
-          '❌ Failed to fetch inventories.'
+          err?.response?.data?.message || '❌ Failed to fetch inventories.'
         setError(message)
         return { success: false, message }
       } finally {
@@ -57,7 +64,6 @@ export const useInventory = () => {
   const removeInventory = useCallback(async (id: string) => {
     try {
       const { data } = await deleteInventory(id)
-
       if (data.success) {
         setInventories(prev => prev.filter(item => item.inventoryID !== id))
         setError(null)
@@ -66,9 +72,9 @@ export const useInventory = () => {
         setError(data.message || '❌ Failed to delete inventory item')
       }
     } catch (err: any) {
-      const message =
+      setError(
         err?.response?.data?.message || '❌ Failed to delete inventory item'
-      setError(message)
+      )
     }
   }, [])
 
@@ -76,7 +82,6 @@ export const useInventory = () => {
     async (updates: InventoryUpdate[]) => {
       try {
         const { data } = await bulkUpdateInventory(updates)
-
         if (data.success) {
           setInventories(prev =>
             prev.map(item => {
@@ -92,10 +97,10 @@ export const useInventory = () => {
           throw new Error('Failed to bulk update inventory items')
         }
       } catch (err: any) {
-        const message =
+        setError(
           err?.response?.data?.message ||
-          '❌ Failed to bulk update inventory items'
-        setError(message)
+            '❌ Failed to bulk update inventory items'
+        )
       }
     },
     []
@@ -104,10 +109,8 @@ export const useInventory = () => {
   const addInventory = useCallback(async (newItem: InventoryUploadType) => {
     try {
       const { data } = await addInventories([newItem])
-
       const inserted = data?.insertedCount ?? 0
       const updated = data?.updatedCount ?? 0
-
       if (data?.success && (inserted > 0 || updated > 0)) {
         return {
           success: true,
@@ -117,25 +120,18 @@ export const useInventory = () => {
               : '✅ Existing inventory updated successfully.'
         }
       }
-
       return { success: false, message: data?.message }
     } catch (err: any) {
-      const message =
-        err?.response?.data?.message || '❌ Error uploading inventory'
-      return { success: false, message }
+      return {
+        success: false,
+        message: err?.response?.data?.message || '❌ Error uploading inventory'
+      }
     }
   }, [])
 
   const uploadInventoryList = useCallback(
-    async (inventories: InventoryUploadType[]) => {
-      try {
-        const result = await addInventories(inventories)
-        return result
-      } catch (error) {
-        console.error('❌ Error uploading inventory:', error)
-        throw error
-      }
-    },
+    async (inventories: InventoryUploadType[]) =>
+      (await addInventories(inventories)).data,
     []
   )
 

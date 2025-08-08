@@ -320,7 +320,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                         )}
                       </TableCell>
 
-                      {/* ✅ Quantity */}
                       <TableCell
                         align='center'
                         sx={{
@@ -526,7 +525,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 </span>
                               </Tooltip>
 
-                              {/* ✅ Cancel */}
                               <Tooltip title='Cancel'>
                                 <span>
                                   <IconButton
@@ -689,7 +687,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                           />
                         </TableCell>
 
-                        {/* ✅ Updated At */}
                         <TableCell
                           align='center'
                           sx={{
