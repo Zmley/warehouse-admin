@@ -5,7 +5,9 @@ import {
   Button,
   Select,
   MenuItem,
-  SelectChangeEvent
+  SelectChangeEvent,
+  IconButton,
+  Tooltip
 } from '@mui/material'
 import { useSearchParams, useParams } from 'react-router-dom'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
@@ -15,6 +17,7 @@ import InventoryTable from 'components/inventory/InventoryTable'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 type SortOrder = 'asc' | 'desc'
 type SortField = 'updatedAt' | 'binCode'
@@ -61,7 +64,6 @@ const Inventory: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
-  // 把当前筛选/分页条件的加载封装成一个函数，避免重复
   const loadCurrent = () =>
     fetchInventories({
       page: page + 1,
@@ -71,7 +73,6 @@ const Inventory: React.FC = () => {
       sortBy: sortField
     })
 
-  // 首次 & 依赖变更时加载
   useEffect(() => {
     loadCurrent()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,6 +136,10 @@ const Inventory: React.FC = () => {
     loadCurrent()
   }
 
+  const handleRefresh = () => {
+    loadCurrent()
+  }
+
   return (
     <Box sx={{ height: '100%', overflowY: 'auto' }}>
       {/* Header */}
@@ -185,6 +190,26 @@ const Inventory: React.FC = () => {
           <MenuItem value='desc'>Descending</MenuItem>
           <MenuItem value='asc'>Ascending</MenuItem>
         </Select>
+
+        <Tooltip title='Refresh'>
+          <span>
+            <IconButton
+              onClick={handleRefresh}
+              disabled={isLoading}
+              size='small'
+              sx={{
+                ml: 1,
+                animation: isLoading ? 'spin 0.9s linear infinite' : 'none',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' }
+                }
+              }}
+            >
+              <RefreshIcon fontSize='small' />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Box>
 
       {/* Table */}
