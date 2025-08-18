@@ -17,7 +17,6 @@ import {
   Snackbar
 } from '@mui/material'
 import dayjs from 'dayjs'
-// import PrintIcon from '@mui/icons-material/Print'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -34,7 +33,6 @@ interface TaskTableProps {
   rowsPerPage: number
   onPageChange: (event: unknown, newPage: number) => void
   onCancel: (taskID: string) => void
-  // onPrint: (task: any) => void
   onRefresh: () => void
 }
 
@@ -44,13 +42,16 @@ const TaskTable: React.FC<TaskTableProps> = ({
   page,
   rowsPerPage,
   onPageChange,
-  // onPrint,
   onRefresh
 }) => {
   const [editTaskID, setEditTaskID] = useState<string | null>(null)
   const [editedStatus, setEditedStatus] = useState('')
-  const [editedSourceBin, setEditedSourceBin] = useState('')
+  // ✅ 保存选中的“具体记录”
+  const [editedSourceBinCode, setEditedSourceBinCode] = useState<string>('') // 传给后端
+  const [editedSourceInventoryID, setEditedSourceInventoryID] =
+    useState<string>('') // 控制哪个按钮被选中
   const [snackOpen, setSnackOpen] = useState(false)
+
   const { fetchBinCodes } = useBin()
   const { updateTask } = useTask()
   const navigate = useNavigate()
@@ -66,26 +67,25 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
   const cellStyle = {
     border: '1px solid #e0e0e0',
-    whiteSpace: 'nowrap',
+    whiteSpace: 'nowrap' as const,
     padding: '6px 8px',
     height: 40,
-    verticalAlign: 'middle',
+    verticalAlign: 'middle' as const,
     fontSize: 14
   }
 
   const handleSave = async (task: any) => {
-    let sourceBin = editedSourceBin
+    let sourceBin = editedSourceBinCode
 
     const sourceBinCount = task.sourceBins?.length || 0
     const isOutOfStock = sourceBinCount === 0
 
-    // ✅ COMPLETED 状态：必须手动选择 bin（有库存）
+    // 必须选择一个（有库存时）
     if (editedStatus === 'COMPLETED' && sourceBinCount > 0 && !sourceBin) {
       setSnackOpen(true)
       return
     }
 
-    // ✅ 没有库存（Out of stock）：根据状态设定
     if (isOutOfStock) {
       if (editedStatus === 'COMPLETED') {
         sourceBin = 'Transfer-in'
@@ -94,7 +94,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
     }
 
-    // ✅ PENDING → CANCELED：自动选择 sourceBin，不允许手动
     if (task.status === 'PENDING' && editedStatus === 'CANCELED') {
       if (sourceBinCount > 1) {
         sourceBin = 'Expired'
@@ -103,12 +102,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
     }
 
-    // ✅ 非 COMPLETED 且只有一个 bin，且未手动选择
     if (sourceBinCount === 1 && !sourceBin && editedStatus !== 'COMPLETED') {
       sourceBin = task.sourceBins[0]?.bin?.binCode || ''
     }
 
-    // 🔄 发请求更新任务
     await updateTask(
       task.taskID,
       {
@@ -122,12 +119,13 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
     )
 
-    // ✅ 清除状态
     setEditTaskID(null)
-    setEditedSourceBin('')
+    setEditedSourceBinCode('')
+    setEditedSourceInventoryID('')
     setEditedStatus('')
     onRefresh()
   }
+
   return (
     <>
       <Paper elevation={3} sx={{ borderRadius: 3, boxShadow: 2 }}>
@@ -156,6 +154,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
               ))}
             </TableRow>
           </TableHead>
+
           <TableBody>
             {isLoading ? (
               <TableRow>
@@ -171,8 +170,21 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 const showEditableBin =
                   isEditing && editedStatus === 'COMPLETED'
 
-                const bins =
-                  task.sourceBins?.map((s: any) => s.bin?.binCode) || []
+                // 用 inventoryID 做唯一选中依据；编辑态按钮显示 “binCode (quantity)”
+                const binEntries: {
+                  code: string
+                  qty: number
+                  inventoryID: string
+                }[] = (task.sourceBins || []).map((s: any) => ({
+                  code: s?.bin?.binCode ?? '',
+                  qty: Number(s?.quantity ?? 0),
+                  inventoryID: String(s?.inventoryID ?? '')
+                }))
+
+                // 普通展示：只展示 binCode 列表（保持原样）
+                const displayBinCodes = (task.sourceBins || []).map(
+                  (s: any) => s?.bin?.binCode
+                )
 
                 return (
                   <TableRow
@@ -197,9 +209,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     >
                       {task.productCode}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {showEditableBin ? (
                         <Box
@@ -208,17 +222,21 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           flexWrap='wrap'
                           gap={1}
                         >
-                          {bins.map((code: string) => {
-                            const selected = code === editedSourceBin
+                          {binEntries.map(entry => {
+                            const selected =
+                              editedSourceInventoryID === entry.inventoryID
                             return (
                               <ToggleButton
-                                key={code}
-                                value={code}
+                                key={entry.inventoryID}
+                                value={entry.inventoryID}
                                 selected={selected}
-                                onClick={() => setEditedSourceBin(code)}
+                                onClick={() => {
+                                  setEditedSourceInventoryID(entry.inventoryID)
+                                  setEditedSourceBinCode(entry.code) // 保存给后端用
+                                }}
                                 sx={{
-                                  minWidth: 80,
-                                  color: selected ? 'success.main' : '#888',
+                                  minWidth: 100,
+                                  color: selected ? 'success.main' : '#666',
                                   borderColor: selected
                                     ? 'success.main'
                                     : '#ccc',
@@ -228,7 +246,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                                 }}
                               >
                                 {selected ? '✔ ' : ''}
-                                {code}
+                                {entry.code} ({entry.qty})
                               </ToggleButton>
                             )
                           })}
@@ -255,14 +273,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           justifyContent='center'
                           gap={1}
                         >
-                          {bins.map((code: string) => (
+                          {displayBinCodes.map((code: string, idx: number) => (
                             <Typography
-                              key={code}
+                              key={`${code}-${idx}`}
                               fontSize={14}
-                              sx={{
-                                cursor: 'pointer',
-                                color: '#3F72AF'
-                              }}
+                              sx={{ cursor: 'pointer', color: '#3F72AF' }}
                               onClick={() =>
                                 navigate(
                                   `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
@@ -275,14 +290,12 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         </Box>
                       )}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {task.destinationBinCode ? (
                         <Typography
                           fontSize={14}
-                          sx={{
-                            cursor: 'pointer',
-                            color: '#3F72AF'
-                          }}
+                          sx={{ cursor: 'pointer', color: '#3F72AF' }}
                           onClick={() =>
                             navigate(
                               `/${warehouseID}/${warehouseCode}/inventory?keyword=${task.destinationBinCode}`
@@ -295,12 +308,15 @@ const TaskTable: React.FC<TaskTableProps> = ({
                         '--'
                       )}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
                     </TableCell>
+
                     <TableCell align='center' sx={cellStyle}>
                       {isEditing ? (
                         <Select
@@ -310,9 +326,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           sx={{ minWidth: 120 }}
                         >
                           <MenuItem value='PENDING'>PENDING</MenuItem>
-                          {/* {!isOutOfStock && (
-                            <MenuItem value='IN_PROCESS'>IN_PROCESS</MenuItem>
-                          )} */}
                           <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
                           <MenuItem value='CANCELED'>CANCELED</MenuItem>
                         </Select>
@@ -348,7 +361,12 @@ const TaskTable: React.FC<TaskTableProps> = ({
                             <SaveIcon fontSize='small' />
                           </IconButton>
                           <IconButton
-                            onClick={() => setEditTaskID(null)}
+                            onClick={() => {
+                              setEditTaskID(null)
+                              setEditedSourceBinCode('')
+                              setEditedSourceInventoryID('')
+                              setEditedStatus('')
+                            }}
                             size='small'
                             sx={{ color: 'purple' }}
                           >
@@ -362,9 +380,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
                             fetchBinCodes()
                             setEditedStatus(task.status)
 
-                            const defaultSourceBinCode =
-                              task.sourceBins?.[0]?.bin?.binCode ?? ''
-                            setEditedSourceBin(defaultSourceBinCode)
+                            // 进入编辑态时，默认选中第一条库存记录（而不是按 binCode）
+                            const first = (task.sourceBins || [])[0]
+                            setEditedSourceBinCode(first?.bin?.binCode || '')
+                            setEditedSourceInventoryID(first?.inventoryID || '')
 
                             setEditTaskID(task.taskID)
                           }}
@@ -385,6 +404,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
             )}
           </TableBody>
         </Table>
+
         <TablePagination
           component='div'
           count={tasks.length}
@@ -394,6 +414,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           rowsPerPageOptions={[rowsPerPage]}
         />
       </Paper>
+
       <Snackbar
         open={snackOpen}
         autoHideDuration={3000}
