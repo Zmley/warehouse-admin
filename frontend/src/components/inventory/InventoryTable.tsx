@@ -722,7 +722,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </TableBody>
       </Table>
 
-      {/* 合并/新增 选择对话框 */}
       <Dialog
         open={mergeDialog.open}
         onClose={() => setMergeDialog(prev => ({ ...prev, open: false }))}

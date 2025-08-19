@@ -11,7 +11,6 @@ import {
 } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTask } from 'hooks/useTask'
-import CreateTask from 'components/task/CreateTask'
 import CreatePickerTask from 'components/task/CreatePickerTask'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { TaskStatusFilter } from 'constants/index'
@@ -32,12 +31,8 @@ const Task: React.FC = () => {
     (searchParams.get('status') as TaskStatusFilter) || TaskStatusFilter.PENDING
   )
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
-  const [isDialogOpen, setOpenDialog] = useState(false)
   const [isPickerDialogOpen, setPickerDialogOpen] = useState(false)
   const [page, setPage] = useState(0)
-
-  const handleOpen = () => setOpenDialog(true)
-  const handleClose = () => setOpenDialog(false)
 
   const updateQueryParams = (
     status: TaskStatusFilter | 'OUT_OF_STOCK',
@@ -127,19 +122,6 @@ const Task: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
-            variant='contained'
-            onClick={handleOpen}
-            startIcon={<AddIcon />}
-            sx={{
-              borderRadius: '8px',
-              backgroundColor: '#3F72AF',
-              '&:hover': { backgroundColor: '#2d5e8c' },
-              fontWeight: 'bold'
-            }}
-          >
-            Create Task
-          </Button>
-          <Button
             variant='outlined'
             onClick={() => setPickerDialogOpen(true)}
             startIcon={<AddIcon />}
@@ -159,17 +141,7 @@ const Task: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Dialogs */}
-      <Dialog open={isDialogOpen} onClose={handleClose} maxWidth='sm' fullWidth>
-        <CreateTask
-          onSuccess={() => {
-            fetchTasks({ warehouseID: warehouseID!, status, keyword })
-            handleClose()
-          }}
-          onClose={handleClose}
-        />
-      </Dialog>
-
+      {/* Picker Task Dialog */}
       <Dialog
         open={isPickerDialogOpen}
         onClose={() => setPickerDialogOpen(false)}
