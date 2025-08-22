@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import dayjs from 'dayjs'
 import {
   Table,
@@ -35,6 +35,14 @@ export interface FetchParams {
   limit?: number
 }
 
+type UpdateBinDto = {
+  binCode?: string
+}
+
+type UpdateSingleResult =
+  | { success: true; bin: any }
+  | { success: false; error?: string; errorCode?: string }
+
 interface BinTableProps {
   rows: any[]
   binType: string
@@ -43,39 +51,53 @@ interface BinTableProps {
   totalPages: number
   page: number
   onPageChange: (e: any, newPage: number) => void
+
+  /** 编辑控制（父组件管理） */
   editBinID: string | null
   editProductCodes: string[]
   newRow: boolean
   addProductValue: string
   updating: boolean
+
+  /** 选项 */
   productCodes: string[]
+  binCodes: string[]
+
+  /** 父组件回调 */
   handleEdit: (binID: string, codes: string[]) => void
   handleCancel: () => void
-  handleSave: () => void
+  handleSave: () => void // 保存 defaultProductCodes（你已有）
   handleDeleteProduct: (idx: number) => void
   handleAddRow: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
   setAddProductValue: React.Dispatch<React.SetStateAction<string>>
   handleDeleteBin: (binID: string) => void
+
+  /** 仅用于保存 defaultProductCodes 的旧接口 */
   updateBin: (binID: string, newCodes: string) => Promise<any>
-  bins: any[]
+
+  /** 只用于保存 binCode 的新接口（单条更新） */
+  updateSingleBin: (
+    binID: string,
+    payload: UpdateBinDto
+  ) => Promise<UpdateSingleResult>
+
+  /** 其他 */
   fetchBins: (params: FetchParams) => Promise<any>
   warehouseCode: string
   navigate: (path: string) => void
-
-  binCodes: string[]
 }
 
 const ROWS_PER_PAGE = 10
 
 const COL_WIDTH = {
   type: 90,
-  binCode: 110,
-  codes: 250,
+  binCode: 150,
+  codes: 260,
   updated: 150,
-  action: 110
+  action: 140
 }
-const rowHeight = 34 // px
+const rowHeight = 34
 
 const BinTable: React.FC<BinTableProps> = ({
   rows,
@@ -100,14 +122,31 @@ const BinTable: React.FC<BinTableProps> = ({
   setAddProductValue,
   handleDeleteBin,
   updateBin,
+  updateSingleBin,
   fetchBins,
   warehouseCode,
   navigate,
   binCodes
 }) => {
+  /** 迁移弹窗（把某个 code 挪到另一个 bin） */
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [transferTargetCode, setTransferTargetCode] = useState('')
   const [transferCodeIdx, setTransferCodeIdx] = useState<number | null>(null)
+
+  /** 当前编辑的 bin 行，用来拿原始 binCode/warehouseID */
+  const currentEditingRow = useMemo(
+    () => (editBinID ? rows.find(r => r.binID === editBinID) : null),
+    [editBinID, rows]
+  )
+
+  /** 编辑态下的 binCode 输入 */
+  const [editingBinCode, setEditingBinCode] = useState<string>(
+    currentEditingRow?.binCode ?? ''
+  )
+
+  useEffect(() => {
+    setEditingBinCode(currentEditingRow?.binCode ?? '')
+  }, [currentEditingRow?.binCode, editBinID])
 
   const handleTransferConfirm = async () => {
     if (transferCodeIdx === null) return
@@ -170,6 +209,48 @@ const BinTable: React.FC<BinTableProps> = ({
     )
   }
 
+  /** 点击保存：先保存 defaultProductCodes（走老的 updateBin），再保存 binCode（走 updateSingleBin） */
+  const handleSaveAll = async () => {
+    if (!editBinID) return
+
+    // 1) 先保存 defaultProductCodes（你已有的 handleSave）
+    await handleSave()
+
+    // 2) 如果 binCode 变了，调用 updateSingleBin
+    const original = (currentEditingRow?.binCode || '').trim()
+    const next = (editingBinCode || '').trim()
+    const changed = next && next !== original
+
+    if (changed) {
+      const resp = await updateSingleBin(editBinID, { binCode: next })
+      if (!resp?.success) {
+        alert(resp?.error || resp?.errorCode || '❌ Failed to update bin code')
+        return
+      }
+
+      const warehouseID = currentEditingRow?.warehouseID
+      if (warehouseID) {
+        await fetchBins({
+          warehouseID,
+          type: binType === 'ALL' ? undefined : binType,
+          keyword: next,
+          page: 1,
+          limit: 10
+        })
+
+        navigate(
+          `/${warehouseID}/${warehouseCode}/bin?type=${binType}&keyword=${encodeURIComponent(
+            next
+          )}&page=1`
+        )
+      }
+    }
+
+    // 3) 退出编辑态
+    handleCancel()
+  }
+
+  /** 渲染编辑区（binCode 可编辑 + productCodes 可编辑） */
   function renderBinEditArea(binRows: any[], binID: string) {
     return (
       <>
@@ -178,6 +259,7 @@ const BinTable: React.FC<BinTableProps> = ({
             key={binID + '-edit-' + idx}
             sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
           >
+            {/* Type（只显示一次） */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -195,7 +277,8 @@ const BinTable: React.FC<BinTableProps> = ({
                 {binRows[0].type}
               </TableCell>
             )}
-            {/* 2. Bin Code */}
+
+            {/* Bin Code：可编辑（只显示一次） */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -210,10 +293,37 @@ const BinTable: React.FC<BinTableProps> = ({
                   p: 0
                 }}
               >
-                {binRows[0].binCode}
+                <AutocompleteTextField
+                  label=''
+                  value={editingBinCode}
+                  onChange={setEditingBinCode}
+                  onSubmit={() => {}}
+                  options={binCodes}
+                  sx={{
+                    width: 140,
+                    minWidth: 140,
+                    height: 32,
+                    '& .MuiInputBase-root': {
+                      height: 32,
+                      fontSize: 13,
+                      minHeight: 32,
+                      background: 'transparent',
+                      p: 0
+                    },
+                    '& .MuiOutlinedInput-input': {
+                      height: '32px !important',
+                      minHeight: '32px !important',
+                      padding: '0 8px !important',
+                      fontSize: 13,
+                      lineHeight: '32px'
+                    }
+                  }}
+                  freeSolo
+                />
               </TableCell>
             )}
-            {/* 3. Product Codes */}
+
+            {/* Default Product Codes：逐项编辑（沿用原逻辑） */}
             <TableCell
               align='center'
               sx={{
@@ -240,8 +350,8 @@ const BinTable: React.FC<BinTableProps> = ({
                   onSubmit={() => {}}
                   options={productCodes}
                   sx={{
-                    width: 130,
-                    minWidth: 130,
+                    width: 180,
+                    minWidth: 180,
                     height: 32,
                     '& .MuiInputBase-root': {
                       height: 32,
@@ -293,7 +403,8 @@ const BinTable: React.FC<BinTableProps> = ({
                 </Tooltip>
               </Box>
             </TableCell>
-            {/* 4. Last Updated */}
+
+            {/* Last Updated */}
             <TableCell
               align='center'
               sx={{
@@ -308,7 +419,8 @@ const BinTable: React.FC<BinTableProps> = ({
                 ? dayjs(binRows[idx].updatedAt).format('YYYY-MM-DD HH:mm')
                 : '--'}
             </TableCell>
-            {/* 5. Action */}
+
+            {/* Action（只显示一次） */}
             {idx === 0 && (
               <TableCell
                 align='center'
@@ -340,13 +452,14 @@ const BinTable: React.FC<BinTableProps> = ({
                           color='success'
                           size='small'
                           sx={{ height: 32, width: 32, p: 0 }}
-                          onClick={handleSave}
+                          onClick={handleSaveAll}
                           disabled={updating}
                         >
                           <SaveIcon />
                         </IconButton>
                       </span>
                     </Tooltip>
+
                     <Tooltip title='Cancel'>
                       <span>
                         <IconButton
@@ -359,6 +472,7 @@ const BinTable: React.FC<BinTableProps> = ({
                         </IconButton>
                       </span>
                     </Tooltip>
+
                     <Tooltip title='Add Product'>
                       <span>
                         <IconButton
@@ -394,7 +508,6 @@ const BinTable: React.FC<BinTableProps> = ({
 
         {newRow && (
           <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
-            {/* Default Product Codes */}
             <TableCell
               align='center'
               sx={{
@@ -417,8 +530,8 @@ const BinTable: React.FC<BinTableProps> = ({
                   onSubmit={() => {}}
                   options={productCodes}
                   sx={{
-                    width: 130,
-                    minWidth: 130,
+                    width: 180,
+                    minWidth: 180,
                     height: 32,
                     '& .MuiInputBase-root': {
                       height: 32,
@@ -461,7 +574,7 @@ const BinTable: React.FC<BinTableProps> = ({
                 height: rowHeight,
                 p: 0
               }}
-            ></TableCell>
+            />
           </TableRow>
         )}
       </>
@@ -524,7 +637,7 @@ const BinTable: React.FC<BinTableProps> = ({
       </TableRow>
     )
   } else {
-    let render: any[] = []
+    const render: any[] = []
     let i = 0
     while (i < rows.length) {
       const binID = rows[i].binID
@@ -536,7 +649,7 @@ const BinTable: React.FC<BinTableProps> = ({
         render.push(renderBinEditArea(binRows, binID))
         i += binRows.length
       } else {
-        binRows.forEach((row, idx) => {
+        binRows.forEach((row: any, idx: number) => {
           render.push(
             <TableRow key={`${binID}-normal-${idx}`} sx={{ height: rowHeight }}>
               {idx === 0 && (
@@ -556,6 +669,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   {row.type}
                 </TableCell>
               )}
+
               {idx === 0 && (
                 <TableCell
                   align='center'
@@ -590,7 +704,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   fontStyle: binType === 'PICK_UP' ? undefined : 'italic'
                 }}
               >
-                {binType === 'PICK_UP' ? row._code || '' : 'Not Applied'}{' '}
+                {binType === 'PICK_UP' ? row._code || '' : 'Not Applied'}
               </TableCell>
 
               <TableCell
@@ -608,6 +722,7 @@ const BinTable: React.FC<BinTableProps> = ({
                   ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm')
                   : '--'}
               </TableCell>
+
               {idx === 0 && (
                 <TableCell
                   align='center'
@@ -629,7 +744,6 @@ const BinTable: React.FC<BinTableProps> = ({
                           size='small'
                           sx={{ height: 32, width: 32, p: 0 }}
                           onClick={() => handleEdit(binID, codes)}
-                          //   disabled={!!editBinID}
                         >
                           <EditIcon />
                         </IconButton>
@@ -667,7 +781,7 @@ const BinTable: React.FC<BinTableProps> = ({
   }
 
   return (
-    <Box sx={{ minWidth: 500, margin: '0 auto' }}>
+    <Box sx={{ minWidth: 600, margin: '0 auto' }}>
       <Table
         size='small'
         sx={{ tableLayout: 'fixed', width: '100%', margin: '0 auto' }}
@@ -743,13 +857,15 @@ const BinTable: React.FC<BinTableProps> = ({
         </TableHead>
         <TableBody>{bodyContent}</TableBody>
       </Table>
+
+      {/* 迁移弹窗 */}
       <Box
         display='flex'
         justifyContent='flex-end'
         alignItems='center'
         px={2}
         py={1}
-        sx={{ borderTop: 'none', background: '#fff', minWidth: 500 }}
+        sx={{ borderTop: 'none', background: '#fff', minWidth: 600 }}
       >
         <TablePagination
           component='div'

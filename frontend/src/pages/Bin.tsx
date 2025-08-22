@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Paper, Stack, Tab, Tabs, Typography, Button } from '@mui/material'
+import {
+  Box,
+  Paper,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+  Button,
+  TextField
+} from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
-import AutocompleteTextField from 'utils/AutocompleteTextField'
+// import AutocompleteTextField from 'utils/AutocompleteTextField'
+
+import Autocomplete from '@mui/material/Autocomplete'
+
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/index'
 import { useProduct } from 'hooks/useProduct'
@@ -44,6 +56,7 @@ const Bin: React.FC = () => {
     totalPages,
     fetchBinCodes,
     updateBin,
+    updateSingleBin,
     isLoading: updating,
 
     deleteBin
@@ -238,18 +251,20 @@ const Bin: React.FC = () => {
         </Stack>
       </Box>
       <Stack direction='row' spacing={2} mb={2} alignItems='center'>
-        <AutocompleteTextField
-          label='Search binCode'
-          value={searchKeyword}
-          onChange={value => {
-            setSearchKeyword(value)
-            updateQueryParams(binType, value, 0)
-          }}
-          onSubmit={() => {}}
+        <Autocomplete
           options={combinedOptions}
+          freeSolo
+          inputValue={searchKeyword}
+          onInputChange={(_, newInput) => {
+            setSearchKeyword(newInput)
+            updateQueryParams(binType, newInput, 0)
+          }}
+          renderInput={params => (
+            <TextField {...params} label='Search binCode' size='small' />
+          )}
           sx={{ width: 250 }}
-          freeSolo={false}
         />
+
         <Tabs
           value={binType}
           onChange={(_, newType: string) => {
@@ -295,7 +310,7 @@ const Bin: React.FC = () => {
           setAddProductValue={setAddProductValue}
           handleDeleteBin={handleDeleteBin}
           updateBin={updateBin}
-          bins={bins}
+          updateSingleBin={updateSingleBin}
           fetchBins={fetchBins}
           warehouseCode={warehouseCode!}
           navigate={navigate}

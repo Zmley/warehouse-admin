@@ -6,11 +6,14 @@ import {
   getBins,
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
   updateBinDefaultProductCodes,
-  deleteBinByBinID
+  deleteBinByBinID,
+  BinDto
 } from 'api/bin'
 import { useLocation, useParams } from 'react-router-dom'
 import { Bin } from 'types/Bin'
 import { BinUploadType } from 'types/Bin'
+
+import * as BinApi from 'api/bin'
 
 export interface FetchParams {
   warehouseID: string
@@ -24,6 +27,10 @@ export interface BasicBin {
   binID: string
   binCode: string
 }
+
+type UpdateResult =
+  | { success: true; bin: BinDto }
+  | { success: false; error?: string; errorCode?: string }
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<Bin[]>([])
@@ -191,6 +198,43 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }, [])
 
+  const updateSingleBin = useCallback(
+    async (
+      binID: string,
+      payload: BinApi.UpdateBinDto
+    ): Promise<UpdateResult> => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        // ✅ 显式指向 API：BinApi.updateBin
+        const res: BinApi.UpdateBinResponse = await BinApi.updateBin(
+          binID,
+          payload
+        )
+
+        if (!res?.success || !res?.bin) {
+          const msg = res?.error || res?.errorCode || '❌ Update failed'
+          setError(typeof msg === 'string' ? msg : '❌ Update failed')
+          return {
+            success: false,
+            error: res?.error,
+            errorCode: res?.errorCode
+          }
+        }
+
+        return { success: true, bin: res.bin }
+      } catch (e: any) {
+        const msg =
+          e?.response?.data?.error || e?.message || '❌ Update exception'
+        setError(msg)
+        return { success: false, error: msg }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
   return {
     deleteBin,
     pickupBinCode,
@@ -205,6 +249,7 @@ export const useBin = (autoLoad: boolean = false) => {
     error,
     fetchBinCodes,
     fetchAvailableBinCodes,
-    updateBin
+    updateBin,
+    updateSingleBin
   }
 }
