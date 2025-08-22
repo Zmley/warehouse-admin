@@ -202,11 +202,10 @@ export const useBin = (autoLoad: boolean = false) => {
     async (
       binID: string,
       payload: BinApi.UpdateBinDto
-    ): Promise<UpdateResult> => {
+    ): Promise<BinApi.UpdateBinResponse> => {
       setIsLoading(true)
       setError(null)
       try {
-        // ✅ 显式指向 API：BinApi.updateBin
         const res: BinApi.UpdateBinResponse = await BinApi.updateBin(
           binID,
           payload
@@ -215,14 +214,9 @@ export const useBin = (autoLoad: boolean = false) => {
         if (!res?.success || !res?.bin) {
           const msg = res?.error || res?.errorCode || '❌ Update failed'
           setError(typeof msg === 'string' ? msg : '❌ Update failed')
-          return {
-            success: false,
-            error: res?.error,
-            errorCode: res?.errorCode
-          }
         }
 
-        return { success: true, bin: res.bin }
+        return res
       } catch (e: any) {
         const msg =
           e?.response?.data?.error || e?.message || '❌ Update exception'

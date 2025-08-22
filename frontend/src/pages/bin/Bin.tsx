@@ -12,16 +12,17 @@ import {
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
-// import AutocompleteTextField from 'utils/AutocompleteTextField'
 
 import Autocomplete from '@mui/material/Autocomplete'
 
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/index'
 import { useProduct } from 'hooks/useProduct'
-import AddBinModal from 'components/bin/AddBinModal'
-import BinTable from 'components/bin/binTable'
+import AddBinModal from 'pages/bin/AddBinModal'
+import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
+
+import * as BinApi from 'api/bin'
 
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
@@ -71,6 +72,7 @@ const Bin: React.FC = () => {
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
 
   const [binType, setBinType] = useState<string>(typeParam)
+
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
   const [isUploadOpen, setIsUploadOpen] = useState(false)

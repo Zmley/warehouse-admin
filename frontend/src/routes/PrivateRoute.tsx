@@ -6,7 +6,7 @@ import Task from 'pages/Task'
 import Inventory from 'pages/Inventory'
 import ManagementLayout from 'components/ManagementLayout'
 import Product from 'pages/Product'
-import Bin from 'pages/Bin'
+import Bin from 'pages/bin/Bin'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
