@@ -35,14 +35,15 @@ type Props = {
   addProductValue: string
   updating: boolean
   productCodes: string[]
-  /** binCodes 不再用于 binCode 编辑，可保留或删除 */
   binCodes: string[]
 
-  /** 受控的 binCode / type */
+  // binCode 编辑
   editingBinCode: string
   setEditingBinCode: (v: string) => void
-  editingType: string
-  setEditingType: (v: string) => void
+
+  // ✅ type 编辑（注意类型改为 BinType）
+  editingType: BinType
+  setEditingType: React.Dispatch<React.SetStateAction<BinType>>
 
   onDeleteProduct: (idx: number) => void
   onAddRow: () => void
@@ -62,11 +63,14 @@ const BinEditRow: React.FC<Props> = ({
   addProductValue,
   updating,
   productCodes,
-  binCodes, // 未使用，可移除
+  binCodes,
   editingBinCode,
   setEditingBinCode,
+
+  // ✅ 使用 BinType
   editingType,
   setEditingType,
+
   onDeleteProduct,
   onAddRow,
   onCancel,
@@ -83,7 +87,6 @@ const BinEditRow: React.FC<Props> = ({
           key={binID + '-edit-' + idx}
           sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
         >
-          {/* Type（受控 Select，只在第一行渲染一次） */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -101,8 +104,12 @@ const BinEditRow: React.FC<Props> = ({
               <Select
                 value={editingType}
                 size='small'
-                onChange={e => setEditingType(e.target.value as string)}
-                sx={{ fontSize: 13, height: 32, minWidth: 100 }}
+                onChange={e => setEditingType(e.target.value as BinType)}
+                sx={{
+                  fontSize: 13,
+                  height: 32,
+                  minWidth: 100
+                }}
               >
                 <MenuItem value={BinType.PICK_UP}>PICK UP</MenuItem>
                 <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
@@ -112,7 +119,6 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Bin Code（普通输入框，只在第一行渲染一次） */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -148,7 +154,6 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Default Product Codes：逐项编辑 */}
           <TableCell
             align='center'
             sx={{
@@ -207,7 +212,6 @@ const BinEditRow: React.FC<Props> = ({
             </Box>
           </TableCell>
 
-          {/* Last Updated */}
           <TableCell
             align='center'
             sx={{
@@ -223,7 +227,6 @@ const BinEditRow: React.FC<Props> = ({
               : '--'}
           </TableCell>
 
-          {/* Action（只在第一行渲染一次） */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -310,7 +313,6 @@ const BinEditRow: React.FC<Props> = ({
         </TableRow>
       ))}
 
-      {/* 新增行（添加一个产品 code） */}
       {newRow && (
         <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
           <TableCell

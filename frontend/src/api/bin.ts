@@ -1,4 +1,4 @@
-import { Bin } from 'types/Bin'
+import { Bin, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import apiClient from './axiosClient.ts'
 import { BinUploadType } from 'types/Bin.js'
 
@@ -65,31 +65,6 @@ export const deleteBinByBinID = async (binID: string) => {
 }
 
 //////////////////////////////////////////
-
-export type BinType = 'PICK_UP' | 'INVENTORY' | 'CART' | 'AISLE'
-
-export type BinDto = {
-  binID: string
-  warehouseID: string
-  binCode: string
-  type: BinType
-  defaultProductCodes: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export type UpdateBinDto = {
-  binCode?: string
-  type?: BinType
-  defaultProductCodes?: string | null
-}
-
-export type UpdateBinResponse = {
-  success: boolean
-  bin?: BinDto
-  errorCode?: string
-  error?: string
-}
 
 export const updateBin = async (
   binID: string,

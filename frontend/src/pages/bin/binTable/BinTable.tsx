@@ -15,6 +15,9 @@ import BinRow from './BinRow'
 import BinEditRow from './BinEditRow'
 import TransferDialog from './TransferDialog'
 
+// ✅ 统一从 types/Bin 引入 Update 类型（不要再在本文件里声明同名类型）
+import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
+
 /** ---- 常量 ---- */
 const ROWS_PER_PAGE = 10
 const COL_WIDTH = {
@@ -34,10 +37,6 @@ export interface FetchParams {
   page?: number
   limit?: number
 }
-type UpdateBinDto = { binCode?: string; type?: string } // <- 支持同时更新 type
-type UpdateSingleResult =
-  | { success: true; bin: any }
-  | { success: false; error?: string; errorCode?: string }
 
 type Props = {
   rows: any[]
@@ -66,11 +65,11 @@ type Props = {
   setAddProductValue: React.Dispatch<React.SetStateAction<string>>
   handleDeleteBin: (binID: string) => void
 
-  updateBin: (binID: string, newCodes: string) => Promise<any>
+  updateBin: (binID: string, newCodes: string) => Promise<boolean>
   updateSingleBin: (
     binID: string,
     payload: UpdateBinDto
-  ) => Promise<UpdateSingleResult>
+  ) => Promise<UpdateBinResponse>
 
   fetchBins: (params: FetchParams) => Promise<any>
   warehouseCode: string
@@ -123,13 +122,13 @@ const BinTable: React.FC<Props> = props => {
   const [editingBinCode, setEditingBinCode] = React.useState<string>(
     currentEditingRow?.binCode ?? ''
   )
-  const [editingType, setEditingType] = React.useState<string>(
-    currentEditingRow?.type ?? BinType.PICK_UP
+  const [editingType, setEditingType] = React.useState<BinType>(
+    (currentEditingRow?.type as BinType) ?? BinType.PICK_UP
   )
 
   React.useEffect(() => {
     setEditingBinCode(currentEditingRow?.binCode ?? '')
-    setEditingType(currentEditingRow?.type ?? BinType.PICK_UP)
+    setEditingType((currentEditingRow?.type as BinType) ?? BinType.PICK_UP)
   }, [currentEditingRow?.binCode, currentEditingRow?.type, editBinID])
 
   /** 分组避免 O(n^2) */
@@ -228,13 +227,13 @@ const BinTable: React.FC<Props> = props => {
     const nextCode = (editingBinCode || '').trim()
     const codeChanged = nextCode && nextCode !== originalCode
 
-    const originalType = currentEditingRow?.type
+    const originalType = currentEditingRow?.type as BinType | undefined
     const typeChanged = editingType && editingType !== originalType
 
     if (codeChanged || typeChanged) {
       const payload: UpdateBinDto = {}
       if (codeChanged) payload.binCode = nextCode
-      if (typeChanged) payload.type = editingType
+      if (typeChanged) payload.type = editingType as UpdateBinDto['type']
 
       const resp = await updateSingleBin(editBinID, payload)
       if (!resp?.success) {
@@ -242,7 +241,6 @@ const BinTable: React.FC<Props> = props => {
         return
       }
 
-      // 刷新：保持现有筛选条件（不要把 keyword 变成 nextCode）
       const warehouseID = currentEditingRow?.warehouseID
       if (warehouseID) {
         await fetchBins({
@@ -328,7 +326,7 @@ const BinTable: React.FC<Props> = props => {
             binCodes={binCodes}
             editingBinCode={editingBinCode}
             setEditingBinCode={setEditingBinCode}
-            /** 新增：类型编辑态传入 */
+            /** 类型编辑态传入 */
             editingType={editingType}
             setEditingType={setEditingType}
             onDeleteProduct={handleDeleteProduct}

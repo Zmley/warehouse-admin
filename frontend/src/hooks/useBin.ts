@@ -6,11 +6,10 @@ import {
   getBins,
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
   updateBinDefaultProductCodes,
-  deleteBinByBinID,
-  BinDto
+  deleteBinByBinID
 } from 'api/bin'
 import { useLocation, useParams } from 'react-router-dom'
-import { Bin } from 'types/Bin'
+import { Bin, BinDto, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import { BinUploadType } from 'types/Bin'
 
 import * as BinApi from 'api/bin'
@@ -198,24 +197,48 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }, [])
 
+  // const updateSingleBin = useCallback(
+  //   async (
+  //     binID: string,
+  //     payload: UpdateBinDto
+  //   ): Promise<UpdateBinResponse> => {
+  //     setIsLoading(true)
+  //     setError(null)
+  //     try {
+  //       const res: UpdateBinResponse = await BinApi.updateBin(binID, payload)
+
+  //       if (!res?.success || !res?.bin) {
+  //         const msg = res?.error || res?.errorCode || '❌ Update failed'
+  //         setError(typeof msg === 'string' ? msg : '❌ Update failed')
+  //       }
+
+  //       return res
+  //     } catch (e: any) {
+  //       const msg =
+  //         e?.response?.data?.error || e?.message || '❌ Update exception'
+  //       setError(msg)
+  //       return { success: false, error: msg }
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   },
+  //   []
+  // )
+
   const updateSingleBin = useCallback(
     async (
       binID: string,
-      payload: BinApi.UpdateBinDto
-    ): Promise<BinApi.UpdateBinResponse> => {
+      payload: UpdateBinDto
+    ): Promise<UpdateBinResponse> => {
       setIsLoading(true)
       setError(null)
       try {
-        const res: BinApi.UpdateBinResponse = await BinApi.updateBin(
-          binID,
-          payload
-        )
+        const res: UpdateBinResponse = await BinApi.updateBin(binID, payload)
 
         if (!res?.success || !res?.bin) {
           const msg = res?.error || res?.errorCode || '❌ Update failed'
           setError(typeof msg === 'string' ? msg : '❌ Update failed')
         }
-
         return res
       } catch (e: any) {
         const msg =
