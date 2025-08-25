@@ -118,10 +118,9 @@ const Bin: React.FC = () => {
   const combinedOptions = [...binCodes, ...productCodes]
   const rows = expandBins(bins)
 
-  // 进入编辑态：保证至少 1 个占位，避免空数组导致整行不渲染
   const handleEdit = (binID: string, codes: string[]) => {
     setEditBinID(binID)
-    setEditProductCodes(codes.length ? [...codes] : [''])
+    setEditProductCodes([...codes])
     setNewRow(false)
     setAddProductValue('')
   }
@@ -133,7 +132,7 @@ const Bin: React.FC = () => {
     setNewRow(false)
   }
 
-  const handleSave = async () => {
+  const handleSave = async (opts?: { skipRefresh?: boolean }) => {
     if (!editBinID) return
 
     let codes = [...editProductCodes]
@@ -156,21 +155,27 @@ const Bin: React.FC = () => {
     )
     if (hasInvalidCode) return
 
-    const ok = await updateBin(editBinID, uniqueCodes.join(','))
-    if (ok) {
-      // 成功后，整页刷新，保持当前 URL（包含 query）
-      window.location.reload()
-      return
-    }
+    await updateBin(editBinID, uniqueCodes.join(','))
 
-    // 失败就留在当前编辑态
+    setEditBinID(null)
+    setEditProductCodes([])
+    setAddProductValue('')
+    setNewRow(false)
+
+    if (!opts?.skipRefresh) {
+      await fetchBins({
+        warehouseID: warehouseID!,
+        type: binType === 'ALL' ? undefined : binType,
+        keyword: searchKeyword ? searchKeyword : undefined,
+        page: page + 1,
+        limit: ROWS_PER_PAGE
+      })
+    }
   }
 
-  // 删除单个 code：删到 0 个也保留一个空占位
   const handleDeleteProduct = (idx: number) => {
-    let next = editProductCodes.filter((_, i) => i !== idx)
-    if (next.length === 0) next = ['']
-    setEditProductCodes(next)
+    if (editProductCodes.length <= 1) return
+    setEditProductCodes(editProductCodes.filter((_, i) => i !== idx))
   }
 
   const handleAddRow = () => {
@@ -184,10 +189,27 @@ const Bin: React.FC = () => {
 
     const res = await deleteBin(binID)
     if (res?.success) {
-      // 直接整页刷新，继续停留在当前筛选页
-      window.location.reload()
+      setEditBinID(null)
+      await fetchBins({
+        warehouseID: warehouseID!,
+        type: binType === 'ALL' ? undefined : binType,
+        keyword: searchKeyword ? searchKeyword : undefined,
+        page: page + 1,
+        limit: ROWS_PER_PAGE
+      })
     }
   }
+
+  useEffect(() => {
+    if (!editBinID) return
+    // 当前页数据中找不到正在编辑的行 => 退出编辑
+    if (!bins.some(b => b.binID === editBinID)) {
+      setEditBinID(null)
+      setEditProductCodes([])
+      setNewRow(false)
+      setAddProductValue('')
+    }
+  }, [bins, editBinID])
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -249,7 +271,11 @@ const Bin: React.FC = () => {
             updateQueryParams(binType, newInput, 0)
           }}
           renderInput={params => (
-            <TextField {...params} label='Search binCode' size='small' />
+            <TextField
+              {...params}
+              label='Search binCode / productCode'
+              size='small'
+            />
           )}
           sx={{ width: 250 }}
         />
@@ -305,6 +331,7 @@ const Bin: React.FC = () => {
           warehouseCode={warehouseCode!}
           navigate={navigate}
           binCodes={binCodes}
+          currentKeyword={searchKeyword} // 传给子组件，刷新时保持筛选
         />
       </Paper>
 
@@ -315,9 +342,14 @@ const Bin: React.FC = () => {
       <AddBinModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onSuccess={() => {
-          // 新建成功也直接刷新
-          window.location.reload()
+        onSuccess={async () => {
+          await fetchBins({
+            warehouseID: warehouseID!,
+            type: binType === 'ALL' ? undefined : binType,
+            keyword: searchKeyword ? searchKeyword : undefined,
+            page: page + 1,
+            limit: ROWS_PER_PAGE
+          })
         }}
       />
     </Box>
