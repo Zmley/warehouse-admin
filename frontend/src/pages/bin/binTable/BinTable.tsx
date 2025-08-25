@@ -16,10 +16,9 @@ import BinEditRow from './BinEditRow'
 import TransferDialog from './TransferDialog'
 import type { NavigateFunction } from 'react-router-dom'
 
-// 统一从 types/Bin 引入 Update 类型
 import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
+import { getBins } from 'api/bin'
 
-/** ---- 常量 ---- */
 const ROWS_PER_PAGE = 10
 const COL_WIDTH = {
   type: 90,
@@ -30,7 +29,6 @@ const COL_WIDTH = {
 }
 const rowHeight = 34
 
-/** ---- 类型 ---- */
 export interface FetchParams {
   warehouseID: string
   type?: string
@@ -74,7 +72,7 @@ type Props = {
 
   fetchBins: (params: FetchParams) => Promise<any>
   warehouseCode: string
-  navigate: NavigateFunction // ✅ 改为 React Router 的类型
+  navigate: NavigateFunction
 }
 
 const BinTable: React.FC<Props> = props => {
@@ -103,24 +101,20 @@ const BinTable: React.FC<Props> = props => {
     handleDeleteBin,
     updateBin,
     updateSingleBin,
-    fetchBins,
-    navigate
+    fetchBins
   } = props
 
-  /** 迁移弹窗状态 */
   const [isTransferOpen, setIsTransferOpen] = React.useState(false)
   const [transferTargetCode, setTransferTargetCode] = React.useState('')
   const [transferCodeIdx, setTransferCodeIdx] = React.useState<number | null>(
     null
   )
 
-  /** 当前编辑行（用于拿初始 binCode / type / warehouseID） */
   const currentEditingRow = React.useMemo(
     () => (editBinID ? rows.find(r => r.binID === editBinID) : null),
     [editBinID, rows]
   )
 
-  /** 编辑态：binCode / type 本地输入 */
   const [editingBinCode, setEditingBinCode] = React.useState<string>(
     currentEditingRow?.binCode ?? ''
   )
@@ -133,7 +127,6 @@ const BinTable: React.FC<Props> = props => {
     setEditingType((currentEditingRow?.type as BinType) ?? BinType.PICK_UP)
   }, [currentEditingRow?.binCode, currentEditingRow?.type, editBinID])
 
-  /** 分组避免 O(n^2) */
   const groups = React.useMemo(() => {
     const m = new Map<string, any[]>()
     for (const r of rows) {
@@ -143,14 +136,13 @@ const BinTable: React.FC<Props> = props => {
     return m
   }, [rows])
 
-  /** 打开迁移弹窗 */
   const openTransfer = React.useCallback((idx: number) => {
     setTransferCodeIdx(idx)
     setTransferTargetCode('')
     setIsTransferOpen(true)
   }, [])
 
-  /** 确认迁移 */
+  /** Transfer 成功后整页刷新 */
   const handleTransferConfirm = React.useCallback(async () => {
     if (transferCodeIdx === null || !editBinID) return
     const code = editProductCodes[transferCodeIdx]
@@ -166,8 +158,7 @@ const BinTable: React.FC<Props> = props => {
       return
     }
 
-    // 只用于查找目标 bin，不改 URL、不改变页面筛选
-    const result = await fetchBins({
+    const lookup = await getBins({
       warehouseID,
       keyword: targetBinCode,
       type: binType === 'ALL' ? undefined : binType,
@@ -175,7 +166,7 @@ const BinTable: React.FC<Props> = props => {
       limit: 1
     })
 
-    const targetBin = result?.[0]
+    const targetBin = lookup?.data?.[0]
     if (!targetBin) {
       alert('❌ Target bin not found')
       return
@@ -204,78 +195,25 @@ const BinTable: React.FC<Props> = props => {
     const ok2 = await updateBin(editBinID, newCodes.join(','))
     if (!ok2) return
 
-    setEditProductCodes(newCodes)
-    setIsTransferOpen(false)
-
-    // 可选：刷新当前路由视图但不改变查询参数
-    // navigate(0)  // 如需强制刷新可放开
+    // 成功后直接刷新整页（保留当前 URL 的 type/keyword/page）
+    window.location.reload()
   }, [
     transferCodeIdx,
     editBinID,
     editProductCodes,
     transferTargetCode,
     rows,
-    fetchBins,
     binType,
-    updateBin,
-    setEditProductCodes
+    updateBin
   ])
 
-  /** 保存所有（不改变 URL 的筛选条件） */
   const handleSaveAll = React.useCallback(async () => {
     if (!editBinID) return
 
-    // 1) 先保存 defaultProductCodes（由页面层校验合法性）
     await handleSave()
+    // handleSave 成功里已经 reload 了，这里不用再做
+  }, [editBinID, handleSave])
 
-    // 2) 对比 binCode / type 是否有变化
-    const originalCode = (currentEditingRow?.binCode || '').trim()
-    const nextCode = (editingBinCode || '').trim()
-    const codeChanged = nextCode && nextCode !== originalCode
-
-    const originalType = currentEditingRow?.type as BinType | undefined
-    const typeChanged = editingType && editingType !== originalType
-
-    if (codeChanged || typeChanged) {
-      const payload: UpdateBinDto = {}
-      if (codeChanged) payload.binCode = nextCode
-      if (typeChanged) payload.type = editingType as UpdateBinDto['type']
-
-      const resp = await updateSingleBin(editBinID, payload)
-      if (!resp?.success) {
-        alert(resp?.error || resp?.errorCode || '❌ Failed to update bin')
-        return
-      }
-
-      const warehouseID = currentEditingRow?.warehouseID
-      if (warehouseID) {
-        // 刷新列表，但不把 keyword 改成 nextCode
-        await fetchBins({
-          warehouseID,
-          type: binType === 'ALL' ? undefined : binType,
-          keyword: undefined,
-          page: 1,
-          limit: ROWS_PER_PAGE
-        })
-      }
-    }
-
-    // 退出编辑态
-    handleCancel()
-  }, [
-    editBinID,
-    handleSave,
-    currentEditingRow?.binCode,
-    currentEditingRow?.type,
-    editingBinCode,
-    editingType,
-    updateSingleBin,
-    fetchBins,
-    binType,
-    handleCancel
-  ])
-
-  /** 表体内容 */
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (

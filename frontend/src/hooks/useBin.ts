@@ -77,25 +77,22 @@ export const useBin = (autoLoad: boolean = false) => {
       }
 
       try {
-        const res = await getBins({
-          warehouseID,
-          type,
-          keyword,
-          page,
-          limit
-        })
-        setTotalPages(res.total)
-        return res.data
+        const res = await getBins({ warehouseID, type, keyword, page, limit })
+
+        setBins(res.data ?? [])
+        setTotalPages(res.total ?? 0)
+
+        return res.data ?? []
       } catch (err) {
         console.error('❌ Error fetching bins:', err)
         setError('Failed to fetch bins')
+        return []
       } finally {
         setIsLoading(false)
       }
     },
     [warehouseID]
   )
-
   const uploadBinList = useCallback(
     async (list: BinUploadType[]) => {
       if (!warehouseID || !type) {

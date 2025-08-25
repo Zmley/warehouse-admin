@@ -12,9 +12,7 @@ import {
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
-
 import Autocomplete from '@mui/material/Autocomplete'
-
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/index'
 import { useProduct } from 'hooks/useProduct'
@@ -28,10 +26,8 @@ const BIN_TYPES = Object.values(BinType)
 function expandBins(bins: any[]) {
   const result: any[] = []
   bins.forEach(bin => {
-    const codes =
-      bin.defaultProductCodes && bin.defaultProductCodes.trim() !== ''
-        ? bin.defaultProductCodes.split(',').map((v: string) => v.trim())
-        : ['']
+    const raw = (bin?.defaultProductCodes ?? '').toString().trim()
+    const codes = raw ? raw.split(',').map((v: string) => v.trim()) : ['']
     codes.forEach((code: string, idx: number) => {
       result.push({
         ...bin,
@@ -57,20 +53,20 @@ const Bin: React.FC = () => {
     updateBin,
     updateSingleBin,
     isLoading: updating,
-
     deleteBin
   } = useBin()
+
   const { warehouseID, warehouseCode } = useParams<{
     warehouseID: string
     warehouseCode: string
   }>()
+
   const [searchParams, setSearchParams] = useSearchParams()
-  const typeParam = searchParams.get('type') || BinType.PICK_UP
+  const typeParam = (searchParams.get('type') as BinType) || BinType.PICK_UP
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
 
   const [binType, setBinType] = useState<string>(typeParam)
-
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -82,7 +78,6 @@ const Bin: React.FC = () => {
   const [addProductValue, setAddProductValue] = useState<string>('')
 
   const [isAddOpen, setIsAddOpen] = useState(false)
-
   const navigate = useNavigate()
 
   const updateQueryParams = (type: string, keyword: string, page: number) => {
@@ -106,24 +101,27 @@ const Bin: React.FC = () => {
         return prev
       })
     }
+
     fetchBins({
       warehouseID: warehouseID!,
       type: binType === 'ALL' ? undefined : binType,
-      keyword: keywordParam || undefined,
+      keyword: searchKeyword ? searchKeyword : undefined,
       page: page + 1,
       limit: ROWS_PER_PAGE
     })
+
     fetchBinCodes()
     fetchProductCodes()
     // eslint-disable-next-line
-  }, [warehouseID, binType, keywordParam, page])
+  }, [warehouseID, binType, searchKeyword, page])
 
   const combinedOptions = [...binCodes, ...productCodes]
   const rows = expandBins(bins)
 
+  // 进入编辑态：保证至少 1 个占位，避免空数组导致整行不渲染
   const handleEdit = (binID: string, codes: string[]) => {
     setEditBinID(binID)
-    setEditProductCodes([...codes])
+    setEditProductCodes(codes.length ? [...codes] : [''])
     setNewRow(false)
     setAddProductValue('')
   }
@@ -158,25 +156,21 @@ const Bin: React.FC = () => {
     )
     if (hasInvalidCode) return
 
-    await updateBin(editBinID, uniqueCodes.join(','))
+    const ok = await updateBin(editBinID, uniqueCodes.join(','))
+    if (ok) {
+      // 成功后，整页刷新，保持当前 URL（包含 query）
+      window.location.reload()
+      return
+    }
 
-    setEditBinID(null)
-    setEditProductCodes([])
-    setAddProductValue('')
-    setNewRow(false)
-
-    fetchBins({
-      warehouseID: warehouseID!,
-      type: binType === 'ALL' ? undefined : binType,
-      keyword: keywordParam || undefined,
-      page: page + 1,
-      limit: ROWS_PER_PAGE
-    })
+    // 失败就留在当前编辑态
   }
 
+  // 删除单个 code：删到 0 个也保留一个空占位
   const handleDeleteProduct = (idx: number) => {
-    if (editProductCodes.length <= 1) return
-    setEditProductCodes(editProductCodes.filter((_, i) => i !== idx))
+    let next = editProductCodes.filter((_, i) => i !== idx)
+    if (next.length === 0) next = ['']
+    setEditProductCodes(next)
   }
 
   const handleAddRow = () => {
@@ -190,14 +184,8 @@ const Bin: React.FC = () => {
 
     const res = await deleteBin(binID)
     if (res?.success) {
-      setEditBinID(null)
-      fetchBins({
-        warehouseID: warehouseID!,
-        type: binType === 'ALL' ? undefined : binType,
-        keyword: keywordParam || undefined,
-        page: page + 1,
-        limit: ROWS_PER_PAGE
-      })
+      // 直接整页刷新，继续停留在当前筛选页
+      window.location.reload()
     }
   }
 
@@ -250,6 +238,7 @@ const Bin: React.FC = () => {
           </Button>
         </Stack>
       </Box>
+
       <Stack direction='row' spacing={2} mb={2} alignItems='center'>
         <Autocomplete
           options={combinedOptions}
@@ -286,6 +275,7 @@ const Bin: React.FC = () => {
           ))}
         </Tabs>
       </Stack>
+
       <Paper elevation={3} sx={{ borderRadius: 3, width: '100%' }}>
         <BinTable
           rows={rows}
@@ -317,6 +307,7 @@ const Bin: React.FC = () => {
           binCodes={binCodes}
         />
       </Paper>
+
       <UploadBinModal
         open={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
@@ -325,13 +316,8 @@ const Bin: React.FC = () => {
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSuccess={() => {
-          fetchBins({
-            warehouseID: warehouseID!,
-            type: binType === 'ALL' ? undefined : binType,
-            keyword: keywordParam || undefined,
-            page: page + 1,
-            limit: ROWS_PER_PAGE
-          })
+          // 新建成功也直接刷新
+          window.location.reload()
         }}
       />
     </Box>
