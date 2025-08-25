@@ -9,7 +9,7 @@ import {
   deleteBinByBinID
 } from 'api/bin'
 import { useLocation, useParams } from 'react-router-dom'
-import { Bin, BinDto, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
+import { Bin, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import { BinUploadType } from 'types/Bin'
 
 import * as BinApi from 'api/bin'
@@ -26,10 +26,6 @@ export interface BasicBin {
   binID: string
   binCode: string
 }
-
-type UpdateResult =
-  | { success: true; bin: BinDto }
-  | { success: false; error?: string; errorCode?: string }
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<Bin[]>([])
@@ -88,7 +84,6 @@ export const useBin = (autoLoad: boolean = false) => {
           page,
           limit
         })
-        setBins(res.data)
         setTotalPages(res.total)
         return res.data
       } catch (err) {

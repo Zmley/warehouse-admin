@@ -14,8 +14,9 @@ import { BinType } from 'constants/index'
 import BinRow from './BinRow'
 import BinEditRow from './BinEditRow'
 import TransferDialog from './TransferDialog'
+import type { NavigateFunction } from 'react-router-dom'
 
-// ✅ 统一从 types/Bin 引入 Update 类型（不要再在本文件里声明同名类型）
+// 统一从 types/Bin 引入 Update 类型
 import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 
 /** ---- 常量 ---- */
@@ -73,7 +74,7 @@ type Props = {
 
   fetchBins: (params: FetchParams) => Promise<any>
   warehouseCode: string
-  navigate: (path: string) => void
+  navigate: NavigateFunction // ✅ 改为 React Router 的类型
 }
 
 const BinTable: React.FC<Props> = props => {
@@ -102,7 +103,8 @@ const BinTable: React.FC<Props> = props => {
     handleDeleteBin,
     updateBin,
     updateSingleBin,
-    fetchBins
+    fetchBins,
+    navigate
   } = props
 
   /** 迁移弹窗状态 */
@@ -164,6 +166,7 @@ const BinTable: React.FC<Props> = props => {
       return
     }
 
+    // 只用于查找目标 bin，不改 URL、不改变页面筛选
     const result = await fetchBins({
       warehouseID,
       keyword: targetBinCode,
@@ -203,6 +206,9 @@ const BinTable: React.FC<Props> = props => {
 
     setEditProductCodes(newCodes)
     setIsTransferOpen(false)
+
+    // 可选：刷新当前路由视图但不改变查询参数
+    // navigate(0)  // 如需强制刷新可放开
   }, [
     transferCodeIdx,
     editBinID,
@@ -243,6 +249,7 @@ const BinTable: React.FC<Props> = props => {
 
       const warehouseID = currentEditingRow?.warehouseID
       if (warehouseID) {
+        // 刷新列表，但不把 keyword 改成 nextCode
         await fetchBins({
           warehouseID,
           type: binType === 'ALL' ? undefined : binType,
@@ -326,7 +333,6 @@ const BinTable: React.FC<Props> = props => {
             binCodes={binCodes}
             editingBinCode={editingBinCode}
             setEditingBinCode={setEditingBinCode}
-            /** 类型编辑态传入 */
             editingType={editingType}
             setEditingType={setEditingType}
             onDeleteProduct={handleDeleteProduct}

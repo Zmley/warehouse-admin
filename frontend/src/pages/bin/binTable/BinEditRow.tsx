@@ -63,14 +63,10 @@ const BinEditRow: React.FC<Props> = ({
   addProductValue,
   updating,
   productCodes,
-  binCodes,
   editingBinCode,
   setEditingBinCode,
-
-  // ✅ 使用 BinType
   editingType,
   setEditingType,
-
   onDeleteProduct,
   onAddRow,
   onCancel,

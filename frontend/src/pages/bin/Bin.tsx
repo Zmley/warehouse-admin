@@ -22,8 +22,6 @@ import AddBinModal from 'pages/bin/AddBinModal'
 import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
 
-import * as BinApi from 'api/bin'
-
 const ROWS_PER_PAGE = 10
 const BIN_TYPES = Object.values(BinType)
 
