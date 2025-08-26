@@ -8,7 +8,8 @@ import {
   TableBody,
   TablePagination,
   CircularProgress,
-  Typography
+  Typography,
+  TableContainer
 } from '@mui/material'
 import { BinType } from 'constants/index'
 import BinRow from './BinRow'
@@ -16,11 +17,11 @@ import BinEditRow from './BinEditRow'
 import TransferDialog from './TransferDialog'
 import type { NavigateFunction } from 'react-router-dom'
 
-// 统一从 types/Bin 引入 Update 类型
 import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
+import { getBins } from 'api/bin'
 
-// 只在本组件内部使用
-const ROWS_PER_PAGE = 10
+/** ---- 常量 ---- */
+const DEFAULT_ROWS_PER_PAGE = 50
 const COL_WIDTH = {
   type: 90,
   binCode: 150,
@@ -28,7 +29,8 @@ const COL_WIDTH = {
   updated: 150,
   action: 140
 }
-const rowHeight = 34
+const rowHeight = 34 // 每行高度（与行样式一致）
+const THEAD_HEIGHT = 34 // 头部高度（和上面 rowHeight 对齐）
 
 /** ---- 类型 ---- */
 export interface FetchParams {
@@ -59,12 +61,7 @@ type Props = {
 
   handleEdit: (binID: string, codes: string[]) => void
   handleCancel: () => void
-
-  /**
-   * 父组件的保存 defaultProductCodes（已支持 { skipRefresh }）
-   */
-  handleSave: (opts?: { skipRefresh?: boolean }) => Promise<void>
-
+  handleSave: () => void
   handleDeleteProduct: (idx: number) => void
   handleAddRow: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
@@ -78,13 +75,11 @@ type Props = {
   ) => Promise<UpdateBinResponse>
 
   fetchBins: (params: FetchParams) => Promise<any>
+  warehouseCode: string
+  navigate: NavigateFunction
 
-  // 仅为了类型完整性，当前文件不直接使用
-  warehouseCode?: string
-  navigate?: NavigateFunction
-
-  // 当前搜索关键字（保持刷新时不跳页不变更筛选）
   currentKeyword: string
+  rowsPerPage?: number
 }
 
 const BinTable: React.FC<Props> = props => {
@@ -105,7 +100,7 @@ const BinTable: React.FC<Props> = props => {
     binCodes,
     handleEdit,
     handleCancel,
-    handleSave, // ✅ 父组件的保存（支持 skipRefresh）
+    handleSave,
     handleDeleteProduct,
     handleAddRow,
     setEditProductCodes,
@@ -114,7 +109,8 @@ const BinTable: React.FC<Props> = props => {
     updateBin,
     updateSingleBin,
     fetchBins,
-    currentKeyword
+    currentKeyword,
+    rowsPerPage = DEFAULT_ROWS_PER_PAGE
   } = props
 
   /** 迁移弹窗状态 */
@@ -124,26 +120,25 @@ const BinTable: React.FC<Props> = props => {
     null
   )
 
-  /** 当前编辑行（用于拿初始 binCode / type / warehouseID） */
+  /** 当前编辑行信息 */
   const currentEditingRow = React.useMemo(
     () => (editBinID ? rows.find(r => r.binID === editBinID) : null),
     [editBinID, rows]
   )
 
-  /** 编辑态：binCode / type 本地输入 */
+  /** 编辑态：binCode / type */
   const [editingBinCode, setEditingBinCode] = React.useState<string>(
     currentEditingRow?.binCode ?? ''
   )
   const [editingType, setEditingType] = React.useState<BinType>(
     (currentEditingRow?.type as BinType) ?? BinType.PICK_UP
   )
-
   React.useEffect(() => {
     setEditingBinCode(currentEditingRow?.binCode ?? '')
     setEditingType((currentEditingRow?.type as BinType) ?? BinType.PICK_UP)
   }, [currentEditingRow?.binCode, currentEditingRow?.type, editBinID])
 
-  /** 分组避免 O(n^2) */
+  /** 分组 */
   const groups = React.useMemo(() => {
     const m = new Map<string, any[]>()
     for (const r of rows) {
@@ -153,14 +148,14 @@ const BinTable: React.FC<Props> = props => {
     return m
   }, [rows])
 
-  /** 打开迁移弹窗 */
+  /** 弹窗控制 */
   const openTransfer = React.useCallback((idx: number) => {
     setTransferCodeIdx(idx)
     setTransferTargetCode('')
     setIsTransferOpen(true)
   }, [])
 
-  /** 确认迁移（保持当前筛选，不改 URL；并在空时保留占位一行） */
+  /** 迁移确认 */
   const handleTransferConfirm = React.useCallback(async () => {
     if (transferCodeIdx === null || !editBinID) return
     const code = editProductCodes[transferCodeIdx]
@@ -176,15 +171,15 @@ const BinTable: React.FC<Props> = props => {
       return
     }
 
-    // 查目标 bin（不改变全局 bins）
-    const lookup = await props.fetchBins({
+    const lookup = await getBins({
       warehouseID,
       keyword: targetBinCode,
       type: binType === 'ALL' ? undefined : binType,
       page: 1,
       limit: 1
-    })
-    const targetBin = lookup?.[0]
+    } as any)
+
+    const targetBin = lookup?.data?.[0]
     if (!targetBin) {
       alert('❌ Target bin not found')
       return
@@ -213,19 +208,18 @@ const BinTable: React.FC<Props> = props => {
     const ok2 = await updateBin(editBinID, newCodes.join(','))
     if (!ok2) return
 
-    // 空时保留一个占位，防止编辑行直接消失
-    setEditProductCodes(newCodes.length ? newCodes : [''])
-
+    setEditProductCodes(newCodes)
     setIsTransferOpen(false)
 
-    // 刷新一次，保持当前筛选
     await fetchBins({
       warehouseID,
       type: binType === 'ALL' ? undefined : binType,
       keyword: currentKeyword || undefined,
-      page: 1,
-      limit: ROWS_PER_PAGE
+      page: page + 1,
+      limit: rowsPerPage
     })
+
+    handleCancel()
   }, [
     transferCodeIdx,
     editBinID,
@@ -236,17 +230,18 @@ const BinTable: React.FC<Props> = props => {
     updateBin,
     setEditProductCodes,
     fetchBins,
-    currentKeyword
+    currentKeyword,
+    page,
+    rowsPerPage,
+    handleCancel
   ])
 
-  /** 保存所有：只刷新一次（统一在这里刷） */
+  /** 保存（defaultProductCodes + 单元格 binCode/type） */
   const handleSaveAll = React.useCallback(async () => {
     if (!editBinID) return
 
-    // 先保存 defaultProductCodes，但跳过父组件内刷新
-    await handleSave({ skipRefresh: true })
+    await handleSave()
 
-    // 再对比 binCode / type 是否有变化
     const originalCode = (currentEditingRow?.binCode || '').trim()
     const nextCode = (editingBinCode || '').trim()
     const codeChanged = nextCode && nextCode !== originalCode
@@ -264,47 +259,50 @@ const BinTable: React.FC<Props> = props => {
         alert(resp?.error || resp?.errorCode || '❌ Failed to update bin')
         return
       }
+
+      const warehouseID = currentEditingRow?.warehouseID
+      if (warehouseID) {
+        await fetchBins({
+          warehouseID,
+          type: binType === 'ALL' ? undefined : binType,
+          keyword: currentKeyword || undefined,
+          page: page + 1,
+          limit: rowsPerPage
+        })
+      }
     }
 
-    // 统一只刷新一次列表，保持当前筛选
-    const warehouseID = currentEditingRow?.warehouseID
-    if (warehouseID) {
-      await fetchBins({
-        warehouseID,
-        type: binType === 'ALL' ? undefined : binType,
-        keyword: currentKeyword || undefined,
-        page: 1,
-        limit: ROWS_PER_PAGE
-      })
-    }
-
-    // 退出编辑态
     handleCancel()
   }, [
     editBinID,
     handleSave,
     currentEditingRow?.binCode,
     currentEditingRow?.type,
-    currentEditingRow?.warehouseID,
     editingBinCode,
     editingType,
     updateSingleBin,
     fetchBins,
     binType,
+    handleCancel,
     currentKeyword,
-    handleCancel
+    page,
+    rowsPerPage
   ])
+
+  /** -------- 动态高度：不足时自适应，多时滚动 -------- */
+  // 计算“真正在表体展示”的行数（编辑态一组仍算多行）
+  const visibleRowCount = rows.length
+  const bodyHeight = Math.max(visibleRowCount, 1) * rowHeight
+  const maxScrollArea = 560 // 你可以按需调整视区高度
+  const desiredHeight = Math.min(THEAD_HEIGHT + bodyHeight, maxScrollArea)
+  const needScroll = THEAD_HEIGHT + bodyHeight > maxScrollArea
 
   /** 表体内容 */
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (
       <TableRow>
-        <TableCell
-          colSpan={5}
-          align='center'
-          sx={{ height: rowHeight * ROWS_PER_PAGE }}
-        >
+        <TableCell colSpan={5} align='center' sx={{ height: rowHeight * 6 }}>
           <CircularProgress size={32} sx={{ m: 2 }} />
         </TableCell>
       </TableRow>
@@ -312,11 +310,7 @@ const BinTable: React.FC<Props> = props => {
   } else if (error) {
     bodyContent = (
       <TableRow>
-        <TableCell
-          colSpan={5}
-          align='center'
-          sx={{ height: rowHeight * ROWS_PER_PAGE }}
-        >
+        <TableCell colSpan={5} align='center' sx={{ height: rowHeight * 6 }}>
           <Typography color='error'>{error}</Typography>
         </TableCell>
       </TableRow>
@@ -324,11 +318,7 @@ const BinTable: React.FC<Props> = props => {
   } else if (rows.length === 0) {
     bodyContent = (
       <TableRow>
-        <TableCell
-          colSpan={5}
-          align='center'
-          sx={{ height: rowHeight * ROWS_PER_PAGE }}
-        >
+        <TableCell colSpan={5} align='center' sx={{ height: rowHeight * 6 }}>
           <Typography color='text.secondary'>No bins found.</Typography>
         </TableCell>
       </TableRow>
@@ -383,129 +373,127 @@ const BinTable: React.FC<Props> = props => {
       }
     })
 
-    const emptyCount = Math.max(0, ROWS_PER_PAGE - items.length)
-    const empties = Array.from({ length: emptyCount }).map((_, i) => (
-      <TableRow key={'empty-row-' + i} sx={{ height: rowHeight }}>
-        {Array.from({ length: 5 }).map((__, j) => (
-          <TableCell
-            key={j}
-            sx={{
-              height: rowHeight,
-              border: '1px solid #e0e0e0',
-              p: 0,
-              background: '#fafafa'
-            }}
-          />
-        ))}
-      </TableRow>
-    ))
-
-    bodyContent = (
-      <>
-        {items}
-        {empties}
-      </>
-    )
+    bodyContent = <>{items}</>
   }
 
   return (
-    <Box sx={{ minWidth: 600, margin: '0 auto' }}>
-      <Table
-        size='small'
-        sx={{ tableLayout: 'fixed', width: '100%', margin: '0 auto' }}
+    <Box sx={{ minWidth: 900, margin: '0 auto' }}>
+      <TableContainer
+        sx={{
+          // 当行少时：容器高度=内容高度，避免出现多余空白
+          // 当行多时：容器高度锁定为 maxScrollArea，并允许滚动
+          height: desiredHeight,
+          maxHeight: maxScrollArea,
+          overflowY: needScroll ? 'auto' : 'hidden',
+          borderRadius: 1,
+          border: '1px solid #e0e0e0',
+          // 去掉 TableContainer 与分页之间可能的额外空隙
+          mb: 0
+        }}
       >
-        <TableHead>
-          <TableRow sx={{ backgroundColor: '#f0f4f9', height: rowHeight }}>
-            <TableCell
-              align='center'
-              sx={{
-                width: COL_WIDTH.type,
-                minWidth: COL_WIDTH.type,
-                border: '1px solid #e0e0e0',
-                fontSize: 13,
-                height: rowHeight,
-                p: 0
-              }}
-            >
-              Type
-            </TableCell>
-            <TableCell
-              align='center'
-              sx={{
-                width: COL_WIDTH.binCode,
-                minWidth: COL_WIDTH.binCode,
-                border: '1px solid #e0e0e0',
-                fontSize: 13,
-                height: rowHeight,
-                p: 0
-              }}
-            >
-              Bin Code
-            </TableCell>
-            <TableCell
-              align='center'
-              sx={{
-                width: COL_WIDTH.codes,
-                minWidth: COL_WIDTH.codes,
-                border: '1px solid #e0e0e0',
-                fontSize: 13,
-                height: rowHeight,
-                p: 0
-              }}
-            >
-              Default Product Codes
-            </TableCell>
-            <TableCell
-              align='center'
-              sx={{
-                width: COL_WIDTH.updated,
-                minWidth: COL_WIDTH.updated,
-                border: '1px solid #e0e0e0',
-                fontSize: 13,
-                height: rowHeight,
-                p: 0
-              }}
-            >
-              Last Updated
-            </TableCell>
-            <TableCell
-              align='center'
-              sx={{
-                width: COL_WIDTH.action,
-                minWidth: COL_WIDTH.action,
-                border: '1px solid #e0e0e0',
-                fontSize: 13,
-                height: rowHeight,
-                p: 0
-              }}
-            >
-              Action
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>{bodyContent}</TableBody>
-      </Table>
+        <Table
+          stickyHeader
+          size='small'
+          sx={{ tableLayout: 'fixed', width: '100%' }}
+        >
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#f0f4f9', height: THEAD_HEIGHT }}>
+              <TableCell
+                align='center'
+                sx={{
+                  width: COL_WIDTH.type,
+                  minWidth: COL_WIDTH.type,
+                  fontSize: 13,
+                  p: 0
+                }}
+              >
+                Type
+              </TableCell>
+              <TableCell
+                align='center'
+                sx={{
+                  width: COL_WIDTH.binCode,
+                  minWidth: COL_WIDTH.binCode,
+                  fontSize: 13,
+                  p: 0
+                }}
+              >
+                Bin Code
+              </TableCell>
+              <TableCell
+                align='center'
+                sx={{
+                  width: COL_WIDTH.codes,
+                  minWidth: COL_WIDTH.codes,
+                  fontSize: 13,
+                  p: 0
+                }}
+              >
+                Default Product Codes
+              </TableCell>
+              <TableCell
+                align='center'
+                sx={{
+                  width: COL_WIDTH.updated,
+                  minWidth: COL_WIDTH.updated,
+                  fontSize: 13,
+                  p: 0
+                }}
+              >
+                Last Updated
+              </TableCell>
+              <TableCell
+                align='center'
+                sx={{
+                  width: COL_WIDTH.action,
+                  minWidth: COL_WIDTH.action,
+                  fontSize: 13,
+                  p: 0
+                }}
+              >
+                Action
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>{bodyContent}</TableBody>
+        </Table>
+      </TableContainer>
 
       <Box
         display='flex'
         justifyContent='flex-end'
         alignItems='center'
         px={2}
-        py={1}
-        sx={{ borderTop: 'none', background: '#fff', minWidth: 600 }}
+        py={0.5} // 分页条更“贴底”，减少视觉空白
+        sx={{ background: '#fff', minWidth: 900 }}
       >
         <TablePagination
           component='div'
           count={totalPages}
           page={page}
           onPageChange={onPageChange}
-          rowsPerPage={ROWS_PER_PAGE}
-          rowsPerPageOptions={[ROWS_PER_PAGE]}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[rowsPerPage]}
           labelDisplayedRows={({ from, to, count }) =>
             `${from}-${to} of ${count}`
           }
-          backIconButtonProps={{ sx: { mx: 1 } }}
-          nextIconButtonProps={{ sx: { mx: 1 } }}
+          backIconButtonProps={{ sx: { mx: 1, p: 0.25 } }}
+          nextIconButtonProps={{ sx: { mx: 1, p: 0.25 } }}
+          sx={{
+            '& .MuiTablePagination-toolbar': {
+              minHeight: 32, // 默认是 52，缩小到 32
+              height: 32,
+              p: 0
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
+              {
+                fontSize: '0.75rem', // 缩小文字
+                m: 0
+              },
+            '& .MuiIconButton-root': {
+              p: 0.25 // 缩小左右按钮
+            }
+          }}
         />
       </Box>
 

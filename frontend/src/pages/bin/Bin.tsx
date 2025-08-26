@@ -20,7 +20,8 @@ import AddBinModal from 'pages/bin/AddBinModal'
 import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
 
-const ROWS_PER_PAGE = 10
+const ROWS_PER_PAGE = 100 // ← 每页 50
+
 const BIN_TYPES = Object.values(BinType)
 
 function expandBins(bins: any[]) {
@@ -107,7 +108,7 @@ const Bin: React.FC = () => {
       type: binType === 'ALL' ? undefined : binType,
       keyword: searchKeyword ? searchKeyword : undefined,
       page: page + 1,
-      limit: ROWS_PER_PAGE
+      limit: ROWS_PER_PAGE // ← 50
     })
 
     fetchBinCodes()
@@ -132,9 +133,8 @@ const Bin: React.FC = () => {
     setNewRow(false)
   }
 
-  const handleSave = async (opts?: { skipRefresh?: boolean }) => {
+  const handleSave = async () => {
     if (!editBinID) return
-
     let codes = [...editProductCodes]
 
     if (
@@ -149,7 +149,6 @@ const Bin: React.FC = () => {
     const uniqueCodes = Array.from(
       new Set(codes.map(x => x.trim()).filter(x => x))
     )
-
     const hasInvalidCode = uniqueCodes.some(
       code => !productCodes.includes(code)
     )
@@ -162,15 +161,13 @@ const Bin: React.FC = () => {
     setAddProductValue('')
     setNewRow(false)
 
-    if (!opts?.skipRefresh) {
-      await fetchBins({
-        warehouseID: warehouseID!,
-        type: binType === 'ALL' ? undefined : binType,
-        keyword: searchKeyword ? searchKeyword : undefined,
-        page: page + 1,
-        limit: ROWS_PER_PAGE
-      })
-    }
+    fetchBins({
+      warehouseID: warehouseID!,
+      type: binType === 'ALL' ? undefined : binType,
+      keyword: searchKeyword ? searchKeyword : undefined,
+      page: page + 1,
+      limit: ROWS_PER_PAGE // ← 50
+    })
   }
 
   const handleDeleteProduct = (idx: number) => {
@@ -190,26 +187,15 @@ const Bin: React.FC = () => {
     const res = await deleteBin(binID)
     if (res?.success) {
       setEditBinID(null)
-      await fetchBins({
+      fetchBins({
         warehouseID: warehouseID!,
         type: binType === 'ALL' ? undefined : binType,
         keyword: searchKeyword ? searchKeyword : undefined,
         page: page + 1,
-        limit: ROWS_PER_PAGE
+        limit: ROWS_PER_PAGE // ← 50
       })
     }
   }
-
-  useEffect(() => {
-    if (!editBinID) return
-    // 当前页数据中找不到正在编辑的行 => 退出编辑
-    if (!bins.some(b => b.binID === editBinID)) {
-      setEditBinID(null)
-      setEditProductCodes([])
-      setNewRow(false)
-      setAddProductValue('')
-    }
-  }, [bins, editBinID])
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -271,11 +257,7 @@ const Bin: React.FC = () => {
             updateQueryParams(binType, newInput, 0)
           }}
           renderInput={params => (
-            <TextField
-              {...params}
-              label='Search binCode / productCode'
-              size='small'
-            />
+            <TextField {...params} label='Search binCode' size='small' />
           )}
           sx={{ width: 250 }}
         />
@@ -331,7 +313,8 @@ const Bin: React.FC = () => {
           warehouseCode={warehouseCode!}
           navigate={navigate}
           binCodes={binCodes}
-          currentKeyword={searchKeyword} // 传给子组件，刷新时保持筛选
+          currentKeyword={searchKeyword}
+          rowsPerPage={ROWS_PER_PAGE} // ← 传给子组件用于分页组件展示
         />
       </Paper>
 
@@ -342,8 +325,8 @@ const Bin: React.FC = () => {
       <AddBinModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onSuccess={async () => {
-          await fetchBins({
+        onSuccess={() => {
+          fetchBins({
             warehouseID: warehouseID!,
             type: binType === 'ALL' ? undefined : binType,
             keyword: searchKeyword ? searchKeyword : undefined,
