@@ -32,6 +32,10 @@ const BinRow: React.FC<Props> = ({
   codes,
   onEdit
 }) => {
+  // ✅ PICK_UP 和 INVENTORY 都可编辑、可展示 defaultProductCodes
+  const canEdit = binType === BinType.PICK_UP || binType === BinType.INVENTORY
+  const applies = canEdit
+
   return (
     <TableRow sx={{ height: rowHeight }}>
       {rowIndex === 0 && (
@@ -79,14 +83,13 @@ const BinRow: React.FC<Props> = ({
           fontSize: 13,
           height: rowHeight,
           p: 0,
-          color:
-            binType === 'PICK_UP'
-              ? undefined
-              : (theme: any) => theme.palette.action.disabled,
-          fontStyle: binType === 'PICK_UP' ? undefined : 'italic'
+          color: applies
+            ? undefined
+            : (theme: any) => theme.palette.action.disabled,
+          fontStyle: applies ? undefined : 'italic'
         }}
       >
-        {binType === 'PICK_UP' ? row._code || '' : 'Not Applied'}
+        {applies ? row._code || '' : 'Not Applied'}
       </TableCell>
 
       <TableCell
@@ -116,7 +119,7 @@ const BinRow: React.FC<Props> = ({
             p: 0
           }}
         >
-          {binType === BinType.PICK_UP ? (
+          {canEdit ? (
             <Tooltip title='Edit'>
               <span>
                 <IconButton

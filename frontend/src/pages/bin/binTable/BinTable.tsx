@@ -29,8 +29,8 @@ const COL_WIDTH = {
   updated: 150,
   action: 140
 }
-const rowHeight = 34 // 每行高度（与行样式一致）
-const THEAD_HEIGHT = 34 // 头部高度（和上面 rowHeight 对齐）
+const rowHeight = 34
+const THEAD_HEIGHT = 34
 
 /** ---- 类型 ---- */
 export interface FetchParams {
@@ -289,11 +289,10 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage
   ])
 
-  /** -------- 动态高度：不足时自适应，多时滚动 -------- */
-  // 计算“真正在表体展示”的行数（编辑态一组仍算多行）
+  /** 高度：不足时自适应，多时滚动 */
   const visibleRowCount = rows.length
   const bodyHeight = Math.max(visibleRowCount, 1) * rowHeight
-  const maxScrollArea = 560 // 你可以按需调整视区高度
+  const maxScrollArea = 560
   const desiredHeight = Math.min(THEAD_HEIGHT + bodyHeight, maxScrollArea)
   const needScroll = THEAD_HEIGHT + bodyHeight > maxScrollArea
 
@@ -325,9 +324,14 @@ const BinTable: React.FC<Props> = props => {
     )
   } else {
     const items: React.ReactNode[] = []
+
+    // ✅ 在这里放宽：PICK_UP 或 INVENTORY 才进入编辑行渲染
+    const canEditType =
+      binType === BinType.PICK_UP || binType === BinType.INVENTORY
+
     groups.forEach((binRows, binID) => {
       const codes = binRows.map(r => r._code)
-      const isEditing = binType === BinType.PICK_UP && editBinID === binID
+      const isEditing = canEditType && editBinID === binID
 
       if (isEditing) {
         items.push(
@@ -380,14 +384,11 @@ const BinTable: React.FC<Props> = props => {
     <Box sx={{ minWidth: 900, margin: '0 auto' }}>
       <TableContainer
         sx={{
-          // 当行少时：容器高度=内容高度，避免出现多余空白
-          // 当行多时：容器高度锁定为 maxScrollArea，并允许滚动
           height: desiredHeight,
           maxHeight: maxScrollArea,
           overflowY: needScroll ? 'auto' : 'hidden',
           borderRadius: 1,
           border: '1px solid #e0e0e0',
-          // 去掉 TableContainer 与分页之间可能的额外空隙
           mb: 0
         }}
       >
@@ -464,7 +465,7 @@ const BinTable: React.FC<Props> = props => {
         justifyContent='flex-end'
         alignItems='center'
         px={2}
-        py={0.5} // 分页条更“贴底”，减少视觉空白
+        py={0.5}
         sx={{ background: '#fff', minWidth: 900 }}
       >
         <TablePagination
@@ -481,18 +482,16 @@ const BinTable: React.FC<Props> = props => {
           nextIconButtonProps={{ sx: { mx: 1, p: 0.25 } }}
           sx={{
             '& .MuiTablePagination-toolbar': {
-              minHeight: 32, // 默认是 52，缩小到 32
+              minHeight: 32,
               height: 32,
               p: 0
             },
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
               {
-                fontSize: '0.75rem', // 缩小文字
+                fontSize: '0.75rem',
                 m: 0
               },
-            '& .MuiIconButton-root': {
-              p: 0.25 // 缩小左右按钮
-            }
+            '& .MuiIconButton-root': { p: 0.25 }
           }}
         />
       </Box>
