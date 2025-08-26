@@ -8,13 +8,16 @@ import {
   IconButton,
   TextField,
   MenuItem,
-  Select
+  Select,
+  Typography,
+  InputAdornment
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import MoveDownIcon from '@mui/icons-material/MoveDown'
+import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt'
 import MiniAuto from './MiniAuto'
 import { BinType } from 'constants/index'
 
@@ -37,11 +40,9 @@ type Props = {
   productCodes: string[]
   binCodes: string[]
 
-  // binCode 编辑
   editingBinCode: string
   setEditingBinCode: (v: string) => void
 
-  // ✅ type 编辑（注意类型改为 BinType）
   editingType: BinType
   setEditingType: React.Dispatch<React.SetStateAction<BinType>>
 
@@ -76,6 +77,27 @@ const BinEditRow: React.FC<Props> = ({
   setAddProductValue,
   onDeleteBin
 }) => {
+  const originalBinCode = binRows?.[0]?.binCode ?? ''
+  const getOriginalCode = (idx: number) => binRows?.[idx]?._code ?? ''
+
+  const capsuleSx = {
+    px: 0.75,
+    py: 0.25,
+    fontFamily:
+      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    fontSize: 12,
+    lineHeight: '18px',
+    borderRadius: '10px',
+    bgcolor: '#eef6ff',
+    border: '1px solid #bcd8ff',
+    color: '#2a4a7b',
+    maxWidth: 70, // ← 收窄，避免被挤掉
+    overflow: 'hidden',
+    textOverflow: 'ellipsis' as const,
+    whiteSpace: 'nowrap' as const,
+    fontWeight: 700
+  }
+
   return (
     <>
       {editProductCodes.map((code, idx) => (
@@ -83,6 +105,7 @@ const BinEditRow: React.FC<Props> = ({
           key={binID + '-edit-' + idx}
           sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
         >
+          {/* Type */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -101,11 +124,7 @@ const BinEditRow: React.FC<Props> = ({
                 value={editingType}
                 size='small'
                 onChange={e => setEditingType(e.target.value as BinType)}
-                sx={{
-                  fontSize: 13,
-                  height: 32,
-                  minWidth: 100
-                }}
+                sx={{ fontSize: 13, height: 32, minWidth: 100 }}
               >
                 <MenuItem value={BinType.PICK_UP}>PICK UP</MenuItem>
                 <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
@@ -115,6 +134,7 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
+          {/* Bin Code：把原值放进输入框左侧的 startAdornment */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -135,6 +155,21 @@ const BinEditRow: React.FC<Props> = ({
                 size='small'
                 fullWidth
                 placeholder='Bin Code'
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start' sx={{ ml: 0.5 }}>
+                      <Tooltip title='Original bin code'>
+                        <Typography sx={capsuleSx}>
+                          {originalBinCode || '--'}
+                        </Typography>
+                      </Tooltip>
+                      <ArrowRightAltIcon
+                        fontSize='small'
+                        sx={{ ml: 0.5, opacity: 0.6 }}
+                      />
+                    </InputAdornment>
+                  )
+                }}
                 inputProps={{
                   style: { height: 32, padding: '0 8px', fontSize: 13 }
                 }}
@@ -150,6 +185,7 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
+          {/* Default Product Codes：左侧原值 + 箭头 + 右侧选择器 */}
           <TableCell
             align='center'
             sx={{
@@ -163,8 +199,18 @@ const BinEditRow: React.FC<Props> = ({
             <Box
               display='flex'
               alignItems='center'
-              sx={{ height: rowHeight, justifyContent: 'center' }}
+              justifyContent='center'
+              sx={{ height: rowHeight, px: 1 }}
+              gap={0.5}
             >
+              <Tooltip title='Original product code'>
+                <Typography sx={capsuleSx}>
+                  {getOriginalCode(idx) || '--'}
+                </Typography>
+              </Tooltip>
+
+              <ArrowRightAltIcon fontSize='small' sx={{ opacity: 0.6 }} />
+
               <MiniAuto
                 value={code}
                 onChange={v => {
@@ -174,7 +220,7 @@ const BinEditRow: React.FC<Props> = ({
                 }}
                 options={productCodes}
                 freeSolo={false}
-                width={180}
+                width={150} // ← 收窄以配合 260 的列宽
               />
 
               <Tooltip title='Transfer'>
@@ -182,7 +228,7 @@ const BinEditRow: React.FC<Props> = ({
                   <IconButton
                     size='small'
                     color='info'
-                    sx={{ ml: 1, height: 32, width: 32, p: 0 }}
+                    sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
                     onClick={() => onOpenTransfer(idx)}
                     aria-label='transfer product'
                   >
@@ -196,7 +242,7 @@ const BinEditRow: React.FC<Props> = ({
                   <IconButton
                     color='error'
                     size='small'
-                    sx={{ ml: 1, height: 32, width: 32, p: 0 }}
+                    sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
                     onClick={() => onDeleteProduct(idx)}
                     disabled={editProductCodes.length <= 1}
                     aria-label='delete product'
@@ -208,6 +254,7 @@ const BinEditRow: React.FC<Props> = ({
             </Box>
           </TableCell>
 
+          {/* Updated At */}
           <TableCell
             align='center'
             sx={{
@@ -223,6 +270,7 @@ const BinEditRow: React.FC<Props> = ({
               : '--'}
           </TableCell>
 
+          {/* Action */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -309,6 +357,7 @@ const BinEditRow: React.FC<Props> = ({
         </TableRow>
       ))}
 
+      {/* New row */}
       {newRow && (
         <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
           <TableCell
@@ -325,21 +374,24 @@ const BinEditRow: React.FC<Props> = ({
               display='flex'
               alignItems='center'
               sx={{ height: rowHeight, justifyContent: 'center' }}
+              gap={0.5}
             >
+              <Typography sx={capsuleSx}>--</Typography>
+              <ArrowRightAltIcon fontSize='small' sx={{ opacity: 0.6 }} />
               <MiniAuto
                 label='New product code'
                 value={addProductValue}
                 onChange={setAddProductValue}
                 options={productCodes}
                 freeSolo={false}
-                width={180}
+                width={130}
               />
               <Tooltip title='Delete'>
                 <span>
                   <IconButton
                     color='error'
                     size='small'
-                    sx={{ ml: 1, height: 32, width: 32, p: 0 }}
+                    sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
                     disabled
                     aria-label='disabled delete'
                   >
