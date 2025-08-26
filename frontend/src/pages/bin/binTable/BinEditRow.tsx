@@ -49,7 +49,7 @@ type Props = {
   onDeleteProduct: (idx: number) => void
   onAddRow: () => void
   onCancel: () => void
-  onOpenTransfer: (idx: number) => void
+  onOpenTransfer: (idx: number, anchor: HTMLElement) => void
   onSaveAll: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
   setAddProductValue: React.Dispatch<React.SetStateAction<string>>
@@ -91,7 +91,7 @@ const BinEditRow: React.FC<Props> = ({
     bgcolor: '#eef6ff',
     border: '1px solid #bcd8ff',
     color: '#2a4a7b',
-    maxWidth: 70, // ← 收窄，避免被挤掉
+    maxWidth: 70,
     overflow: 'hidden',
     textOverflow: 'ellipsis' as const,
     whiteSpace: 'nowrap' as const,
@@ -123,7 +123,17 @@ const BinEditRow: React.FC<Props> = ({
               <Select
                 value={editingType}
                 size='small'
-                onChange={e => setEditingType(e.target.value as BinType)}
+                onChange={e => {
+                  const next = e.target.value as BinType
+                  setEditingType(next)
+
+                  // 👉 切到 INVENTORY 时清空 Default Product Codes
+                  if (next === BinType.INVENTORY) {
+                    // 保留一行空串，让 UI 仍然显示一个可编辑输入框
+                    setEditProductCodes([''])
+                    setAddProductValue('')
+                  }
+                }}
                 sx={{ fontSize: 13, height: 32, minWidth: 100 }}
               >
                 <MenuItem value={BinType.PICK_UP}>PICK UP</MenuItem>
@@ -134,7 +144,7 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Bin Code：把原值放进输入框左侧的 startAdornment */}
+          {/* Bin Code：左侧展示原值 + 箭头 + 右侧输入框 */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -185,7 +195,6 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Default Product Codes：左侧原值 + 箭头 + 右侧选择器 */}
           <TableCell
             align='center'
             sx={{
@@ -220,7 +229,7 @@ const BinEditRow: React.FC<Props> = ({
                 }}
                 options={productCodes}
                 freeSolo={false}
-                width={150} // ← 收窄以配合 260 的列宽
+                width={150}
               />
 
               <Tooltip title='Transfer'>
@@ -229,7 +238,8 @@ const BinEditRow: React.FC<Props> = ({
                     size='small'
                     color='info'
                     sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
-                    onClick={() => onOpenTransfer(idx)}
+                    // 🔴 改这里：把锚点传出去，父组件用它打开 Popover
+                    onClick={e => onOpenTransfer(idx, e.currentTarget)}
                     aria-label='transfer product'
                   >
                     <MoveDownIcon fontSize='small' />

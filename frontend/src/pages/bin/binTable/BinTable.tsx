@@ -14,11 +14,11 @@ import {
 import { BinType } from 'constants/index'
 import BinRow from './BinRow'
 import BinEditRow from './BinEditRow'
-import TransferDialog from './TransferDialog'
 import type { NavigateFunction } from 'react-router-dom'
 
 import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import { getBins } from 'api/bin'
+import TransferPopover from './TransferPopover'
 
 /** ---- 常量 ---- */
 const DEFAULT_ROWS_PER_PAGE = 50
@@ -113,12 +113,28 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage = DEFAULT_ROWS_PER_PAGE
   } = props
 
-  /** 迁移弹窗状态 */
-  const [isTransferOpen, setIsTransferOpen] = React.useState(false)
+  /** ---- Transfer Popover 状态 ---- */
+  const [transferAnchorEl, setTransferAnchorEl] =
+    React.useState<HTMLElement | null>(null)
   const [transferTargetCode, setTransferTargetCode] = React.useState('')
   const [transferCodeIdx, setTransferCodeIdx] = React.useState<number | null>(
     null
   )
+
+  const openTransfer = React.useCallback(
+    (idx: number, anchorEl: HTMLElement) => {
+      setTransferCodeIdx(idx)
+      setTransferTargetCode('')
+      setTransferAnchorEl(anchorEl)
+    },
+    []
+  )
+
+  const closeTransfer = React.useCallback(() => {
+    setTransferAnchorEl(null)
+    setTransferCodeIdx(null)
+    setTransferTargetCode('')
+  }, [])
 
   /** 当前编辑行信息 */
   const currentEditingRow = React.useMemo(
@@ -148,31 +164,23 @@ const BinTable: React.FC<Props> = props => {
     return m
   }, [rows])
 
-  /** 弹窗控制 */
-  const openTransfer = React.useCallback((idx: number) => {
-    setTransferCodeIdx(idx)
-    setTransferTargetCode('')
-    setIsTransferOpen(true)
-  }, [])
-
-  /** 迁移确认 */
+  /** 迁移确认（Popover 版） */
   const handleTransferConfirm = React.useCallback(async () => {
     if (transferCodeIdx === null || !editBinID) return
-    const code = editProductCodes[transferCodeIdx]
+
+    // 先把需要的值“快照”出来，避免关闭后依赖丢失
+    const idx = transferCodeIdx
+    const code = editProductCodes[idx]
     const targetBinCode = transferTargetCode.trim()
-    if (!code || !targetBinCode) {
-      alert('Please provide a valid product code and target bin.')
-      return
-    }
+    const whID = rows.find(r => r.binID === editBinID)?.warehouseID
+    if (!code || !targetBinCode || !whID) return
 
-    const warehouseID = rows.find(r => r.binID === editBinID)?.warehouseID
-    if (!warehouseID) {
-      alert('Warehouse ID not found.')
-      return
-    }
+    // ✅ 先同步关闭，避免闪烁
+    closeTransfer()
 
+    // …下面保持你原来的逻辑
     const lookup = await getBins({
-      warehouseID,
+      warehouseID: whID,
       keyword: targetBinCode,
       type: binType === 'ALL' ? undefined : binType,
       page: 1,
@@ -180,10 +188,7 @@ const BinTable: React.FC<Props> = props => {
     } as any)
 
     const targetBin = lookup?.data?.[0]
-    if (!targetBin) {
-      alert('❌ Target bin not found')
-      return
-    }
+    if (!targetBin) return
 
     const existingCodes = targetBin.defaultProductCodes
       ? targetBin.defaultProductCodes
@@ -192,10 +197,7 @@ const BinTable: React.FC<Props> = props => {
           .filter(Boolean)
       : []
 
-    if (existingCodes.includes(code)) {
-      alert('⚠️ Code already exists in target bin')
-      return
-    }
+    if (existingCodes.includes(code)) return
 
     const ok1 = await updateBin(
       targetBin.binID,
@@ -204,15 +206,14 @@ const BinTable: React.FC<Props> = props => {
     if (!ok1) return
 
     const newCodes = [...editProductCodes]
-    newCodes.splice(transferCodeIdx, 1)
+    newCodes.splice(idx, 1)
     const ok2 = await updateBin(editBinID, newCodes.join(','))
     if (!ok2) return
 
     setEditProductCodes(newCodes)
-    setIsTransferOpen(false)
 
     await fetchBins({
-      warehouseID,
+      warehouseID: whID,
       type: binType === 'ALL' ? undefined : binType,
       keyword: currentKeyword || undefined,
       page: page + 1,
@@ -233,10 +234,11 @@ const BinTable: React.FC<Props> = props => {
     currentKeyword,
     page,
     rowsPerPage,
-    handleCancel
+    handleCancel,
+    closeTransfer
   ])
 
-  /** 保存（defaultProductCodes + 单元格 binCode/type） */
+  /** 保存（defaultProductCodes + binCode/type） */
   const handleSaveAll = React.useCallback(async () => {
     if (!editBinID) return
 
@@ -255,10 +257,7 @@ const BinTable: React.FC<Props> = props => {
       if (typeChanged) payload.type = editingType as UpdateBinDto['type']
 
       const resp = await updateSingleBin(editBinID, payload)
-      if (!resp?.success) {
-        alert(resp?.error || resp?.errorCode || '❌ Failed to update bin')
-        return
-      }
+      if (!resp?.success) return
 
       const warehouseID = currentEditingRow?.warehouseID
       if (warehouseID) {
@@ -325,7 +324,7 @@ const BinTable: React.FC<Props> = props => {
   } else {
     const items: React.ReactNode[] = []
 
-    // ✅ 在这里放宽：PICK_UP 或 INVENTORY 才进入编辑行渲染
+    // 只有 PICK_UP 或 INVENTORY 才能进入编辑行
     const canEditType =
       binType === BinType.PICK_UP || binType === BinType.INVENTORY
 
@@ -352,7 +351,8 @@ const BinTable: React.FC<Props> = props => {
             onDeleteProduct={handleDeleteProduct}
             onAddRow={handleAddRow}
             onCancel={handleCancel}
-            onOpenTransfer={idx => openTransfer(idx)}
+            // !!! 这里把锚点传上来
+            onOpenTransfer={(idx, el) => openTransfer(idx, el as HTMLElement)}
             onSaveAll={handleSaveAll}
             setEditProductCodes={setEditProductCodes}
             setAddProductValue={setAddProductValue}
@@ -487,21 +487,20 @@ const BinTable: React.FC<Props> = props => {
               p: 0
             },
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
-              {
-                fontSize: '0.75rem',
-                m: 0
-              },
+              { fontSize: '0.75rem', m: 0 },
             '& .MuiIconButton-root': { p: 0.25 }
           }}
         />
       </Box>
 
-      <TransferDialog
-        open={isTransferOpen}
-        targetValue={transferTargetCode}
-        setTargetValue={setTransferTargetCode}
-        binCodes={binCodes}
-        onClose={() => setIsTransferOpen(false)}
+      {/* —— Popover 版 Transfer —— */}
+      <TransferPopover
+        anchorEl={transferAnchorEl}
+        open={Boolean(transferAnchorEl)}
+        value={transferTargetCode}
+        options={binCodes}
+        onChange={setTransferTargetCode}
+        onClose={closeTransfer}
         onConfirm={handleTransferConfirm}
       />
     </Box>
