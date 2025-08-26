@@ -134,7 +134,11 @@ const BinEditRow: React.FC<Props> = ({
                     setAddProductValue('')
                   }
                 }}
-                sx={{ fontSize: 13, height: 32, minWidth: 100 }}
+                sx={{
+                  fontSize: 13,
+                  height: 32,
+                  minWidth: 150
+                }}
               >
                 <MenuItem value={BinType.PICK_UP}>PICK UP</MenuItem>
                 <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
