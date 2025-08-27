@@ -20,7 +20,6 @@ import { UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import { getBins } from 'api/bin'
 import TransferPopover from './TransferPopover'
 
-/** ---- 常量 ---- */
 const DEFAULT_ROWS_PER_PAGE = 50
 const COL_WIDTH = {
   type: 90,
@@ -32,7 +31,6 @@ const COL_WIDTH = {
 const rowHeight = 34
 const THEAD_HEIGHT = 34
 
-/** ---- 类型 ---- */
 export interface FetchParams {
   warehouseID: string
   type?: string
@@ -113,7 +111,6 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage = DEFAULT_ROWS_PER_PAGE
   } = props
 
-  /** ---- Transfer Popover 状态 ---- */
   const [transferAnchorEl, setTransferAnchorEl] =
     React.useState<HTMLElement | null>(null)
   const [transferTargetCode, setTransferTargetCode] = React.useState('')
@@ -136,13 +133,11 @@ const BinTable: React.FC<Props> = props => {
     setTransferTargetCode('')
   }, [])
 
-  /** 当前编辑行信息 */
   const currentEditingRow = React.useMemo(
     () => (editBinID ? rows.find(r => r.binID === editBinID) : null),
     [editBinID, rows]
   )
 
-  /** 编辑态：binCode / type */
   const [editingBinCode, setEditingBinCode] = React.useState<string>(
     currentEditingRow?.binCode ?? ''
   )
@@ -154,7 +149,6 @@ const BinTable: React.FC<Props> = props => {
     setEditingType((currentEditingRow?.type as BinType) ?? BinType.PICK_UP)
   }, [currentEditingRow?.binCode, currentEditingRow?.type, editBinID])
 
-  /** 分组 */
   const groups = React.useMemo(() => {
     const m = new Map<string, any[]>()
     for (const r of rows) {
@@ -164,21 +158,17 @@ const BinTable: React.FC<Props> = props => {
     return m
   }, [rows])
 
-  /** 迁移确认（Popover 版） */
   const handleTransferConfirm = React.useCallback(async () => {
     if (transferCodeIdx === null || !editBinID) return
 
-    // 先把需要的值“快照”出来，避免关闭后依赖丢失
     const idx = transferCodeIdx
     const code = editProductCodes[idx]
     const targetBinCode = transferTargetCode.trim()
     const whID = rows.find(r => r.binID === editBinID)?.warehouseID
     if (!code || !targetBinCode || !whID) return
 
-    // ✅ 先同步关闭，避免闪烁
     closeTransfer()
 
-    // …下面保持你原来的逻辑
     const lookup = await getBins({
       warehouseID: whID,
       keyword: targetBinCode,
@@ -238,7 +228,6 @@ const BinTable: React.FC<Props> = props => {
     closeTransfer
   ])
 
-  /** 保存（defaultProductCodes + binCode/type） */
   const handleSaveAll = React.useCallback(async () => {
     if (!editBinID) return
 
@@ -288,14 +277,12 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage
   ])
 
-  /** 高度：不足时自适应，多时滚动 */
   const visibleRowCount = rows.length
   const bodyHeight = Math.max(visibleRowCount, 1) * rowHeight
   const maxScrollArea = 560
   const desiredHeight = Math.min(THEAD_HEIGHT + bodyHeight, maxScrollArea)
   const needScroll = THEAD_HEIGHT + bodyHeight > maxScrollArea
 
-  /** 表体内容 */
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (
@@ -324,7 +311,6 @@ const BinTable: React.FC<Props> = props => {
   } else {
     const items: React.ReactNode[] = []
 
-    // 只有 PICK_UP 或 INVENTORY 才能进入编辑行
     const canEditType =
       binType === BinType.PICK_UP || binType === BinType.INVENTORY
 
@@ -351,7 +337,6 @@ const BinTable: React.FC<Props> = props => {
             onDeleteProduct={handleDeleteProduct}
             onAddRow={handleAddRow}
             onCancel={handleCancel}
-            // !!! 这里把锚点传上来
             onOpenTransfer={(idx, el) => openTransfer(idx, el as HTMLElement)}
             onSaveAll={handleSaveAll}
             setEditProductCodes={setEditProductCodes}
