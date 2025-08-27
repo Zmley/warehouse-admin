@@ -20,7 +20,7 @@ import AddBinModal from 'pages/bin/AddBinModal'
 import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
 
-const ROWS_PER_PAGE = 100 // ← 每页 50
+const ROWS_PER_PAGE = 100
 
 const BIN_TYPES = Object.values(BinType)
 
@@ -256,6 +256,21 @@ const Bin: React.FC = () => {
             setSearchKeyword(newInput)
             updateQueryParams(binType, newInput, 0)
           }}
+          open={Boolean((searchKeyword || '').trim().length >= 1)}
+          onOpen={e => {
+            if (!searchKeyword || searchKeyword.trim().length < 1) {
+              e.preventDefault()
+            }
+          }}
+          filterOptions={(options, { inputValue }) => {
+            const q = (inputValue || '').trim()
+            if (q.length < 1) return []
+            const lower = q.toLowerCase()
+            return options.filter(opt => opt.toLowerCase().startsWith(lower))
+          }}
+          noOptionsText={
+            (searchKeyword || '').trim().length < 1 ? '' : 'No matches'
+          }
           renderInput={params => (
             <TextField {...params} label='Search binCode' size='small' />
           )}

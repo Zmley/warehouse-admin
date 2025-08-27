@@ -127,9 +127,7 @@ const BinEditRow: React.FC<Props> = ({
                   const next = e.target.value as BinType
                   setEditingType(next)
 
-                  // 👉 切到 INVENTORY 时清空 Default Product Codes
                   if (next === BinType.INVENTORY) {
-                    // 保留一行空串，让 UI 仍然显示一个可编辑输入框
                     setEditProductCodes([''])
                     setAddProductValue('')
                   }
@@ -284,7 +282,6 @@ const BinEditRow: React.FC<Props> = ({
               : '--'}
           </TableCell>
 
-          {/* Action */}
           {idx === 0 && (
             <TableCell
               align='center'
