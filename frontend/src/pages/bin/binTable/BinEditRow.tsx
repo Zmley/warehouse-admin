@@ -103,9 +103,12 @@ const BinEditRow: React.FC<Props> = ({
       {editProductCodes.map((code, idx) => (
         <TableRow
           key={binID + '-edit-' + idx}
-          sx={{ backgroundColor: '#e8f4fd', height: rowHeight }}
+          sx={{
+            backgroundColor: '#bfdbfe',
+            '& td': { borderColor: '#93c5fd' },
+            height: rowHeight
+          }}
         >
-          {/* Type */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -146,7 +149,6 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Bin Code：左侧展示原值 + 箭头 + 右侧输入框 */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -366,11 +368,8 @@ const BinEditRow: React.FC<Props> = ({
         </TableRow>
       ))}
 
-      {/* New row */}
-      {/* New row */}
       {newRow && (
         <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
-          {/* 只需要 Codes 和 Updated 两列，Type / BinCode / Action 已经用 rowSpan 合并撑过来了 */}
           <TableCell
             align='center'
             sx={{
@@ -408,8 +407,12 @@ const BinEditRow: React.FC<Props> = ({
                     color='error'
                     size='small'
                     sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
-                    disabled
-                    aria-label='disabled delete'
+                    onClick={() => {
+                      // 👉 删除新行逻辑：清空输入并结束 newRow 状态
+                      setAddProductValue('')
+                      onCancel()
+                    }}
+                    aria-label='delete new product'
                   >
                     <DeleteIcon fontSize='small' />
                   </IconButton>

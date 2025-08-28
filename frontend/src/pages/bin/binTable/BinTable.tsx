@@ -29,10 +29,23 @@ const COL_WIDTH = {
   action: 140
 }
 const rowHeight = 34
-const THEAD_HEIGHT = 34
+const THEAD_HEIGHT = 40
 
 const MIN_BODY_ROWS = 10
 const MAX_SCROLL_AREA = 560
+
+const HEADER_BG = '#f6f8fb'
+const HEADER_BORDER = '#d9e1ec'
+const HEADER_TEXT = '#0f172a'
+
+const CONTAINER_BORDER = '#e6eaf1'
+const CONTAINER_SHADOW = '0 6px 16px rgba(16,24,40,0.06)'
+
+const CELL_BORDER = '#edf2f7'
+const ROW_STRIPE_BG = '#fbfdff'
+const ROW_HOVER_BG = '#e0f2fe'
+const CELL_TEXT = '#111827'
+const MUTED_TEXT = '#6b7280'
 
 export interface FetchParams {
   warehouseID: string
@@ -280,7 +293,6 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage
   ])
 
-  /** ---------- 计算容器高度与占位行 ---------- */
   const visibleRowCount = rows.length
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
   const containerHeight = Math.min(
@@ -288,7 +300,6 @@ const BinTable: React.FC<Props> = props => {
     MAX_SCROLL_AREA
   )
 
-  /** ---------- 构建表体内容 ---------- */
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (
@@ -321,7 +332,6 @@ const BinTable: React.FC<Props> = props => {
       binType === BinType.PICK_UP || binType === BinType.INVENTORY
 
     groups.forEach((binRows, binID) => {
-      const codes = binRows.map(r => r._code)
       const isEditing = canEditType && editBinID === binID
 
       if (isEditing) {
@@ -360,7 +370,7 @@ const BinTable: React.FC<Props> = props => {
               row={row}
               rowIndex={idx}
               rowSpan={binRows.length}
-              codes={codes}
+              codes={binRows.map(r => r._code)}
               onEdit={handleEdit}
             />
           )
@@ -372,11 +382,11 @@ const BinTable: React.FC<Props> = props => {
     for (let i = 0; i < fillerCount; i++) {
       items.push(
         <TableRow key={`filler-${i}`} sx={{ height: rowHeight }}>
-          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
-          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
-          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
-          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
-          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+          <TableCell sx={{ p: 0, border: `1px solid ${CELL_BORDER}` }} />
+          <TableCell sx={{ p: 0, border: `1px solid ${CELL_BORDER}` }} />
+          <TableCell sx={{ p: 0, border: `1px solid ${CELL_BORDER}` }} />
+          <TableCell sx={{ p: 0, border: `1px solid ${CELL_BORDER}` }} />
+          <TableCell sx={{ p: 0, border: `1px solid ${CELL_BORDER}` }} />
         </TableRow>
       )
     }
@@ -391,71 +401,85 @@ const BinTable: React.FC<Props> = props => {
           height: containerHeight,
           maxHeight: MAX_SCROLL_AREA,
           overflowY: 'auto',
-          borderRadius: 1,
-          border: '1px solid #e0e0e0',
-          mb: 0,
-          backgroundColor: '#fff'
+          borderRadius: 2,
+          border: `1px solid ${CONTAINER_BORDER}`,
+          backgroundColor: '#fff',
+          boxShadow: CONTAINER_SHADOW
         }}
       >
         <Table
           stickyHeader
           size='small'
-          sx={{ tableLayout: 'fixed', width: '100%' }}
+          sx={{
+            tableLayout: 'fixed',
+            width: '100%',
+            color: CELL_TEXT,
+            // 表头配色（不改尺寸）
+            '& .MuiTableCell-stickyHeader': {
+              background: HEADER_BG,
+              color: HEADER_TEXT,
+              fontWeight: 800,
+              letterSpacing: 0.2,
+              boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
+              zIndex: 2
+            },
+            // 细线与配色（表体）
+            '& .MuiTableBody-root .MuiTableCell-root': {
+              borderColor: CELL_BORDER
+            },
+            // 斑马纹与 hover
+            '& .MuiTableBody-root tr:nth-of-type(even)': {
+              backgroundColor: ROW_STRIPE_BG
+            },
+            '& .MuiTableBody-root tr:hover': {
+              backgroundColor: ROW_HOVER_BG
+            }
+          }}
         >
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#f0f4f9', height: THEAD_HEIGHT }}>
+            <TableRow
+              sx={{
+                height: THEAD_HEIGHT,
+                '& th': {
+                  borderRight: `1px solid ${HEADER_BORDER}`,
+                  fontSize: 13,
+                  p: 0,
+                  color: HEADER_TEXT
+                },
+                '& th:last-of-type': { borderRight: 'none' }
+              }}
+            >
               <TableCell
                 align='center'
-                sx={{
-                  width: COL_WIDTH.type,
-                  minWidth: COL_WIDTH.type,
-                  fontSize: 13,
-                  p: 0
-                }}
+                sx={{ width: COL_WIDTH.type, minWidth: COL_WIDTH.type }}
               >
                 Type
               </TableCell>
+
               <TableCell
                 align='center'
-                sx={{
-                  width: COL_WIDTH.binCode,
-                  minWidth: COL_WIDTH.binCode,
-                  fontSize: 13,
-                  p: 0
-                }}
+                sx={{ width: COL_WIDTH.binCode, minWidth: COL_WIDTH.binCode }}
               >
                 Bin Code
               </TableCell>
+
               <TableCell
                 align='center'
-                sx={{
-                  width: COL_WIDTH.codes,
-                  minWidth: COL_WIDTH.codes,
-                  fontSize: 13,
-                  p: 0
-                }}
+                sx={{ width: COL_WIDTH.codes, minWidth: COL_WIDTH.codes }}
               >
                 Default Product Codes
               </TableCell>
+
               <TableCell
                 align='center'
-                sx={{
-                  width: COL_WIDTH.updated,
-                  minWidth: COL_WIDTH.updated,
-                  fontSize: 13,
-                  p: 0
-                }}
+                sx={{ width: COL_WIDTH.updated, minWidth: COL_WIDTH.updated }}
               >
                 Last Updated
               </TableCell>
+
               <TableCell
                 align='center'
-                sx={{
-                  width: COL_WIDTH.action,
-                  minWidth: COL_WIDTH.action,
-                  fontSize: 13,
-                  p: 0
-                }}
+                sx={{ width: COL_WIDTH.action, minWidth: COL_WIDTH.action }}
               >
                 Action
               </TableCell>
@@ -472,7 +496,7 @@ const BinTable: React.FC<Props> = props => {
         alignItems='center'
         px={2}
         py={0.5}
-        sx={{ background: '#fff', minWidth: 900 }}
+        sx={{ background: '#fff', minWidth: 900, color: MUTED_TEXT }}
       >
         <TablePagination
           component='div'
@@ -493,10 +517,7 @@ const BinTable: React.FC<Props> = props => {
               p: 0
             },
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
-              {
-                fontSize: '0.75rem',
-                m: 0
-              },
+              { fontSize: '0.75rem', m: 0, color: MUTED_TEXT },
             '& .MuiIconButton-root': { p: 0.25 }
           }}
         />
