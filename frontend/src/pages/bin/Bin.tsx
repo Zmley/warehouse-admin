@@ -21,7 +21,6 @@ import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
 
 const ROWS_PER_PAGE = 100
-
 const BIN_TYPES = Object.values(BinType)
 
 function expandBins(bins: any[]) {
@@ -81,13 +80,20 @@ const Bin: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const navigate = useNavigate()
 
-  const updateQueryParams = (type: string, keyword: string, page: number) => {
+  // NEW: 控制 Autocomplete 的打开/关闭
+  const [autoOpen, setAutoOpen] = useState(false)
+
+  const updateQueryParams = (
+    type: string,
+    keyword: string,
+    pageNum: number
+  ) => {
     setSearchParams({
       type,
       keyword,
-      page: (page + 1).toString()
+      page: (pageNum + 1).toString()
     })
-    setPage(page)
+    setPage(pageNum)
   }
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -108,12 +114,15 @@ const Bin: React.FC = () => {
       type: binType === 'ALL' ? undefined : binType,
       keyword: searchKeyword ? searchKeyword : undefined,
       page: page + 1,
-      limit: ROWS_PER_PAGE // ← 50
+      limit: ROWS_PER_PAGE
     })
 
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line
+
+    // 如果关键字被清空或切换导致无关键字，关闭下拉
+    if (!searchKeyword?.trim()) setAutoOpen(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, binType, searchKeyword, page])
 
   const combinedOptions = [...binCodes, ...productCodes]
@@ -166,7 +175,7 @@ const Bin: React.FC = () => {
       type: binType === 'ALL' ? undefined : binType,
       keyword: searchKeyword ? searchKeyword : undefined,
       page: page + 1,
-      limit: ROWS_PER_PAGE // ← 50
+      limit: ROWS_PER_PAGE
     })
   }
 
@@ -181,8 +190,10 @@ const Bin: React.FC = () => {
   }
 
   const handleDeleteBin = async (binID: string) => {
-    const confirm = window.confirm('Are you sure you want to delete this bin?')
-    if (!confirm) return
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this bin?'
+    )
+    if (!confirmDelete) return
 
     const res = await deleteBin(binID)
     if (res?.success) {
@@ -192,7 +203,7 @@ const Bin: React.FC = () => {
         type: binType === 'ALL' ? undefined : binType,
         keyword: searchKeyword ? searchKeyword : undefined,
         page: page + 1,
-        limit: ROWS_PER_PAGE // ← 50
+        limit: ROWS_PER_PAGE
       })
     }
   }
@@ -253,20 +264,33 @@ const Bin: React.FC = () => {
           freeSolo
           inputValue={searchKeyword}
           onInputChange={(_, newInput) => {
+            const v = (newInput ?? '').trim()
             setSearchKeyword(newInput)
             updateQueryParams(binType, newInput, 0)
+            setAutoOpen(v.length >= 1) // 输入有内容就打开；清空就关闭
           }}
-          open={Boolean((searchKeyword || '').trim().length >= 1)}
-          onOpen={e => {
-            if (!searchKeyword || searchKeyword.trim().length < 1) {
-              e.preventDefault()
+          open={autoOpen}
+          onOpen={() => {
+            if ((searchKeyword ?? '').trim().length >= 1) {
+              setAutoOpen(true)
+            }
+          }}
+          onClose={() => {
+            // 点击别处、失焦等都会触发，显式关闭
+            setAutoOpen(false)
+          }}
+          onChange={(_, value) => {
+            // 选中选项后关闭，并同步查询参数
+            setAutoOpen(false)
+            if (typeof value === 'string') {
+              setSearchKeyword(value)
+              updateQueryParams(binType, value, 0)
             }
           }}
           filterOptions={(options, { inputValue }) => {
-            const q = (inputValue || '').trim()
-            if (q.length < 1) return []
-            const lower = q.toLowerCase()
-            return options.filter(opt => opt.toLowerCase().startsWith(lower))
+            const q = (inputValue || '').trim().toLowerCase()
+            if (!q) return []
+            return options.filter(opt => opt.toLowerCase().startsWith(q))
           }}
           noOptionsText={
             (searchKeyword || '').trim().length < 1 ? '' : 'No matches'
@@ -282,6 +306,7 @@ const Bin: React.FC = () => {
           onChange={(_, newType: string) => {
             setBinType(newType)
             setSearchKeyword('')
+            setAutoOpen(false) // 切换 Tab 时关闭下拉
             updateQueryParams(newType, '', 0)
           }}
           textColor='primary'
@@ -329,7 +354,7 @@ const Bin: React.FC = () => {
           navigate={navigate}
           binCodes={binCodes}
           currentKeyword={searchKeyword}
-          rowsPerPage={ROWS_PER_PAGE} // ← 传给子组件用于分页组件展示
+          rowsPerPage={ROWS_PER_PAGE}
         />
       </Paper>
 
