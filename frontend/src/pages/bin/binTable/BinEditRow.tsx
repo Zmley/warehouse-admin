@@ -34,8 +34,7 @@ type Props = {
   binID: string
   binRows: any[]
   editProductCodes: string[]
-  newRow: boolean
-  addProductValue: string
+  newRows: string[]
   updating: boolean
   productCodes: string[]
   binCodes: string[]
@@ -52,7 +51,7 @@ type Props = {
   onOpenTransfer: (idx: number, anchor: HTMLElement) => void
   onSaveAll: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
-  setAddProductValue: React.Dispatch<React.SetStateAction<string>>
+  setNewRows: React.Dispatch<React.SetStateAction<string[]>>
   onDeleteBin: (binID: string) => void
 }
 
@@ -60,8 +59,7 @@ const BinEditRow: React.FC<Props> = ({
   binID,
   binRows,
   editProductCodes,
-  newRow,
-  addProductValue,
+  newRows,
   updating,
   productCodes,
   editingBinCode,
@@ -74,7 +72,7 @@ const BinEditRow: React.FC<Props> = ({
   onOpenTransfer,
   onSaveAll,
   setEditProductCodes,
-  setAddProductValue,
+  setNewRows,
   onDeleteBin
 }) => {
   const originalBinCode = binRows?.[0]?.binCode ?? ''
@@ -98,6 +96,8 @@ const BinEditRow: React.FC<Props> = ({
     fontWeight: 700
   }
 
+  const rowSpanCount = Math.max(editProductCodes.length + newRows.length, 1)
+
   return (
     <>
       {editProductCodes.map((code, idx) => (
@@ -109,10 +109,11 @@ const BinEditRow: React.FC<Props> = ({
             height: rowHeight
           }}
         >
+          {/* Type */}
           {idx === 0 && (
             <TableCell
               align='center'
-              rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
+              rowSpan={rowSpanCount}
               sx={{
                 width: COL_WIDTH.type,
                 minWidth: COL_WIDTH.type,
@@ -132,7 +133,7 @@ const BinEditRow: React.FC<Props> = ({
 
                   if (next === BinType.INVENTORY) {
                     setEditProductCodes([''])
-                    setAddProductValue('')
+                    setNewRows([])
                   }
                 }}
                 sx={{
@@ -149,10 +150,11 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
+          {/* Bin Code：左侧展示原值 + 箭头 + 右侧输入框 */}
           {idx === 0 && (
             <TableCell
               align='center'
-              rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
+              rowSpan={rowSpanCount}
               sx={{
                 width: COL_WIDTH.binCode,
                 minWidth: COL_WIDTH.binCode,
@@ -285,7 +287,7 @@ const BinEditRow: React.FC<Props> = ({
           {idx === 0 && (
             <TableCell
               align='center'
-              rowSpan={editProductCodes.length + (newRow ? 1 : 0)}
+              rowSpan={rowSpanCount}
               sx={{
                 border: '1px solid #e0e0e0',
                 width: COL_WIDTH.action,
@@ -301,10 +303,7 @@ const BinEditRow: React.FC<Props> = ({
                 alignItems='center'
                 justifyContent='center'
                 gap={1}
-                height={
-                  rowHeight *
-                  Math.max(editProductCodes.length + (newRow ? 1 : 0), 1)
-                }
+                height={rowHeight * rowSpanCount}
               >
                 <Box display='flex' gap={1}>
                   <Tooltip title='Save'>
@@ -341,7 +340,6 @@ const BinEditRow: React.FC<Props> = ({
                         size='small'
                         sx={{ height: 32, width: 32, p: 0 }}
                         onClick={onAddRow}
-                        disabled={newRow}
                         aria-label='add product'
                       >
                         <AddCircleOutlineIcon />
@@ -368,8 +366,12 @@ const BinEditRow: React.FC<Props> = ({
         </TableRow>
       ))}
 
-      {newRow && (
-        <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
+      {/* 多个“新增”行 */}
+      {newRows.map((val, nIdx) => (
+        <TableRow
+          key={`${binID}-new-${nIdx}`}
+          sx={{ backgroundColor: '#eafce8', height: rowHeight }}
+        >
           <TableCell
             align='center'
             sx={{
@@ -394,8 +396,12 @@ const BinEditRow: React.FC<Props> = ({
               <ArrowRightAltIcon fontSize='small' sx={{ opacity: 0.6 }} />
 
               <MiniAuto
-                value={addProductValue}
-                onChange={setAddProductValue}
+                value={val}
+                onChange={v => {
+                  const next = [...newRows]
+                  next[nIdx] = v
+                  setNewRows(next)
+                }}
                 options={productCodes}
                 freeSolo={false}
                 width={150}
@@ -408,9 +414,9 @@ const BinEditRow: React.FC<Props> = ({
                     size='small'
                     sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
                     onClick={() => {
-                      // 👉 删除新行逻辑：清空输入并结束 newRow 状态
-                      setAddProductValue('')
-                      onCancel()
+                      const next = [...newRows]
+                      next.splice(nIdx, 1)
+                      setNewRows(next)
                     }}
                     aria-label='delete new product'
                   >
@@ -432,7 +438,7 @@ const BinEditRow: React.FC<Props> = ({
             }}
           />
         </TableRow>
-      )}
+      ))}
     </>
   )
 }

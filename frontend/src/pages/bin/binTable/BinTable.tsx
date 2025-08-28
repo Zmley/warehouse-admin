@@ -66,8 +66,7 @@ type Props = {
 
   editBinID: string | null
   editProductCodes: string[]
-  newRow: boolean
-  addProductValue: string
+  newRows: string[]
   updating: boolean
 
   productCodes: string[]
@@ -79,7 +78,7 @@ type Props = {
   handleDeleteProduct: (idx: number) => void
   handleAddRow: () => void
   setEditProductCodes: React.Dispatch<React.SetStateAction<string[]>>
-  setAddProductValue: React.Dispatch<React.SetStateAction<string>>
+  setNewRows: React.Dispatch<React.SetStateAction<string[]>>
   handleDeleteBin: (binID: string) => void
 
   updateBin: (binID: string, newCodes: string) => Promise<boolean>
@@ -107,8 +106,7 @@ const BinTable: React.FC<Props> = props => {
     onPageChange,
     editBinID,
     editProductCodes,
-    newRow,
-    addProductValue,
+    newRows,
     updating,
     productCodes,
     binCodes,
@@ -118,7 +116,7 @@ const BinTable: React.FC<Props> = props => {
     handleDeleteProduct,
     handleAddRow,
     setEditProductCodes,
-    setAddProductValue,
+    setNewRows,
     handleDeleteBin,
     updateBin,
     updateSingleBin,
@@ -341,8 +339,7 @@ const BinTable: React.FC<Props> = props => {
             binID={binID}
             binRows={binRows}
             editProductCodes={editProductCodes}
-            newRow={newRow}
-            addProductValue={addProductValue}
+            newRows={newRows}
             updating={updating}
             productCodes={productCodes}
             binCodes={binCodes}
@@ -356,7 +353,7 @@ const BinTable: React.FC<Props> = props => {
             onOpenTransfer={(idx, el) => openTransfer(idx, el as HTMLElement)}
             onSaveAll={handleSaveAll}
             setEditProductCodes={setEditProductCodes}
-            setAddProductValue={setAddProductValue}
+            setNewRows={setNewRows}
             onDeleteBin={handleDeleteBin}
           />
         )

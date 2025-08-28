@@ -74,8 +74,7 @@ const Bin: React.FC = () => {
 
   const [editBinID, setEditBinID] = useState<string | null>(null)
   const [editProductCodes, setEditProductCodes] = useState<string[]>([])
-  const [newRow, setNewRow] = useState(false)
-  const [addProductValue, setAddProductValue] = useState<string>('')
+  const [newRows, setNewRows] = useState<string[]>([])
 
   const [isAddOpen, setIsAddOpen] = useState(false)
   const navigate = useNavigate()
@@ -129,29 +128,18 @@ const Bin: React.FC = () => {
   const handleEdit = (binID: string, codes: string[]) => {
     setEditBinID(binID)
     setEditProductCodes([...codes])
-    setNewRow(false)
-    setAddProductValue('')
+    setNewRows([])
   }
 
   const handleCancel = () => {
     setEditBinID(null)
     setEditProductCodes([])
-    setAddProductValue('')
-    setNewRow(false)
+    setNewRows([])
   }
 
   const handleSave = async () => {
     if (!editBinID) return
-    let codes = [...editProductCodes]
-
-    if (
-      newRow &&
-      addProductValue &&
-      !codes.includes(addProductValue) &&
-      productCodes.includes(addProductValue)
-    ) {
-      codes.push(addProductValue)
-    }
+    let codes = [...editProductCodes, ...newRows]
 
     const uniqueCodes = Array.from(
       new Set(codes.map(x => x.trim()).filter(x => x))
@@ -165,8 +153,7 @@ const Bin: React.FC = () => {
 
     setEditBinID(null)
     setEditProductCodes([])
-    setAddProductValue('')
-    setNewRow(false)
+    setNewRows([])
 
     fetchBins({
       warehouseID: warehouseID!,
@@ -183,8 +170,7 @@ const Bin: React.FC = () => {
   }
 
   const handleAddRow = () => {
-    setNewRow(true)
-    setAddProductValue('')
+    setNewRows(prev => [...prev, ''])
   }
 
   const handleDeleteBin = async (binID: string) => {
@@ -331,8 +317,7 @@ const Bin: React.FC = () => {
           onPageChange={handleChangePage}
           editBinID={editBinID}
           editProductCodes={editProductCodes}
-          newRow={newRow}
-          addProductValue={addProductValue}
+          newRows={newRows}
           updating={updating}
           productCodes={productCodes}
           handleEdit={handleEdit}
@@ -341,7 +326,7 @@ const Bin: React.FC = () => {
           handleDeleteProduct={handleDeleteProduct}
           handleAddRow={handleAddRow}
           setEditProductCodes={setEditProductCodes}
-          setAddProductValue={setAddProductValue}
+          setNewRows={setNewRows}
           handleDeleteBin={handleDeleteBin}
           updateBin={updateBin}
           updateSingleBin={updateSingleBin}
