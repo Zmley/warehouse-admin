@@ -95,7 +95,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     Record<string, { productCode: string; quantity: number | '' }[]>
   >({})
 
-  // 合并/新增 选择对话框（当新增的 productCode 在该 bin 已存在时触发）
   const [mergeDialog, setMergeDialog] = useState<{
     open: boolean
     binCode: string
@@ -409,7 +408,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                     sx={{ height: 32, width: 32, p: 0 }}
                                     disabled={saving !== null}
                                     onClick={async () => {
-                                      // 校验：产品必填
                                       const invalidProduct =
                                         items.some(i => {
                                           const prod = (
@@ -426,7 +424,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                         return
                                       }
 
-                                      // 校验：数量 > 0
                                       const invalidOld = items.some(i => {
                                         const draftQty =
                                           quantityDraft[i.inventoryID]
@@ -445,7 +442,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
                                       setSaving(binCode)
                                       try {
-                                        // 先处理编辑过的老行
                                         const updates = items
                                           .map(i => {
                                             const qty =
@@ -485,23 +481,21 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                           await onBulkUpdate(updates)
                                         }
 
-                                        // 再处理新增行：如果与现有（更新后的）产品码重复，则弹窗让用户选择“合并/新增”
                                         for (const row of newRows[binCode] ||
                                           []) {
                                           const targetCode =
                                             row.productCode.trim()
-                                          const existingAfterEdit =
-                                            // 用“编辑后”的产品码集合进行匹配
-                                            items.find(i => {
+                                          const existingAfterEdit = items.find(
+                                            i => {
                                               const finalCode = (
                                                 productDraft[i.inventoryID] ??
                                                 i.productCode
                                               ).trim()
                                               return finalCode === targetCode
-                                            })
+                                            }
+                                          )
 
                                           if (existingAfterEdit) {
-                                            // 弹出选择对话框，只处理当前这个重复的新增行，暂停保存流程
                                             setMergeDialog({
                                               open: true,
                                               binCode,
@@ -513,10 +507,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                                 existingAfterEdit.quantity
                                             })
                                             setSaving(null)
-                                            return // 中断后续，等用户做选择
+                                            return
                                           }
 
-                                          // 不重复：直接新增
                                           await onAddNewItem(
                                             binCode,
                                             targetCode,
@@ -524,7 +517,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                           )
                                         }
 
-                                        // 没有触发任何合并弹窗，执行收尾
                                         onEditBin(binCode)
                                         setEditBinCode(null)
                                         setNewRows(prev => ({
@@ -748,7 +740,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
-              // Merge quantity: call onBulkUpdate
               const newQty = mergeDialog.existingQuantity + mergeDialog.quantity
               await onBulkUpdate([
                 {
@@ -759,7 +750,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               ])
               setMergeDialog(prev => ({ ...prev, open: false }))
 
-              // Cleanup
               onEditBin(mergeDialog.binCode)
               setEditBinCode(null)
               setQuantityDraft({})
@@ -773,7 +763,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
-              // Add as new: call onAddNewItem (allow duplicate)
               await onAddNewItem(
                 mergeDialog.binCode,
                 mergeDialog.productCode,

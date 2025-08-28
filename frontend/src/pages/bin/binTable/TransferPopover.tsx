@@ -49,9 +49,9 @@ const TransferPopover: React.FC<Props> = ({
       PaperProps={{
         sx: theme => ({
           p: 1,
-          borderRadius: 2, // 更柔和
+          borderRadius: 2,
           border: '1px solid',
-          borderColor: theme.palette.success.light, // 细腻绿色边框
+          borderColor: theme.palette.success.light,
           bgcolor:
             theme.palette.mode === 'dark'
               ? 'rgba(28,28,28,0.95)'
@@ -60,8 +60,8 @@ const TransferPopover: React.FC<Props> = ({
             theme.palette.mode === 'dark'
               ? '0 8px 22px rgba(0,0,0,0.35)'
               : '0 10px 26px rgba(30,62,98,0.12)',
-          minWidth: width + 76, // 输入 + 按钮
-          // 轻入场
+          minWidth: width + 76,
+
           '@keyframes popIn': {
             from: { opacity: 0, transform: 'translateY(-4px) scale(.98)' },
             to: { opacity: 1, transform: 'translateY(0) scale(1)' }
@@ -114,7 +114,6 @@ const TransferPopover: React.FC<Props> = ({
         })}
       />
 
-      {/* 内容区 */}
       <Stack
         direction='row'
         alignItems='center'
@@ -124,20 +123,17 @@ const TransferPopover: React.FC<Props> = ({
             height: 36,
             fontSize: 13,
             borderRadius: 1.5,
-            // 轻微内阴影，聚焦时更明显
             boxShadow: 'inset 0 0 0 1px rgba(67,160,71,0.18)',
             transition: 'box-shadow .15s ease'
           },
           '& .MuiInputBase-root.Mui-focused': {
             boxShadow: 'inset 0 0 0 1px rgba(67,160,71,0.38)'
           },
-          // 隐藏浮动 label，避免你截图那种“顶到边框”的视觉问题
           '& .MuiInputLabel-root': { display: 'none' }
         }}
       >
-        {/* 不再显示浮动 Label，只用输入框（MiniAuto 内部会渲染 TextField） */}
         <MiniAuto
-          label='' // 去掉 label
+          label=''
           value={value}
           onChange={onChange}
           options={options}

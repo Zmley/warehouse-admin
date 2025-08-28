@@ -80,7 +80,6 @@ const Bin: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const navigate = useNavigate()
 
-  // NEW: 控制 Autocomplete 的打开/关闭
   const [autoOpen, setAutoOpen] = useState(false)
 
   const updateQueryParams = (
@@ -120,7 +119,6 @@ const Bin: React.FC = () => {
     fetchBinCodes()
     fetchProductCodes()
 
-    // 如果关键字被清空或切换导致无关键字，关闭下拉
     if (!searchKeyword?.trim()) setAutoOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, binType, searchKeyword, page])
@@ -267,7 +265,7 @@ const Bin: React.FC = () => {
             const v = (newInput ?? '').trim()
             setSearchKeyword(newInput)
             updateQueryParams(binType, newInput, 0)
-            setAutoOpen(v.length >= 1) // 输入有内容就打开；清空就关闭
+            setAutoOpen(v.length >= 1)
           }}
           open={autoOpen}
           onOpen={() => {
@@ -276,11 +274,9 @@ const Bin: React.FC = () => {
             }
           }}
           onClose={() => {
-            // 点击别处、失焦等都会触发，显式关闭
             setAutoOpen(false)
           }}
           onChange={(_, value) => {
-            // 选中选项后关闭，并同步查询参数
             setAutoOpen(false)
             if (typeof value === 'string') {
               setSearchKeyword(value)
@@ -306,7 +302,7 @@ const Bin: React.FC = () => {
           onChange={(_, newType: string) => {
             setBinType(newType)
             setSearchKeyword('')
-            setAutoOpen(false) // 切换 Tab 时关闭下拉
+            setAutoOpen(false)
             updateQueryParams(newType, '', 0)
           }}
           textColor='primary'

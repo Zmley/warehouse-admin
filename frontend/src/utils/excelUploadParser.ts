@@ -80,7 +80,7 @@ export const parseProductRows = (
     .map(row => ({
       productCode: row[productCodeIndex]!.toString().trim(),
       barCode: row[barCodeIndex]!.toString().trim(),
-      boxType: row[boxTypeIndex]?.toString().trim() || '' // fallback
+      boxType: row[boxTypeIndex]?.toString().trim() || ''
     }))
 
   return { products: parsed }

@@ -32,7 +32,6 @@ const BinRow: React.FC<Props> = ({
   codes,
   onEdit
 }) => {
-  // ✅ PICK_UP 和 INVENTORY 都可编辑、可展示 defaultProductCodes
   const canEdit = binType === BinType.PICK_UP || binType === BinType.INVENTORY
   const applies = canEdit
 

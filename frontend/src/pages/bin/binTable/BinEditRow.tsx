@@ -240,7 +240,6 @@ const BinEditRow: React.FC<Props> = ({
                     size='small'
                     color='info'
                     sx={{ ml: 0.25, height: 32, width: 32, p: 0 }}
-                    // 🔴 改这里：把锚点传出去，父组件用它打开 Popover
                     onClick={e => onOpenTransfer(idx, e.currentTarget)}
                     aria-label='transfer product'
                   >
@@ -266,7 +265,6 @@ const BinEditRow: React.FC<Props> = ({
             </Box>
           </TableCell>
 
-          {/* Updated At */}
           <TableCell
             align='center'
             sx={{
@@ -369,8 +367,10 @@ const BinEditRow: React.FC<Props> = ({
       ))}
 
       {/* New row */}
+      {/* New row */}
       {newRow && (
         <TableRow sx={{ backgroundColor: '#eafce8', height: rowHeight }}>
+          {/* 只需要 Codes 和 Updated 两列，Type / BinCode / Action 已经用 rowSpan 合并撑过来了 */}
           <TableCell
             align='center'
             sx={{
@@ -384,19 +384,24 @@ const BinEditRow: React.FC<Props> = ({
             <Box
               display='flex'
               alignItems='center'
-              sx={{ height: rowHeight, justifyContent: 'center' }}
+              justifyContent='center'
+              sx={{ height: rowHeight, px: 1 }}
               gap={0.5}
             >
-              <Typography sx={capsuleSx}>--</Typography>
+              <Tooltip title='Original product code'>
+                <Typography sx={capsuleSx}>--</Typography>
+              </Tooltip>
+
               <ArrowRightAltIcon fontSize='small' sx={{ opacity: 0.6 }} />
+
               <MiniAuto
-                label='New product code'
                 value={addProductValue}
                 onChange={setAddProductValue}
                 options={productCodes}
                 freeSolo={false}
-                width={130}
+                width={150}
               />
+
               <Tooltip title='Delete'>
                 <span>
                   <IconButton
@@ -412,6 +417,7 @@ const BinEditRow: React.FC<Props> = ({
               </Tooltip>
             </Box>
           </TableCell>
+
           <TableCell
             align='center'
             sx={{

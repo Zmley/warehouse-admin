@@ -13,8 +13,6 @@ export interface BinUploadType {
   type: string
 }
 
-////////////////////////
-
 export type BinDto = {
   binID: string
   warehouseID: string

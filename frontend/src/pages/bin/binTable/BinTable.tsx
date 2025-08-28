@@ -31,6 +31,9 @@ const COL_WIDTH = {
 const rowHeight = 34
 const THEAD_HEIGHT = 34
 
+const MIN_BODY_ROWS = 10
+const MAX_SCROLL_AREA = 560
+
 export interface FetchParams {
   warehouseID: string
   type?: string
@@ -277,12 +280,15 @@ const BinTable: React.FC<Props> = props => {
     rowsPerPage
   ])
 
+  /** ---------- 计算容器高度与占位行 ---------- */
   const visibleRowCount = rows.length
-  const bodyHeight = Math.max(visibleRowCount, 1) * rowHeight
-  const maxScrollArea = 560
-  const desiredHeight = Math.min(THEAD_HEIGHT + bodyHeight, maxScrollArea)
-  const needScroll = THEAD_HEIGHT + bodyHeight > maxScrollArea
+  const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
+  const containerHeight = Math.min(
+    THEAD_HEIGHT + effectiveRowCount * rowHeight,
+    MAX_SCROLL_AREA
+  )
 
+  /** ---------- 构建表体内容 ---------- */
   let bodyContent: React.ReactNode
   if (isLoading) {
     bodyContent = (
@@ -362,6 +368,19 @@ const BinTable: React.FC<Props> = props => {
       }
     })
 
+    const fillerCount = Math.max(0, MIN_BODY_ROWS - visibleRowCount)
+    for (let i = 0; i < fillerCount; i++) {
+      items.push(
+        <TableRow key={`filler-${i}`} sx={{ height: rowHeight }}>
+          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+          <TableCell sx={{ p: 0, border: '1px solid #eee' }} />
+        </TableRow>
+      )
+    }
+
     bodyContent = <>{items}</>
   }
 
@@ -369,12 +388,13 @@ const BinTable: React.FC<Props> = props => {
     <Box sx={{ minWidth: 900, margin: '0 auto' }}>
       <TableContainer
         sx={{
-          height: desiredHeight,
-          maxHeight: maxScrollArea,
-          overflowY: needScroll ? 'auto' : 'hidden',
+          height: containerHeight,
+          maxHeight: MAX_SCROLL_AREA,
+          overflowY: 'auto',
           borderRadius: 1,
           border: '1px solid #e0e0e0',
-          mb: 0
+          mb: 0,
+          backgroundColor: '#fff'
         }}
       >
         <Table
@@ -441,6 +461,7 @@ const BinTable: React.FC<Props> = props => {
               </TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>{bodyContent}</TableBody>
         </Table>
       </TableContainer>
@@ -472,7 +493,10 @@ const BinTable: React.FC<Props> = props => {
               p: 0
             },
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
-              { fontSize: '0.75rem', m: 0 },
+              {
+                fontSize: '0.75rem',
+                m: 0
+              },
             '& .MuiIconButton-root': { p: 0.25 }
           }}
         />

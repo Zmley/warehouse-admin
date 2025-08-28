@@ -189,34 +189,6 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }, [])
 
-  // const updateSingleBin = useCallback(
-  //   async (
-  //     binID: string,
-  //     payload: UpdateBinDto
-  //   ): Promise<UpdateBinResponse> => {
-  //     setIsLoading(true)
-  //     setError(null)
-  //     try {
-  //       const res: UpdateBinResponse = await BinApi.updateBin(binID, payload)
-
-  //       if (!res?.success || !res?.bin) {
-  //         const msg = res?.error || res?.errorCode || '❌ Update failed'
-  //         setError(typeof msg === 'string' ? msg : '❌ Update failed')
-  //       }
-
-  //       return res
-  //     } catch (e: any) {
-  //       const msg =
-  //         e?.response?.data?.error || e?.message || '❌ Update exception'
-  //       setError(msg)
-  //       return { success: false, error: msg }
-  //     } finally {
-  //       setIsLoading(false)
-  //     }
-  //   },
-  //   []
-  // )
-
   const updateSingleBin = useCallback(
     async (
       binID: string,

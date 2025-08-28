@@ -46,10 +46,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
 }) => {
   const [editTaskID, setEditTaskID] = useState<string | null>(null)
   const [editedStatus, setEditedStatus] = useState('')
-  // ✅ 保存选中的“具体记录”
-  const [editedSourceBinCode, setEditedSourceBinCode] = useState<string>('') // 传给后端
+  const [editedSourceBinCode, setEditedSourceBinCode] = useState<string>('')
   const [editedSourceInventoryID, setEditedSourceInventoryID] =
-    useState<string>('') // 控制哪个按钮被选中
+    useState<string>('')
   const [snackOpen, setSnackOpen] = useState(false)
 
   const { fetchBinCodes } = useBin()
@@ -80,7 +79,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
     const sourceBinCount = task.sourceBins?.length || 0
     const isOutOfStock = sourceBinCount === 0
 
-    // 必须选择一个（有库存时）
     if (editedStatus === 'COMPLETED' && sourceBinCount > 0 && !sourceBin) {
       setSnackOpen(true)
       return
@@ -170,7 +168,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 const showEditableBin =
                   isEditing && editedStatus === 'COMPLETED'
 
-                // 用 inventoryID 做唯一选中依据；编辑态按钮显示 “binCode (quantity)”
                 const binEntries: {
                   code: string
                   qty: number
@@ -181,7 +178,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   inventoryID: String(s?.inventoryID ?? '')
                 }))
 
-                // 普通展示：只展示 binCode 列表（保持原样）
                 const displayBinCodes = (task.sourceBins || []).map(
                   (s: any) => s?.bin?.binCode
                 )
@@ -232,7 +228,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                                 selected={selected}
                                 onClick={() => {
                                   setEditedSourceInventoryID(entry.inventoryID)
-                                  setEditedSourceBinCode(entry.code) // 保存给后端用
+                                  setEditedSourceBinCode(entry.code)
                                 }}
                                 sx={{
                                   minWidth: 100,
@@ -380,7 +376,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
                             fetchBinCodes()
                             setEditedStatus(task.status)
 
-                            // 进入编辑态时，默认选中第一条库存记录（而不是按 binCode）
                             const first = (task.sourceBins || [])[0]
                             setEditedSourceBinCode(first?.bin?.binCode || '')
                             setEditedSourceInventoryID(first?.inventoryID || '')

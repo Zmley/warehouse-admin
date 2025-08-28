@@ -64,8 +64,6 @@ export const deleteBinByBinID = async (binID: string) => {
   }
 }
 
-//////////////////////////////////////////
-
 export const updateBin = async (
   binID: string,
   payload: UpdateBinDto
