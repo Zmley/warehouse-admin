@@ -5,7 +5,7 @@ import Dashboard from 'pages/Dashboard'
 import Task from 'pages/Task'
 import Inventory from 'pages/Inventory'
 import ManagementLayout from 'components/ManagementLayout'
-import Product from 'pages/Product'
+import Product from 'pages/product/Product'
 import Bin from 'pages/bin/Bin'
 
 const PrivateRoutes: React.FC = () => {

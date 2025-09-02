@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography } from '@mui/material'
-import { useSearchParams } from 'react-router-dom'
+import { Box, Typography, TextField, Autocomplete } from '@mui/material'
+import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
-import AutocompleteTextField from 'utils/AutocompleteTextField'
-import ProductTable from 'components/product/ProductTable'
-import { useParams } from 'react-router-dom'
+import ProductTable from 'pages/product/productTable.tsx/ProductTable'
 
-const ROWS_PER_PAGE = 10
+const ROWS_PER_PAGE = 100
 
 const Product: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
 
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
+  const [autoOpen, setAutoOpen] = useState(false)
 
   const { warehouseID } = useParams<{ warehouseID: string }>()
-
   const {
     products,
     isLoading,
@@ -31,11 +28,11 @@ const Product: React.FC = () => {
 
   const combinedOptions = [...productCodes]
 
-  const updateQueryParams = (keyword: string, page: number) => {
-    setSearchParams({ keyword, page: (page + 1).toString() })
+  const updateQueryParams = (keyword: string, pageNum: number) => {
+    setSearchParams({ keyword, page: (pageNum + 1).toString() })
   }
 
-  const handleKeywordSubmit = () => {
+  const handleSubmit = () => {
     setPage(0)
     updateQueryParams(searchKeyword, 0)
   }
@@ -57,26 +54,57 @@ const Product: React.FC = () => {
 
   return (
     <Box sx={{ pt: 0 }}>
-      {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Product Management
         </Typography>
       </Box>
 
-      {/* 搜索栏 */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <AutocompleteTextField
-          label='Search productCode'
-          value={searchKeyword}
-          onChange={setSearchKeyword}
-          onSubmit={handleKeywordSubmit}
+        <Autocomplete
           options={combinedOptions}
-          sx={{ width: 250 }}
+          freeSolo
+          inputValue={searchKeyword}
+          onInputChange={(_, newInput) => {
+            setSearchKeyword(newInput)
+            const v = (newInput ?? '').trim()
+            setAutoOpen(v.length >= 1)
+          }}
+          open={autoOpen}
+          onOpen={() => {
+            if ((searchKeyword ?? '').trim().length >= 1) setAutoOpen(true)
+          }}
+          onClose={() => setAutoOpen(false)}
+          onChange={(_, value) => {
+            setAutoOpen(false)
+            if (typeof value === 'string') {
+              setSearchKeyword(value)
+              setPage(0)
+              updateQueryParams(value, 0)
+            }
+          }}
+          filterOptions={(options, { inputValue }) => {
+            const q = (inputValue || '').trim().toLowerCase()
+            if (!q) return []
+            return options.filter(opt => opt.toLowerCase().startsWith(q))
+          }}
+          renderInput={params => (
+            <TextField
+              {...params}
+              label='Search productCode'
+              size='small'
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleSubmit()
+                }
+              }}
+            />
+          )}
+          sx={{ width: 280 }}
         />
       </Box>
 
-      {/* 只交给 Table 控制 loading/数据 */}
       <ProductTable
         products={products}
         isLoading={isLoading}
@@ -85,7 +113,6 @@ const Product: React.FC = () => {
         onPageChange={handleChangePage}
       />
 
-      {/* 错误提示 */}
       {error && (
         <Typography color='error' align='center' sx={{ mt: 2 }}>
           {error}
