@@ -4,15 +4,15 @@ import {
   Typography,
   TextField,
   Autocomplete,
-  Button,
-  ButtonGroup
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material'
 import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
 
 const ROWS_PER_PAGE = 100
-
+const LS_KEY = 'lowStockMaxQty:v1' // 本地存储 key
 type Mode = 'all' | 'low'
 
 const Product: React.FC = () => {
@@ -20,7 +20,12 @@ const Product: React.FC = () => {
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
   const initialMode = (searchParams.get('mode') as Mode) || 'all'
-  const initialMaxQty = Number(searchParams.get('maxQty') || '50')
+
+  // 读取默认阈值：优先 URL，其次 localStorage，最后 50
+  const urlMax = searchParams.get('maxQty')
+  const lsMax = Number(localStorage.getItem(LS_KEY) || '')
+  const initialMaxQty =
+    urlMax !== null ? Number(urlMax) || 50 : Number.isFinite(lsMax) ? lsMax : 50
 
   const [searchKeyword, setSearchKeyword] = useState(keywordParam)
   const [page, setPage] = useState(initialPage)
@@ -34,7 +39,7 @@ const Product: React.FC = () => {
     isLoading,
     error,
     fetchProducts,
-    fetchLowStockProducts, // ← 需要在 hook 里暴露
+    fetchLowStockProducts,
     totalProductsCount,
     productCodes,
     fetchProductCodes
@@ -62,11 +67,9 @@ const Product: React.FC = () => {
     updateQueryParams(searchKeyword, 0, mode, maxQty)
   }
 
-  // 初始化 & 任何依赖变化时拉数据
+  // —— 拉数据
   useEffect(() => {
-    // 拉列表
     if (mode === 'low') {
-      // 低库存
       fetchLowStockProducts({
         keyword: keywordParam,
         page: page + 1,
@@ -74,17 +77,22 @@ const Product: React.FC = () => {
         maxQty
       })
     } else {
-      // 全部
       fetchProducts({
         keyword: keywordParam,
         page: page + 1,
         limit: ROWS_PER_PAGE
       })
     }
-    // 补全联想
     fetchProductCodes()
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keywordParam, page, warehouseID, mode, maxQty])
+
+  // —— 写 localStorage（用户调整就记住）
+  useEffect(() => {
+    if (Number.isFinite(maxQty)) {
+      localStorage.setItem(LS_KEY, String(maxQty))
+    }
+  }, [maxQty])
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
@@ -106,52 +114,58 @@ const Product: React.FC = () => {
           Product Management
         </Typography>
 
-        {/* 右侧 ALL / LOW + 阈值 */}
+        {/* 右侧模式切换 + 阈值（保持布局稳定不抖动） */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ButtonGroup>
-            <Button
-              variant={mode === 'all' ? 'contained' : 'outlined'}
-              onClick={() => {
-                setMode('all')
-                setPage(0)
-                updateQueryParams(searchKeyword, 0, 'all', maxQty)
-              }}
-            >
-              ALL
-            </Button>
-            <Button
-              variant={mode === 'low' ? 'contained' : 'outlined'}
-              onClick={() => {
-                setMode('low')
-                setPage(0)
-                updateQueryParams(searchKeyword, 0, 'low', maxQty)
-              }}
-            >
-              LOW
-            </Button>
-          </ButtonGroup>
+          <ToggleButtonGroup
+            exclusive
+            value={mode}
+            onChange={(_, v: Mode | null) => {
+              if (!v) return
+              setMode(v)
+              setPage(0)
+              updateQueryParams(searchKeyword, 0, v, maxQty)
+            }}
+            size='small'
+            sx={{
+              '& .MuiToggleButton-root': {
+                fontWeight: 700,
+                width: 72, // 固定宽度防抖
+                borderRadius: 1.5
+              }
+            }}
+          >
+            <ToggleButton value='all'>ALL</ToggleButton>
+            <ToggleButton value='low'>LOW</ToggleButton>
+          </ToggleButtonGroup>
 
-          {/* 可编辑阈值（仅低库存模式用），回车或失焦应用 */}
+          {/* 始终占位，ALL 时透明 + 禁用，避免布局跳动 */}
           <TextField
             size='small'
             type='number'
             label='≤ Qty'
             value={maxQty}
             onChange={e => setMaxQty(Math.max(0, Number(e.target.value || 0)))}
-            onBlur={() => updateQueryParams(searchKeyword, 0, mode, maxQty)}
+            onBlur={() => updateQueryParams(searchKeyword, 0, 'low', maxQty)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
                 setPage(0)
-                updateQueryParams(searchKeyword, 0, mode, maxQty)
+                updateQueryParams(searchKeyword, 0, 'low', maxQty)
               }
             }}
-            sx={{ width: 100, ml: 1 }}
             inputProps={{ min: 0 }}
+            sx={{
+              width: 110,
+              ml: 1,
+              transition: 'opacity .15s',
+              opacity: mode === 'low' ? 1 : 0,
+              visibility: mode === 'low' ? 'visible' : 'hidden',
+              pointerEvents: mode === 'low' ? 'auto' : 'none'
+            }}
           />
         </Box>
       </Box>
 
-      {/* 搜索栏：MUI Autocomplete */}
+      {/* 搜索栏：MUI Autocomplete（startsWith 过滤） */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <Autocomplete
           options={combinedOptions}
