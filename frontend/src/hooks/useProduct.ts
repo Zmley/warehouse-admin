@@ -1,5 +1,10 @@
 import { useState, useCallback } from 'react'
-import { addProducts, getProductCodes, getProducts } from '../api/product'
+import {
+  addProducts,
+  getLowStockProducts,
+  getProductCodes,
+  getProducts
+} from '../api/product'
 import { Product } from 'types/product'
 import { useParams } from 'react-router-dom'
 import { ProductsUploadType } from 'types/product'
@@ -56,6 +61,7 @@ export const useProduct = () => {
     },
     [warehouseID]
   )
+
   const uploadProductList = useCallback(async (list: ProductsUploadType[]) => {
     try {
       const res = await addProducts(list)
@@ -78,6 +84,35 @@ export const useProduct = () => {
     }
   }, [])
 
+  type LowStockParams = FetchParams & {
+    maxQty: number
+  }
+
+  //////////////////////////////
+
+  const fetchLowStockProducts = useCallback(
+    async (params: LowStockParams) => {
+      if (!warehouseID) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const res = await getLowStockProducts({ warehouseID, ...params })
+        if (res?.success) {
+          setProducts(res.products || [])
+          setTotalProductsCount(res.total ?? res.products?.length ?? 0)
+        } else {
+          throw new Error('Invalid response')
+        }
+      } catch (err) {
+        console.error('❌ Failed to load low-stock products:', err)
+        setError('Failed to load low-stock products')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [warehouseID]
+  )
+
   return {
     uploadProductList,
     productCodes,
@@ -86,6 +121,7 @@ export const useProduct = () => {
     fetchProductCodes,
     fetchProducts,
     isLoading,
-    error
+    error,
+    fetchLowStockProducts
   }
 }

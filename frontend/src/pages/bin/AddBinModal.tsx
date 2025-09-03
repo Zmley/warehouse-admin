@@ -160,9 +160,9 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
           <InfoOutlinedIcon fontSize='small' />
           {showProductCol ? (
             <Typography variant='body2'>
-              You must choose from the suggestion list. The dropdown will only
-              appear after typing at least 1 character. After selecting a
-              product code, the input will automatically clear.
+              You must choose from the suggestion list. The dropdown appears
+              after typing at least 1 character. After selecting a product code,
+              the input clears automatically.
             </Typography>
           ) : (
             <Typography variant='body2'>
@@ -189,123 +189,140 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
           </TableHead>
 
           <TableBody>
-            {rows.map((row, idx) => (
-              <TableRow key={idx}>
-                <TableCell>
-                  <TextField
-                    fullWidth
-                    size='small'
-                    placeholder='e.g. PICK-001'
-                    value={row.binCode}
-                    onChange={e => handleBinCodeChange(idx, e.target.value)}
-                    inputProps={{ maxLength: 64 }}
-                  />
-                </TableCell>
+            {rows.map((row, idx) => {
+              const query = (row._autoText || '').trim().toLowerCase()
+              const matchCount = query
+                ? productCodes.filter(opt =>
+                    opt.toLowerCase().startsWith(query)
+                  ).length
+                : 0
 
-                {showProductCol && (
+              return (
+                <TableRow key={idx}>
                   <TableCell>
-                    <Box
-                      sx={theme => ({
-                        display: 'flex',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: 0.5,
-                        minHeight: 40,
-                        px: 1,
-                        py: 0.75,
-                        borderRadius: 1.5,
-                        border: `1px solid ${theme.palette.divider}`,
-                        backgroundColor:
-                          theme.palette.mode === 'dark'
-                            ? 'rgba(255,255,255,0.04)'
-                            : '#fff',
-                        '&:focus-within': {
-                          borderColor: theme.palette.primary.main,
-                          boxShadow: `0 0 0 2px ${theme.palette.primary.main}14`
-                        }
-                      })}
-                      onPaste={e => handlePaste(idx, e)}
-                    >
-                      {row.defaultProductCodes.map(code => (
-                        <Chip
-                          key={code}
-                          label={code}
-                          size='small'
-                          onDelete={() => removeProductCode(idx, code)}
-                          sx={{ borderRadius: 1, fontWeight: 600 }}
-                        />
-                      ))}
-
-                      <Autocomplete
-                        options={productCodes}
-                        freeSolo={false}
-                        value={null}
-                        inputValue={row._autoText || ''}
-                        onInputChange={(_, newInput) => {
-                          setRows(prev => {
-                            const next = [...prev]
-                            next[idx]._autoText = newInput || ''
-                            return next
-                          })
-                        }}
-                        onChange={(_, newValue) => {
-                          if (typeof newValue === 'string' && newValue) {
-                            addProductCode(idx, newValue)
-                          }
-                          setRows(prev => {
-                            const next = [...prev]
-                            next[idx]._autoText = ''
-                            return next
-                          })
-                        }}
-                        open={Boolean(
-                          row._autoText && row._autoText.length >= 1
-                        )}
-                        filterOptions={opts => {
-                          if (!row._autoText || row._autoText.length < 1)
-                            return []
-                          return opts
-                        }}
-                        renderInput={params => (
-                          <TextField
-                            {...params}
-                            size='small'
-                            placeholder='Type a code...'
-                            onKeyDown={e => {
-                              if (
-                                e.key === 'Enter' &&
-                                (!row._autoText ||
-                                  !productSet.has(row._autoText))
-                              ) {
-                                e.preventDefault()
-                              }
-                            }}
-                          />
-                        )}
-                        sx={{ minWidth: 150, flex: 1 }}
-                      />
-
-                      <Tooltip title='Paste multiple codes separated by comma or newline. Only valid product codes are accepted.'>
-                        <InfoOutlinedIcon
-                          fontSize='small'
-                          sx={{ ml: 0.5, color: 'action.disabled' }}
-                        />
-                      </Tooltip>
-                    </Box>
+                    <TextField
+                      fullWidth
+                      size='small'
+                      placeholder='e.g. PICK-001'
+                      value={row.binCode}
+                      onChange={e => handleBinCodeChange(idx, e.target.value)}
+                      inputProps={{ maxLength: 64 }}
+                    />
                   </TableCell>
-                )}
 
-                <TableCell align='center'>
-                  <IconButton
-                    onClick={() => handleDeleteRow(idx)}
-                    disabled={rows.length === 1}
-                    size='small'
-                  >
-                    <DeleteIcon fontSize='small' />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+                  {showProductCol && (
+                    <TableCell>
+                      <Box
+                        sx={theme => ({
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: 0.5,
+                          minHeight: 40,
+                          px: 1,
+                          py: 0.75,
+                          borderRadius: 1.5,
+                          border: `1px solid ${theme.palette.divider}`,
+                          backgroundColor:
+                            theme.palette.mode === 'dark'
+                              ? 'rgba(255,255,255,0.04)'
+                              : '#fff',
+                          '&:focus-within': {
+                            borderColor: theme.palette.primary.main,
+                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}14`
+                          }
+                        })}
+                        onPaste={e => handlePaste(idx, e)}
+                      >
+                        {row.defaultProductCodes.map(code => (
+                          <Chip
+                            key={code}
+                            label={code}
+                            size='small'
+                            onDelete={() => removeProductCode(idx, code)}
+                            sx={{ borderRadius: 1, fontWeight: 600 }}
+                          />
+                        ))}
+
+                        <Autocomplete
+                          options={productCodes}
+                          freeSolo={false}
+                          value={null}
+                          inputValue={row._autoText || ''}
+                          onInputChange={(_, newInput) => {
+                            setRows(prev => {
+                              const next = [...prev]
+                              next[idx]._autoText = newInput || ''
+                              return next
+                            })
+                          }}
+                          onChange={(_, newValue) => {
+                            const val = (newValue ?? '') as string
+                            if (val) addProductCode(idx, val)
+                            setRows(prev => {
+                              const next = [...prev]
+                              next[idx]._autoText = ''
+                              return next
+                            })
+                          }}
+                          open={query.length >= 1 && matchCount > 0}
+                          filterOptions={opts => {
+                            if (!query) return []
+                            return opts
+                              .filter(o => o.toLowerCase().startsWith(query))
+                              .slice(0, 100)
+                          }}
+                          noOptionsText={query ? 'No matches' : ''}
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              size='small'
+                              placeholder='Type a code...'
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  const first = productCodes.find(o =>
+                                    o.toLowerCase().startsWith(query)
+                                  )
+                                  if (first) {
+                                    e.preventDefault()
+                                    addProductCode(idx, first)
+                                    setRows(prev => {
+                                      const next = [...prev]
+                                      next[idx]._autoText = ''
+                                      return next
+                                    })
+                                  } else {
+                                    e.preventDefault()
+                                  }
+                                }
+                              }}
+                            />
+                          )}
+                          sx={{ minWidth: 150, flex: 1 }}
+                        />
+
+                        <Tooltip title='Paste multiple codes separated by comma or newline. Only valid product codes are accepted.'>
+                          <InfoOutlinedIcon
+                            fontSize='small'
+                            sx={{ ml: 0.5, color: 'action.disabled' }}
+                          />
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  )}
+
+                  <TableCell align='center'>
+                    <IconButton
+                      onClick={() => handleDeleteRow(idx)}
+                      disabled={rows.length === 1}
+                      size='small'
+                    >
+                      <DeleteIcon fontSize='small' />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
 

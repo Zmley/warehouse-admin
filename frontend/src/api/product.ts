@@ -23,3 +23,16 @@ export const addProducts = async (list: ProductsUploadType[]) => {
   const response = await apiClient.post('/products/add', list, {})
   return response.data
 }
+
+/////////////////////////////////////////
+
+export const getLowStockProducts = async (params: {
+  warehouseID: string
+  keyword?: string
+  page?: number
+  limit?: number
+  maxQty: number
+}) => {
+  const { data } = await apiClient.get('/products/low-stock', { params })
+  return data
+}
