@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link as RouterLink, useParams } from 'react-router-dom'
 import {
   Box,
   Table,
@@ -50,13 +51,17 @@ const ProductTable: React.FC<ProductTableProps> = ({
   total,
   onPageChange
 }) => {
-  // 计算容器高度：最多显示 MAX_SCROLL_AREA 的可滚区域
   const visibleCount = products.length || 10
   const bodyRows = Math.max(visibleCount, 10)
   const containerHeight = Math.min(
     THEAD_HEIGHT + bodyRows * ROW_HEIGHT,
     MAX_SCROLL_AREA
   )
+
+  const { warehouseID = '', warehouseCode = '' } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
 
   let body: React.ReactNode
   if (isLoading) {
@@ -86,8 +91,24 @@ const ProductTable: React.FC<ProductTableProps> = ({
               'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
           }}
         >
-          {p.productCode}
+          <Box
+            component={RouterLink}
+            to={`/${warehouseID}/${warehouseCode}/inventory?page=1&keyword=${p.productCode}&sortBy=updatedAt&order=desc`}
+            sx={{
+              color: '#2563eb',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              fontSize: 'inherit',
+              fontWeight: 'inherit',
+              fontFamily: 'inherit',
+              lineHeight: 'inherit',
+              '&:hover': { textDecoration: 'underline' }
+            }}
+          >
+            {p.productCode}
+          </Box>
         </TableCell>
+
         <TableCell align='center' sx={{ border: `1px solid ${CELL_BORDER}` }}>
           {p.totalQuantity ?? 0}
         </TableCell>
@@ -103,7 +124,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
       </TableRow>
     ))
 
-    // 填充空白行以保持容器高度稳定
     const filler = Math.max(0, 10 - products.length)
     for (let i = 0; i < filler; i++) {
       rows.push(
@@ -139,7 +159,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
           sx={{
             tableLayout: 'fixed',
             width: '100%',
-            // 表头样式
             '& .MuiTableCell-stickyHeader': {
               background: HEADER_BG,
               color: HEADER_TEXT,
@@ -148,11 +167,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
               boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
               zIndex: 2
             },
-            // 单元格边框
             '& .MuiTableBody-root .MuiTableCell-root': {
               borderColor: CELL_BORDER
             },
-            // 斑马纹 & hover
             '& .MuiTableBody-root tr:nth-of-type(even)': {
               backgroundColor: ROW_STRIPE_BG
             },
@@ -218,12 +235,12 @@ const ProductTable: React.FC<ProductTableProps> = ({
         px={2}
         py={0.5}
         sx={{
-          background: '#f6f8fb', // 与表头一致
-          border: '1px solid #e6eaf1', // 与容器边框一致
-          borderTop: 'none', // 和上面的表格无缝衔接
-          borderRadius: '0 0 8px 8px', // 底部圆角
+          background: '#f6f8fb',
+          border: '1px solid #e6eaf1',
+          borderTop: 'none',
+          borderRadius: '0 0 8px 8px',
           minWidth: 900,
-          color: '#475569', // 文案深灰
+          color: '#475569',
           '& .MuiTablePagination-toolbar': { minHeight: 32, height: 32, p: 0 },
           '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
             {
@@ -231,8 +248,8 @@ const ProductTable: React.FC<ProductTableProps> = ({
               m: 0,
               color: '#475569'
             },
-          '& .MuiIconButton-root': { p: 0.25, color: '#475569' }, // 翻页箭头颜色
-          '& .Mui-disabled': { opacity: 0.35 } // 禁用箭头更淡
+          '& .MuiIconButton-root': { p: 0.25, color: '#475569' },
+          '& .Mui-disabled': { opacity: 0.35 }
         }}
       >
         <TablePagination
