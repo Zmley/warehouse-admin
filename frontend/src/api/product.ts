@@ -36,3 +36,10 @@ export const getLowStockProducts = async (params: {
   const { data } = await apiClient.get('/products/low-stock', { params })
   return data
 }
+
+export const getBoxTypes = async (params?: {
+  keyword?: string
+}): Promise<{ success: boolean; boxTypes: string[] }> => {
+  const { data } = await apiClient.get('/products/box-types', { params })
+  return data
+}

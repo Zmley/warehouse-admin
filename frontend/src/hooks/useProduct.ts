@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import {
   addProducts,
+  getBoxTypes,
   getLowStockProducts,
   getProductCodes,
   getProducts
@@ -13,6 +14,7 @@ export interface FetchParams {
   keyword?: string
   page?: number
   limit?: number
+  boxType?: string
 }
 
 export const useProduct = () => {
@@ -21,6 +23,7 @@ export const useProduct = () => {
   const [totalProductsCount, setTotalProductsCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [boxTypes, setBoxTypes] = useState<string[]>([])
 
   const fetchProductCodes = useCallback(async () => {
     try {
@@ -113,6 +116,15 @@ export const useProduct = () => {
     [warehouseID]
   )
 
+  const fetchBoxTypes = useCallback(async (keyword?: string) => {
+    try {
+      const res = await getBoxTypes(keyword ? { keyword } : undefined)
+      if (res.success) setBoxTypes(res.boxTypes)
+    } catch (e) {
+      console.error('❌ getBoxTypes failed', e)
+    }
+  }, [])
+
   return {
     uploadProductList,
     productCodes,
@@ -122,6 +134,8 @@ export const useProduct = () => {
     fetchProducts,
     isLoading,
     error,
-    fetchLowStockProducts
+    fetchLowStockProducts,
+    boxTypes,
+    fetchBoxTypes
   }
 }

@@ -1,107 +1,136 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Typography,
   TextField,
   Autocomplete,
   ToggleButton,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  InputAdornment
 } from '@mui/material'
 import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
 
-const ROWS_PER_PAGE = 100
-const LS_KEY = 'lowStockMaxQty:v1' // 本地存储 key
 type Mode = 'all' | 'low'
+const ROWS_PER_PAGE = 100
+const SEARCH_WIDTH = 280
+const LS_KEY = 'lowStockMaxQty:v1'
 
 const Product: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const keywordParam = searchParams.get('keyword') || ''
-  const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
+  const initialPage = Math.max(
+    0,
+    (parseInt(searchParams.get('page') || '1', 10) || 1) - 1
+  )
   const initialMode = (searchParams.get('mode') as Mode) || 'all'
+  const initialBoxType = searchParams.get('boxType') || ''
 
-  // 读取默认阈值：优先 URL，其次 localStorage，最后 50
   const urlMax = searchParams.get('maxQty')
   const lsMax = Number(localStorage.getItem(LS_KEY) || '')
   const initialMaxQty =
     urlMax !== null ? Number(urlMax) || 50 : Number.isFinite(lsMax) ? lsMax : 50
 
-  const [searchKeyword, setSearchKeyword] = useState(keywordParam)
-  const [page, setPage] = useState(initialPage)
-  const [autoOpen, setAutoOpen] = useState(false)
   const [mode, setMode] = useState<Mode>(initialMode)
-  const [maxQty, setMaxQty] = useState<number>(initialMaxQty)
+  const [page, setPage] = useState<number>(initialPage)
+  const [keyword, setKeyword] = useState<string>(keywordParam)
+  const [qty, setQty] = useState<number>(initialMaxQty)
+  const [boxType, setBoxType] = useState<string>(initialBoxType)
+
+  const [kwOpen, setKwOpen] = useState(false)
 
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const {
     products,
     isLoading,
     error,
-    fetchProducts,
-    fetchLowStockProducts,
     totalProductsCount,
     productCodes,
-    fetchProductCodes
+    boxTypes,
+    fetchProductCodes,
+    fetchBoxTypes,
+    fetchProducts,
+    fetchLowStockProducts
   } = useProduct()
 
-  const combinedOptions = [...productCodes]
-
-  const updateQueryParams = (
-    keyword: string,
-    pageNum: number,
-    m: Mode,
-    qty: number
+  const syncURL = (
+    next: Partial<{
+      keyword: string
+      page: number
+      mode: Mode
+      maxQty: number
+      boxType?: string
+    }>
   ) => {
-    const next: Record<string, string> = {
-      keyword,
-      page: (pageNum + 1).toString(),
-      mode: m
+    const params: Record<string, string> = {
+      keyword: next.keyword ?? keyword,
+      page: String((next.page ?? page) + 1),
+      mode: next.mode ?? mode
     }
-    if (m === 'low') next.maxQty = String(qty)
-    setSearchParams(next)
+    if ((next.mode ?? mode) === 'low') {
+      params.maxQty = String(next.maxQty ?? qty)
+      const bt = (next.boxType ?? boxType)?.trim()
+      if (bt) params.boxType = bt
+    }
+    setSearchParams(params)
   }
 
-  const handleSubmit = () => {
-    setPage(0)
-    updateQueryParams(searchKeyword, 0, mode, maxQty)
-  }
-
-  // —— 拉数据
   useEffect(() => {
+    fetchProductCodes()
+    fetchBoxTypes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warehouseID])
+
+  // 拉表格
+  useEffect(() => {
+    if (!warehouseID) return
     if (mode === 'low') {
       fetchLowStockProducts({
-        keyword: keywordParam,
+        keyword: keyword || undefined,
         page: page + 1,
         limit: ROWS_PER_PAGE,
-        maxQty
+        maxQty: qty,
+        boxType: boxType?.trim() || undefined
       })
     } else {
       fetchProducts({
-        keyword: keywordParam,
+        keyword: keyword || undefined,
         page: page + 1,
         limit: ROWS_PER_PAGE
       })
     }
-    fetchProductCodes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keywordParam, page, warehouseID, mode, maxQty])
+  }, [warehouseID, mode, page, qty, boxType, keyword])
 
-  // —— 写 localStorage（用户调整就记住）
   useEffect(() => {
-    if (Number.isFinite(maxQty)) {
-      localStorage.setItem(LS_KEY, String(maxQty))
+    if (Number.isFinite(qty)) {
+      localStorage.setItem(LS_KEY, String(qty))
     }
-  }, [maxQty])
+  }, [qty])
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const isLowMode = mode === 'low'
+  const disabledTone = useMemo(
+    () => ({
+      opacity: isLowMode ? 1 : 0.45,
+      pointerEvents: isLowMode ? 'auto' : 'none',
+      filter: isLowMode ? 'none' : 'grayscale(50%)'
+    }),
+    [isLowMode]
+  )
+
+  const onSubmit = () => {
+    setPage(0)
+    syncURL({ page: 0, keyword, mode, maxQty: qty, boxType })
+  }
+
+  const onChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
-    updateQueryParams(searchKeyword, newPage, mode, maxQty)
+    syncURL({ page: newPage })
   }
 
   return (
     <Box sx={{ pt: 0 }}>
-      {/* Header */}
       <Box
         sx={{
           mb: 3,
@@ -113,82 +142,29 @@ const Product: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Product Management
         </Typography>
-
-        {/* 右侧模式切换 + 阈值（保持布局稳定不抖动） */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ToggleButtonGroup
-            exclusive
-            value={mode}
-            onChange={(_, v: Mode | null) => {
-              if (!v) return
-              setMode(v)
-              setPage(0)
-              updateQueryParams(searchKeyword, 0, v, maxQty)
-            }}
-            size='small'
-            sx={{
-              '& .MuiToggleButton-root': {
-                fontWeight: 700,
-                width: 72, // 固定宽度防抖
-                borderRadius: 1.5
-              }
-            }}
-          >
-            <ToggleButton value='all'>ALL</ToggleButton>
-            <ToggleButton value='low'>LOW</ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* 始终占位，ALL 时透明 + 禁用，避免布局跳动 */}
-          <TextField
-            size='small'
-            type='number'
-            label='≤ Qty'
-            value={maxQty}
-            onChange={e => setMaxQty(Math.max(0, Number(e.target.value || 0)))}
-            onBlur={() => updateQueryParams(searchKeyword, 0, 'low', maxQty)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                setPage(0)
-                updateQueryParams(searchKeyword, 0, 'low', maxQty)
-              }
-            }}
-            inputProps={{ min: 0 }}
-            sx={{
-              width: 110,
-              ml: 1,
-              transition: 'opacity .15s',
-              opacity: mode === 'low' ? 1 : 0,
-              visibility: mode === 'low' ? 'visible' : 'hidden',
-              pointerEvents: mode === 'low' ? 'auto' : 'none'
-            }}
-          />
-        </Box>
       </Box>
 
-      {/* 搜索栏：MUI Autocomplete（startsWith 过滤） */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 2,
+          flexWrap: 'wrap'
+        }}
+      >
         <Autocomplete
-          options={combinedOptions}
+          options={productCodes}
           freeSolo
-          inputValue={searchKeyword}
-          onInputChange={(_, newInput) => {
-            setSearchKeyword(newInput)
-            const v = (newInput ?? '').trim()
-            setAutoOpen(v.length >= 1)
+          inputValue={keyword}
+          value={null}
+          onInputChange={(_, v) => {
+            setKeyword(v)
+            setKwOpen((v ?? '').trim().length >= 1)
           }}
-          open={autoOpen}
-          onOpen={() => {
-            if ((searchKeyword ?? '').trim().length >= 1) setAutoOpen(true)
-          }}
-          onClose={() => setAutoOpen(false)}
-          onChange={(_, value) => {
-            setAutoOpen(false)
-            if (typeof value === 'string') {
-              setSearchKeyword(value)
-              setPage(0)
-              updateQueryParams(value, 0, mode, maxQty)
-            }
-          }}
+          open={kwOpen}
+          onOpen={() => (keyword.trim().length >= 1 ? setKwOpen(true) : null)}
+          onClose={() => setKwOpen(false)}
           filterOptions={(options, { inputValue }) => {
             const q = (inputValue || '').trim().toLowerCase()
             if (!q) return []
@@ -199,15 +175,98 @@ const Product: React.FC = () => {
               {...params}
               label='Search productCode'
               size='small'
+              sx={{ width: SEARCH_WIDTH }}
               onKeyDown={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  handleSubmit()
+                  onSubmit()
                 }
               }}
             />
           )}
-          sx={{ width: 280 }}
+          sx={{ width: SEARCH_WIDTH }}
+        />
+
+        {/* 模式切换 */}
+        <ToggleButtonGroup
+          exclusive
+          value={mode}
+          onChange={(_, v: Mode | null) => {
+            if (!v) return
+            const switchingToAll = v === 'all'
+            setMode(v)
+            setPage(0)
+            // ALL 模式重置 boxType（你要求“每次回 ALL 清空”）
+            const nextBoxType = switchingToAll ? '' : boxType
+            setBoxType(nextBoxType)
+            syncURL({
+              page: 0,
+              mode: v,
+              keyword,
+              maxQty: qty,
+              boxType: nextBoxType
+            })
+          }}
+          size='small'
+          sx={{
+            '& .MuiToggleButton-root': {
+              fontWeight: 700,
+              width: 72,
+              borderRadius: 1.5
+            }
+          }}
+        >
+          <ToggleButton value='all'>ALL</ToggleButton>
+          <ToggleButton value='low'>LOW</ToggleButton>
+        </ToggleButtonGroup>
+
+        <TextField
+          size='small'
+          type='number'
+          label='≤ Qty'
+          value={qty}
+          onChange={e => setQty(Math.max(0, Number(e.target.value || 0)))}
+          onBlur={() => syncURL({ page: 0, mode: 'low', maxQty: qty, boxType })}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              setPage(0)
+              syncURL({ page: 0, mode: 'low', maxQty: qty, boxType })
+            }
+          }}
+          inputProps={{ min: 0 }}
+          sx={{ width: 120, ...disabledTone }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position='start' sx={{ mr: 0.5 }}>
+                ≤
+              </InputAdornment>
+            )
+          }}
+        />
+
+        <Autocomplete
+          options={boxTypes}
+          freeSolo
+          inputValue={boxType}
+          value={null}
+          onInputChange={(_, v) => {
+            const next = (v ?? '').trim()
+            setBoxType(next)
+            if (isLowMode) {
+              setPage(0)
+              syncURL({ page: 0, mode: 'low', maxQty: qty, boxType: next })
+            }
+          }}
+          renderInput={params => (
+            <TextField
+              {...params}
+              label='Box Type'
+              size='small'
+              placeholder='e.g. 350*350*350'
+            />
+          )}
+          sx={{ width: 220, ...disabledTone }}
+          onOpen={() => fetchBoxTypes(boxType || undefined)}
         />
       </Box>
 
@@ -216,7 +275,7 @@ const Product: React.FC = () => {
         isLoading={isLoading}
         page={page}
         total={totalProductsCount}
-        onPageChange={handleChangePage}
+        onPageChange={onChangePage}
       />
 
       {error && (
