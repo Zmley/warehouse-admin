@@ -187,7 +187,6 @@ const Product: React.FC = () => {
           sx={{ width: SEARCH_WIDTH }}
         />
 
-        {/* 模式切换 */}
         <ToggleButtonGroup
           exclusive
           value={mode}
@@ -196,7 +195,6 @@ const Product: React.FC = () => {
             const switchingToAll = v === 'all'
             setMode(v)
             setPage(0)
-            // ALL 模式重置 boxType（你要求“每次回 ALL 清空”）
             const nextBoxType = switchingToAll ? '' : boxType
             setBoxType(nextBoxType)
             syncURL({

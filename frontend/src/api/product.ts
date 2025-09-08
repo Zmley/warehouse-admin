@@ -24,8 +24,6 @@ export const addProducts = async (list: ProductsUploadType[]) => {
   return response.data
 }
 
-/////////////////////////////////////////
-
 export const getLowStockProducts = async (params: {
   warehouseID: string
   keyword?: string

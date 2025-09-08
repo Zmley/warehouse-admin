@@ -109,7 +109,6 @@ const BinEditRow: React.FC<Props> = ({
             height: rowHeight
           }}
         >
-          {/* Type */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -150,7 +149,6 @@ const BinEditRow: React.FC<Props> = ({
             </TableCell>
           )}
 
-          {/* Bin Code：左侧展示原值 + 箭头 + 右侧输入框 */}
           {idx === 0 && (
             <TableCell
               align='center'
@@ -366,7 +364,6 @@ const BinEditRow: React.FC<Props> = ({
         </TableRow>
       ))}
 
-      {/* 多个“新增”行 */}
       {newRows.map((val, nIdx) => (
         <TableRow
           key={`${binID}-new-${nIdx}`}

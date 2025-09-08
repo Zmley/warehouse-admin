@@ -108,7 +108,6 @@ const Task: React.FC = () => {
 
   return (
     <Box sx={{ pt: 0 }}>
-      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -141,7 +140,6 @@ const Task: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Picker Task Dialog */}
       <Dialog
         open={isPickerDialogOpen}
         onClose={() => setPickerDialogOpen(false)}
@@ -157,7 +155,6 @@ const Task: React.FC = () => {
         />
       </Dialog>
 
-      {/* Filter */}
       <Stack direction='row' spacing={2} mb={3} alignItems='center'>
         <AutocompleteTextField
           label=''
@@ -212,7 +209,6 @@ const Task: React.FC = () => {
         </IconButton>
       </Stack>
 
-      {/* Task Table */}
       <TaskTable
         tasks={filteredTasks}
         isLoading={isLoading}

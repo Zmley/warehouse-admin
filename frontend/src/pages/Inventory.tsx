@@ -142,7 +142,6 @@ const Inventory: React.FC = () => {
 
   return (
     <Box sx={{ height: '100%', overflowY: 'auto' }}>
-      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -170,7 +169,6 @@ const Inventory: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Search + Sort */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <AutocompleteTextField
           label=''
@@ -212,7 +210,6 @@ const Inventory: React.FC = () => {
         </Tooltip>
       </Box>
 
-      {/* Table */}
       <InventoryTable
         inventories={inventories}
         page={page}

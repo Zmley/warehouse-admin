@@ -65,7 +65,6 @@ const Topbar: React.FC = () => {
         justifyContent: 'space-between'
       }}
     >
-      {/* Left: Back & Greeting */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Tooltip title='Back'>
           <IconButton onClick={handleBack} sx={{ color: '#333' }}>
@@ -77,10 +76,8 @@ const Topbar: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Center: optional */}
       <Box />
 
-      {/* Right: Warehouse selector & Avatar */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {warehouseCode ? (
           <>
@@ -152,7 +149,6 @@ const Topbar: React.FC = () => {
         </Tooltip>
       </Box>
 
-      {/* Account Popover */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}

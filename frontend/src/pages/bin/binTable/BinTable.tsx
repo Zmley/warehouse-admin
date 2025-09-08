@@ -520,7 +520,6 @@ const BinTable: React.FC<Props> = props => {
         />
       </Box>
 
-      {/* —— Popover 版 Transfer —— */}
       <TransferPopover
         anchorEl={transferAnchorEl}
         open={Boolean(transferAnchorEl)}

@@ -185,7 +185,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                       No inventory found.
                     </Typography>
 
-                    {/* ✅ Add Inventory Button */}
                     <Tooltip title='Add Inventory'>
                       <IconButton
                         color='primary'
@@ -554,7 +553,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                                 </span>
                               </Tooltip>
 
-                              {/* ✅ Add Product */}
                               <Tooltip title='Add Product'>
                                 <span>
                                   <IconButton
@@ -784,7 +782,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* 数量无效 */}
       <Dialog
         open={quantityDialogOpen}
         onClose={() => setQuantityDialogOpen(false)}
@@ -804,7 +801,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* 产品码为空 */}
       <Dialog
         open={emptyProductDialogOpen}
         onClose={() => setEmptyProductDialogOpen(false)}

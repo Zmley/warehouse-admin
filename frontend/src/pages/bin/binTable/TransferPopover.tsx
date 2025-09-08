@@ -73,7 +73,6 @@ const TransferPopover: React.FC<Props> = ({
         onKeyDown: handleKeyDown
       }}
     >
-      {/* 顶部小标题区 + 关闭 */}
       <Stack
         direction='row'
         alignItems='center'
@@ -95,7 +94,6 @@ const TransferPopover: React.FC<Props> = ({
         </IconButton>
       </Stack>
 
-      {/* 箭头（更小、更圆） */}
       <Box
         sx={theme => ({
           position: 'absolute',

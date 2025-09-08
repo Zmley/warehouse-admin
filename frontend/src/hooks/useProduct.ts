@@ -91,8 +91,6 @@ export const useProduct = () => {
     maxQty: number
   }
 
-  //////////////////////////////
-
   const fetchLowStockProducts = useCallback(
     async (params: LowStockParams) => {
       if (!warehouseID) return
