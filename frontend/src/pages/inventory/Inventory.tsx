@@ -13,7 +13,7 @@ import { useSearchParams, useParams } from 'react-router-dom'
 import AutocompleteTextField from 'utils/AutocompleteTextField'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
-import InventoryTable from 'components/inventory/InventoryTable'
+import InventoryTable from 'pages/inventory/inventoryTable/InventoryTable'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
@@ -22,7 +22,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 type SortOrder = 'asc' | 'desc'
 type SortField = 'updatedAt' | 'binCode'
 
-const ROWS_PER_PAGE = 10
+const ROWS_PER_PAGE = 50
 
 const Inventory: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()

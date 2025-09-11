@@ -30,7 +30,7 @@ export const useInventory = () => {
         const {
           binID,
           page = 1,
-          limit = 10,
+          limit,
           keyword,
           sort = 'desc',
           sortBy = 'updatedAt'
