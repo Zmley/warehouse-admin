@@ -95,8 +95,7 @@ const InventoryRows: React.FC<Props> = ({
         return (
           <React.Fragment key={binCode}>
             {items.map((item, idx) => {
-              const isPlaceholder = !item.inventoryID // 空货位占位行
-              const showDelete = editing && !isPlaceholder
+              const isPlaceholder = !item.inventoryID
 
               const currentProduct = isPlaceholder
                 ? emptyDraft[binCode]?.productCode ?? ''
@@ -114,26 +113,22 @@ const InventoryRows: React.FC<Props> = ({
                   {idx === 0 && (
                     <TableCell
                       align='center'
+                      rowSpan={rowSpanCount}
                       sx={{
-                        border: '1px solid #e0e0e0',
+                        border: `1px solid ${CELL_BORDER}`,
                         fontWeight: 700,
-                        height: ROW_HEIGHT,
+                        fontSize: 13,
                         p: 0
                       }}
-                      rowSpan={rowSpanCount}
                     >
                       {binCode}
                     </TableCell>
                   )}
 
-                  {/* Product Code（空货位显示空白，不再显示 none） */}
+                  {/* Product Code */}
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid #e0e0e0',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
                     {editing ? (
                       <Box
@@ -182,9 +177,9 @@ const InventoryRows: React.FC<Props> = ({
                               }}
                             />
                           )}
-                          sx={{ width: 150 }}
+                          sx={{ width: 160 }}
                         />
-                        {showDelete && (
+                        {!isPlaceholder && (
                           <Tooltip title='Delete Item'>
                             <span>
                               <IconButton
@@ -209,24 +204,25 @@ const InventoryRows: React.FC<Props> = ({
                       </Box>
                     ) : item.productCode ? (
                       <Typography
-                        sx={{ color: '#1976d2', cursor: 'pointer' }}
+                        sx={{
+                          color: '#2563eb',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          '&:hover': { textDecoration: 'underline' }
+                        }}
                         onClick={() => navigateToProduct(item.productCode!)}
                       >
                         {item.productCode}
                       </Typography>
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </TableCell>
 
-                  {/* Quantity（空货位显示空白） */}
+                  {/* Quantity */}
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid #e0e0e0',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
                     {editing ? (
                       <TextField
@@ -252,7 +248,7 @@ const InventoryRows: React.FC<Props> = ({
                           }
                         }}
                         sx={{
-                          width: 80,
+                          width: 86,
                           '& .MuiInputBase-root': {
                             height: 32,
                             fontSize: 13,
@@ -267,40 +263,30 @@ const InventoryRows: React.FC<Props> = ({
                         }}
                       />
                     ) : item.inventoryID ? (
-                      <Typography sx={{ fontWeight: 500, color: '#3F72AF' }}>
+                      <Typography
+                        sx={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}
+                      >
                         {item.quantity}
                       </Typography>
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </TableCell>
 
-                  {/* Updated At（空货位不显示） */}
+                  {/* Updated At */}
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid #e0e0e0',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
-                    {item.inventoryID && item.updatedAt ? (
-                      dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')
-                    ) : (
-                      <></>
-                    )}
+                    {item.inventoryID && item.updatedAt
+                      ? dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')
+                      : null}
                   </TableCell>
 
                   {/* Actions（按 bin 合并） */}
                   {idx === 0 && (
                     <TableCell
                       align='center'
-                      sx={{
-                        border: '1px solid #e0e0e0',
-                        height: ROW_HEIGHT,
-                        p: 0
-                      }}
                       rowSpan={rowSpanCount}
+                      sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                     >
                       {editing ? (
                         <Box display='flex' justifyContent='center' gap={1}>
@@ -344,7 +330,6 @@ const InventoryRows: React.FC<Props> = ({
                             </span>
                           </Tooltip>
 
-                          {/* 非空货位才显示新增按钮 */}
                           {!empty && (
                             <Tooltip title='Add Product'>
                               <span>
@@ -388,7 +373,6 @@ const InventoryRows: React.FC<Props> = ({
               )
             })}
 
-            {/* 非空货位下的“新行”输入（空货位不显示） */}
             {editing &&
               !empty &&
               (newRows[binCode] || []).map((row, index) => (
@@ -398,11 +382,7 @@ const InventoryRows: React.FC<Props> = ({
                 >
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid #e0e0e0',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
                     <Box
                       display='flex'
@@ -441,7 +421,7 @@ const InventoryRows: React.FC<Props> = ({
                             }}
                           />
                         )}
-                        sx={{ width: 150 }}
+                        sx={{ width: 160 }}
                       />
                       <Tooltip title='Delete'>
                         <span>
@@ -460,11 +440,7 @@ const InventoryRows: React.FC<Props> = ({
 
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid ${CELL_BORDER}',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
                     <TextField
                       type='number'
@@ -480,7 +456,7 @@ const InventoryRows: React.FC<Props> = ({
                         })
                       }}
                       sx={{
-                        width: 80,
+                        width: 86,
                         '& .MuiInputBase-root': {
                           height: 32,
                           fontSize: 13,
@@ -498,19 +474,13 @@ const InventoryRows: React.FC<Props> = ({
 
                   <TableCell
                     align='center'
-                    sx={{
-                      border: '1px solid ${CELL_BORDER}',
-                      height: ROW_HEIGHT,
-                      p: 0
-                    }}
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   />
                 </TableRow>
               ))}
           </React.Fragment>
         )
       })}
-
-      {/* 填充行，保持最小高度（移动到父里也可，这里留空即可） */}
     </TableBody>
   )
 }

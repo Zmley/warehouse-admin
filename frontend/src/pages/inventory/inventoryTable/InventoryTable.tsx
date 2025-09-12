@@ -54,7 +54,7 @@ const CONTAINER_BORDER = '#e6eaf1'
 const CONTAINER_SHADOW = '0 6px 16px rgba(16,24,40,0.06)'
 const CELL_BORDER = '#edf2f7'
 const ROW_STRIPE_BG = '#fbfdff'
-const CELL_TEXT = '#111827'
+const CELL_TEXT = '#0f172a'
 const MUTED_TEXT = '#6b7280'
 
 const groupByBinCode = (list: InventoryItem[]) => {
@@ -94,12 +94,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const [productDraft, setProductDraft] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
 
-  // 空货位草稿（因为没有 inventoryID，用 binCode 作为 key）
   const [emptyDraft, setEmptyDraft] = useState<
     Record<string, { productCode: string; quantity: number | '' }>
   >({})
-
-  // 非空货位下“额外新增多行”
   const [newRows, setNewRows] = useState<
     Record<string, { productCode: string; quantity: number | '' }[]>
   >({})
@@ -184,7 +181,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
     setSaving(binCode)
     try {
-      // 更新已有行
       const updates = items
         .map(i => {
           if (!i.inventoryID) return null
@@ -210,7 +206,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         await onBulkUpdate(updates)
       }
 
-      // 空货位：直接新增
       if (empty && emptyDraftObj) {
         await onAddNewItem(
           binCode,
@@ -219,7 +214,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         )
       }
 
-      // 非空货位：新增多行，如果与已有（或已编辑）产品码冲突，触发合并弹窗
       if (!empty) {
         for (const row of newRows[binCode] || []) {
           const targetCode = row.productCode.trim()
@@ -261,7 +255,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     }
   }
 
-  // 计算滚动容器高度（最少行填充）
   const visibleRowCount = inventories.length
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
   const containerHeight = Math.min(
@@ -270,7 +263,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   )
 
   return (
-    <Paper elevation={3} sx={{ borderRadius: 3, minWidth: 900, mx: 'auto' }}>
+    <Paper elevation={0} sx={{ borderRadius: 2, minWidth: 900, mx: 'auto' }}>
       <TableContainer
         sx={{
           height: containerHeight,
@@ -297,10 +290,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
               zIndex: 2
             },
+            '& .MuiTableBody-root td': {
+              fontSize: 13,
+              color: CELL_TEXT
+            },
             '& .MuiTableBody-root .MuiTableCell-root': {
               borderColor: CELL_BORDER
             },
-            // 斑马纹，去掉 hover
             '& .MuiTableBody-root tr:nth-of-type(even)': {
               backgroundColor: ROW_STRIPE_BG
             }
@@ -346,7 +342,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     justifyContent='center'
                     gap={1}
                   >
-                    <Typography color='text.secondary' sx={{ fontSize: 16 }}>
+                    <Typography color='text.secondary' sx={{ fontSize: 13 }}>
                       No inventory found.
                     </Typography>
                   </Box>
@@ -402,14 +398,20 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </Table>
       </TableContainer>
 
-      {/* Footer (match BinTable height & style) */}
       <Box
         display='flex'
         justifyContent='flex-end'
         alignItems='center'
         px={2}
         py={0.5}
-        sx={{ background: '#fff', minWidth: 900, color: MUTED_TEXT }}
+        sx={{
+          background: '#f6f8fb',
+          border: `1px solid ${CONTAINER_BORDER}`,
+          borderTop: 'none',
+          borderRadius: '0 0 8px 8px',
+          minWidth: 900,
+          color: MUTED_TEXT
+        }}
       >
         <TablePagination
           component='div'
@@ -440,7 +442,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         />
       </Box>
 
-      {/* Merge Dialog */}
+      {/* —— Dialogs —— */}
       <Dialog
         open={mergeDialog.open}
         onClose={() => setMergeDialog(prev => ({ ...prev, open: false }))}
@@ -518,7 +520,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* 校验弹窗 */}
       <Dialog
         open={quantityDialogOpen}
         onClose={() => setQuantityDialogOpen(false)}
