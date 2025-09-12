@@ -143,7 +143,6 @@ const Inventory: React.FC = () => {
     })
   }
 
-  // —— 修改点 2：切换为 binCode 时强制升序，并同步到 URL
   const handleSortFieldChange = (event: SelectChangeEvent) => {
     const selected = event.target.value as SortField
     const nextOrder: SortOrder = selected === 'binCode' ? 'asc' : sortOrder
@@ -287,23 +286,39 @@ const Inventory: React.FC = () => {
             isLoading={isLoading}
             onPageChange={handleChangePage}
             onDelete={handleDelete}
-            onEditBin={() => loadCurrent()}
-            onBulkUpdate={async updates => {
-              await editInventoriesBulk(updates)
-              await loadCurrent()
+            onEditBin={() => {
+              void loadCurrent()
             }}
-            onAddNewItem={async (binCode, productCode, quantity) => {
-              const result = await addInventory({
-                binCode,
-                productCode,
-                quantity
-              })
-              if (!result.success) alert(result.message)
+            onUpsert={async changes => {
+              const updates = changes.filter(c => c.inventoryID)
+              const creates = changes.filter(c => !c.inventoryID)
+
+              if (updates.length) {
+                await editInventoriesBulk(
+                  updates.map(u => ({
+                    inventoryID: u.inventoryID!,
+                    productCode: u.productCode,
+                    quantity: u.quantity
+                  }))
+                )
+              }
+
+              for (const c of creates) {
+                const res = await addInventory({
+                  binCode: c.binCode,
+                  productCode: c.productCode,
+                  quantity: c.quantity
+                })
+                if (!res.success) alert(res.message)
+              }
+
               await loadCurrent()
             }}
             productOptions={productCodes}
             searchedBinCode={keyword}
-            onRefresh={() => loadCurrent()}
+            onRefresh={() => {
+              void loadCurrent()
+            }}
           />
         </Box>
       </Box>

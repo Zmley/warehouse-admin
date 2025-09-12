@@ -1,3 +1,4 @@
+// InventoryRows.tsx
 import React from 'react'
 import {
   TableBody,
@@ -51,10 +52,10 @@ type Props = {
   onAddRow: (binCode: string) => void
   onDeleteNewRow: (binCode: string, index: number) => void
   onSaveGroup: (binCode: string) => Promise<void>
-  saving: string | null
-  pendingBin: string | null
 
-  onEditBin: (binCode: string) => void
+  saving: string | null
+  isLoading: boolean
+
   isEmptyBin: (items: InventoryItem[]) => boolean
   navigateToProduct: (productCode: string) => void
 }
@@ -80,8 +81,7 @@ const InventoryRows: React.FC<Props> = ({
   onDeleteNewRow,
   onSaveGroup,
   saving,
-  pendingBin,
-  onEditBin,
+  isLoading, // unused
   isEmptyBin,
   navigateToProduct
 }) => {
@@ -92,22 +92,17 @@ const InventoryRows: React.FC<Props> = ({
         const editing = editBinCode === binCode
         const empty = isEmptyBin(items)
 
-        const rowSpanCount =
-          items.length + (empty ? 0 : newRows[binCode]?.length || 0)
-
-        // —— 处于保存或回填中的 bin：禁用交互 + 半透明遮罩 —— //
-        const isBusy = saving === binCode || pendingBin === binCode
+        // 空/非空都把新增行计入 rowSpan
+        const rowSpanCount = items.length + (newRows[binCode]?.length || 0)
+        const isBusy = saving === binCode
 
         return (
           <React.Fragment key={binCode}>
-            {/* 让这一组变半透明并拦截点击 */}
             {items.map((item, idx) => {
               const isPlaceholder = !item.inventoryID
-
               const currentProduct = isPlaceholder
                 ? emptyDraft[binCode]?.productCode ?? ''
                 : productDraft[item.inventoryID] ?? item.productCode
-
               const currentQuantity = isPlaceholder
                 ? emptyDraft[binCode]?.quantity ?? ''
                 : quantityDraft[item.inventoryID] ?? item.quantity
@@ -132,25 +127,9 @@ const InventoryRows: React.FC<Props> = ({
                         border: `1px solid ${CELL_BORDER}`,
                         fontWeight: 700,
                         fontSize: 13,
-                        p: 0,
-                        position: 'relative'
+                        p: 0
                       }}
                     >
-                      {/* 顶部右上角小圈圈（组级 Busy 时只显示一次） */}
-                      {isBusy && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: 4,
-                            right: 4,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <CircularProgress size={16} thickness={5} />
-                        </Box>
-                      )}
                       {binCode}
                     </TableCell>
                   )}
@@ -315,7 +294,7 @@ const InventoryRows: React.FC<Props> = ({
                       : null}
                   </TableCell>
 
-                  {/* Actions（按 bin 合并） */}
+                  {/* Actions（合并到首行） */}
                   {idx === 0 && (
                     <TableCell
                       align='center'
@@ -373,20 +352,18 @@ const InventoryRows: React.FC<Props> = ({
                               </span>
                             </Tooltip>
 
-                            {!empty && (
-                              <Tooltip title='Add Product'>
-                                <span>
-                                  <IconButton
-                                    color='primary'
-                                    size='small'
-                                    sx={{ height: 32, width: 32, p: 0 }}
-                                    onClick={() => onAddRow(binCode)}
-                                  >
-                                    <AddCircleOutlineIcon />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            )}
+                            <Tooltip title='Add Product'>
+                              <span>
+                                <IconButton
+                                  color='primary'
+                                  size='small'
+                                  sx={{ height: 32, width: 32, p: 0 }}
+                                  onClick={() => onAddRow(binCode)}
+                                >
+                                  <AddCircleOutlineIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </Box>
                         )
                       ) : isBusy ? (
@@ -426,9 +403,8 @@ const InventoryRows: React.FC<Props> = ({
               )
             })}
 
-            {/* 编辑态新增行 */}
+            {/* 编辑态新增行：空/非空都渲染 */}
             {editing &&
-              !empty &&
               (newRows[binCode] || []).map((row, index) => (
                 <TableRow
                   key={`new-${binCode}-${index}`}

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'
+// InventoryTable.tsx
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Table,
   TableHead,
@@ -28,14 +29,14 @@ interface InventoryTableProps {
   isLoading: boolean
   onPageChange: (event: unknown, newPage: number) => void
   onDelete: (inventoryID: string) => Promise<void>
-  onEditBin: (binCode: string) => void
-  onBulkUpdate: (
-    updates: { inventoryID: string; quantity: number; productCode: string }[]
-  ) => Promise<void>
-  onAddNewItem: (
-    binCode: string,
-    productCode: string,
-    quantity: number
+  onEditBin: (binCode: string) => void // 保留签名，不再使用
+  onUpsert: (
+    changes: {
+      inventoryID?: string
+      binCode: string
+      productCode: string
+      quantity: number
+    }[]
   ) => Promise<void>
   productOptions: string[]
   searchedBinCode?: string
@@ -67,17 +68,6 @@ const groupByBinCode = (list: InventoryItem[]) => {
   return map
 }
 
-// 替换 list 中某个 bin 的所有行
-const replaceBin = (
-  list: InventoryItem[],
-  binCode: string,
-  nextBinRows: InventoryItem[]
-) => {
-  const code = (v: InventoryItem) => v.bin?.binCode || '--'
-  const rest = list.filter(it => code(it) !== binCode)
-  return [...rest, ...nextBinRows]
-}
-
 const InventoryTable: React.FC<InventoryTableProps> = ({
   inventories,
   page,
@@ -85,9 +75,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   isLoading,
   onPageChange,
   onDelete,
-  onEditBin,
-  onBulkUpdate,
-  onAddNewItem,
+  onUpsert,
   productOptions,
   searchedBinCode,
   onRefresh
@@ -98,38 +86,33 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     warehouseCode: string
   }>()
 
-  // 本地渲染数据 + 正在等待服务端回填的 bin + 正在保存的 bin
-  const [localList, setLocalList] = useState<InventoryItem[]>(inventories)
-  const [pendingBin, setPendingBin] = useState<string | null>(null)
-  const [saving, setSaving] = useState<string | null>(null)
+  const grouped = useMemo(() => groupByBinCode(inventories), [inventories])
+  const binCodes = useMemo(() => Object.keys(grouped), [grouped])
 
-  useEffect(() => {
-    if (!pendingBin) {
-      setLocalList(inventories)
-      return
-    }
-    const freshBinRows = inventories.filter(
-      it => (it.bin?.binCode || '--') === pendingBin
-    )
-    setLocalList(prev => replaceBin(prev, pendingBin, freshBinRows))
-    // 一旦该 bin 回填（有或没有都视为回填完成）
-    setPendingBin(null)
-    setSaving(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inventories])
-
+  // 编辑期草稿 & UI 状态
   const [editBinCode, setEditBinCode] = useState<string | null>(null)
   const [quantityDraft, setQuantityDraft] = useState<
     Record<string, number | ''>
   >({})
   const [productDraft, setProductDraft] = useState<Record<string, string>>({})
-
   const [emptyDraft, setEmptyDraft] = useState<
     Record<string, { productCode: string; quantity: number | '' }>
   >({})
   const [newRows, setNewRows] = useState<
     Record<string, { productCode: string; quantity: number | '' }[]>
   >({})
+
+  // 哪个 bin 正在保存/删除（只用于在 Action 列显示单个圈 & 禁交互）
+  const [savingBin, setSavingBin] = useState<string | null>(null)
+  const pendingClearAfterRefresh = useRef<null | 'save' | 'delete'>(null)
+
+  // 刷新结束后清除 savingBin
+  useEffect(() => {
+    if (!isLoading && pendingClearAfterRefresh.current) {
+      setSavingBin(null)
+      pendingClearAfterRefresh.current = null
+    }
+  }, [isLoading])
 
   const [mergeDialog, setMergeDialog] = useState<{
     open: boolean
@@ -150,10 +133,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const [quantityDialogOpen, setQuantityDialogOpen] = useState(false)
   const [emptyProductDialogOpen, setEmptyProductDialogOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
-
-  // 渲染用 localList
-  const grouped = useMemo(() => groupByBinCode(localList), [localList])
-  const binCodes = useMemo(() => Object.keys(grouped), [grouped])
 
   const isEmptyBin = (items: InventoryItem[]) =>
     items.length === 1 && !items[0].inventoryID
@@ -210,75 +189,88 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
       return
     }
 
-    setSaving(binCode)
+    setSavingBin(binCode)
     try {
-      // 1) 更新已有行
       const updates = items
         .map(i => {
           if (!i.inventoryID) return null
           const qty = quantityDraft[i.inventoryID] ?? i.quantity
-          const prod = productDraft[i.inventoryID] ?? i.productCode
+          const prod = (productDraft[i.inventoryID] ?? i.productCode)?.trim()
           if (qty === '' || isNaN(Number(qty))) return null
           if (Number(qty) !== i.quantity || prod !== i.productCode) {
             return {
               inventoryID: i.inventoryID,
-              quantity: Number(qty),
-              productCode: prod
+              binCode,
+              productCode: prod!,
+              quantity: Number(qty)
             }
           }
           return null
         })
         .filter(Boolean) as {
         inventoryID: string
-        quantity: number
+        binCode: string
         productCode: string
+        quantity: number
       }[]
 
-      if (updates.length > 0) {
-        await onBulkUpdate(updates)
-      }
+      const emptyCreates: {
+        binCode: string
+        productCode: string
+        quantity: number
+      }[] =
+        empty && emptyDraftObj
+          ? [
+              {
+                binCode,
+                productCode: emptyDraftObj.productCode.trim(),
+                quantity: Number(emptyDraftObj.quantity)
+              }
+            ]
+          : []
 
-      // 2) 空货位直接新增
-      if (empty && emptyDraftObj) {
-        await onAddNewItem(
-          binCode,
-          emptyDraftObj.productCode.trim(),
-          emptyDraftObj.quantity as number
-        )
-      }
+      const newCreates: {
+        binCode: string
+        productCode: string
+        quantity: number
+      }[] = (newRows[binCode] || []).map(r => ({
+        binCode,
+        productCode: r.productCode.trim(),
+        quantity: Number(r.quantity)
+      }))
 
-      // 3) 非空货位新增
-      if (!empty) {
-        for (const row of newRows[binCode] || []) {
-          const targetCode = row.productCode.trim()
-          const existingAfterEdit = items.find(i => {
-            const finalCode =
-              (i.inventoryID &&
-                (productDraft[i.inventoryID] ?? i.productCode)) ||
-              ''
-            return i.inventoryID && finalCode.trim() === targetCode
+      for (const row of newRows[binCode] || []) {
+        const targetCode = row.productCode.trim()
+        const existingAfterEdit = items.find(i => {
+          const finalCode =
+            (i.inventoryID && (productDraft[i.inventoryID] ?? i.productCode)) ||
+            ''
+          return i.inventoryID && finalCode.trim() === targetCode
+        })
+        if (existingAfterEdit) {
+          setMergeDialog({
+            open: true,
+            binCode,
+            productCode: targetCode,
+            quantity: Number(row.quantity),
+            existingInventoryID: existingAfterEdit.inventoryID!,
+            existingQuantity: existingAfterEdit.quantity
           })
-          if (existingAfterEdit) {
-            setMergeDialog({
-              open: true,
-              binCode,
-              productCode: targetCode,
-              quantity: Number(row.quantity),
-              existingInventoryID: existingAfterEdit.inventoryID!,
-              existingQuantity: existingAfterEdit.quantity
-            })
-            setSaving(null)
-            return
-          }
-          await onAddNewItem(binCode, targetCode, row.quantity as number)
+          return
         }
       }
 
-      // 标记等待该 bin 的回填
-      setPendingBin(binCode)
-      onEditBin(binCode)
+      const payload = [
+        ...updates,
+        ...emptyCreates.map(c => ({ ...c })),
+        ...newCreates.map(c => ({ ...c }))
+      ]
+      if (payload.length) await onUpsert(payload)
 
-      // 清理编辑态
+      // 刷新 & 清理编辑态
+      pendingClearAfterRefresh.current = 'save'
+      onRefresh()
+
       setEditBinCode(null)
       setQuantityDraft({})
       setProductDraft({})
@@ -289,11 +281,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         return cp
       })
     } catch {
-      setSaving(null)
+      setSavingBin(null)
     }
   }
 
-  const visibleRowCount = localList.length
+  const visibleRowCount = inventories.length
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
   const containerHeight = Math.min(
     THEAD_HEIGHT + effectiveRowCount * ROW_HEIGHT,
@@ -302,151 +294,160 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
   return (
     <Paper elevation={0} sx={{ borderRadius: 2, minWidth: 900, mx: 'auto' }}>
-      <TableContainer
-        sx={{
-          height: containerHeight,
-          maxHeight: MAX_SCROLL_AREA,
-          overflowY: 'auto',
-          borderRadius: 2,
-          border: `1px solid ${CONTAINER_BORDER}`,
-          backgroundColor: '#fff',
-          boxShadow: CONTAINER_SHADOW
-        }}
-      >
-        <Table
-          stickyHeader
-          size='small'
+      <Box sx={{ position: 'relative' }}>
+        <TableContainer
           sx={{
-            tableLayout: 'fixed',
-            width: '100%',
-            color: CELL_TEXT,
-            '& .MuiTableCell-stickyHeader': {
-              background: HEADER_BG,
-              color: HEADER_TEXT,
-              fontWeight: 800,
-              letterSpacing: 0.2,
-              boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
-              zIndex: 2
-            },
-            '& .MuiTableBody-root td': {
-              fontSize: 13,
-              color: CELL_TEXT
-            },
-            '& .MuiTableBody-root .MuiTableCell-root': {
-              borderColor: CELL_BORDER
-            },
-            '& .MuiTableBody-root tr:nth-of-type(even)': {
-              backgroundColor: ROW_STRIPE_BG
-            }
+            height: containerHeight,
+            maxHeight: MAX_SCROLL_AREA,
+            overflowY: 'auto',
+            borderRadius: 2,
+            border: `1px solid ${CONTAINER_BORDER}`,
+            backgroundColor: '#fff',
+            boxShadow: CONTAINER_SHADOW
           }}
         >
-          <TableHead>
-            <TableRow
-              sx={{
-                height: THEAD_HEIGHT,
-                '& th': {
-                  borderRight: `1px solid ${HEADER_BORDER}`,
-                  fontSize: 13,
-                  p: 0,
-                  color: HEADER_TEXT
-                },
-                '& th:last-of-type': { borderRight: 'none' }
-              }}
-            >
-              <TableCell align='center'>Bin Code</TableCell>
-              <TableCell align='center'>Product Code</TableCell>
-              <TableCell align='center'>Quantity</TableCell>
-              <TableCell align='center'>Updated At</TableCell>
-              <TableCell align='center'>Action</TableCell>
-            </TableRow>
-          </TableHead>
-
-          {/* Body */}
-          {isLoading && localList.length === 0 ? (
-            <tbody>
-              <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
-                <TableCell colSpan={5} align='center'>
-                  <CircularProgress size={32} sx={{ m: 2 }} />
-                </TableCell>
+          <Table
+            stickyHeader
+            size='small'
+            sx={{
+              tableLayout: 'fixed',
+              width: '100%',
+              color: CELL_TEXT,
+              '& .MuiTableCell-stickyHeader': {
+                background: HEADER_BG,
+                color: HEADER_TEXT,
+                fontWeight: 800,
+                letterSpacing: 0.2,
+                boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
+                zIndex: 2
+              },
+              '& .MuiTableBody-root td': {
+                fontSize: 13,
+                color: CELL_TEXT
+              },
+              '& .MuiTableBody-root .MuiTableCell-root': {
+                borderColor: CELL_BORDER
+              },
+              '& .MuiTableBody-root tr:nth-of-type(even)': {
+                backgroundColor: ROW_STRIPE_BG
+              }
+            }}
+          >
+            <TableHead>
+              <TableRow
+                sx={{
+                  height: THEAD_HEIGHT,
+                  '& th': {
+                    borderRight: `1px solid ${HEADER_BORDER}`,
+                    fontSize: 13,
+                    p: 0,
+                    color: HEADER_TEXT
+                  },
+                  '& th:last-of-type': { borderRight: 'none' }
+                }}
+              >
+                <TableCell align='center'>Bin Code</TableCell>
+                <TableCell align='center'>Product Code</TableCell>
+                <TableCell align='center'>Quantity</TableCell>
+                <TableCell align='center'>Updated At</TableCell>
+                <TableCell align='center'>Action</TableCell>
               </TableRow>
-            </tbody>
-          ) : localList.length === 0 ? (
-            <tbody>
-              <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
-                <TableCell colSpan={5} align='center'>
-                  <Box
-                    display='flex'
-                    alignItems='center'
-                    justifyContent='center'
-                    gap={1}
-                  >
+            </TableHead>
+
+            {inventories.length === 0 ? (
+              <tbody>
+                <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
+                  <TableCell colSpan={5} align='center'>
                     <Typography color='text.secondary' sx={{ fontSize: 13 }}>
                       No inventory found.
                     </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
-
-              {showCreate && (
-                <TableRow>
-                  <TableCell colSpan={5}>
-                    <CreateInventory
-                      onClose={() => setShowCreate(false)}
-                      onSuccess={() => {
-                        setShowCreate(false)
-                        onRefresh()
-                      }}
-                      binCode={searchedBinCode || ''}
-                    />
                   </TableCell>
                 </TableRow>
-              )}
-            </tbody>
-          ) : (
-            <InventoryRows
-              grouped={grouped}
-              binCodes={binCodes}
-              ROW_HEIGHT={ROW_HEIGHT}
-              CELL_BORDER={CELL_BORDER}
-              productOptions={productOptions}
-              editBinCode={editBinCode}
-              setEditBinCode={setEditBinCode}
-              productDraft={productDraft}
-              setProductDraft={setProductDraft}
-              quantityDraft={quantityDraft}
-              setQuantityDraft={setQuantityDraft}
-              emptyDraft={emptyDraft}
-              setEmptyDraft={setEmptyDraft}
-              newRows={newRows}
-              setNewRows={setNewRows}
-              // 删除时也只回填该 bin
-              onDelete={async (inventoryID: string) => {
-                const bin = editBinCode
-                await onDelete(inventoryID)
-                if (bin) {
-                  setPendingBin(bin)
-                  onEditBin(bin)
+
+                {showCreate && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <CreateInventory
+                        onClose={() => setShowCreate(false)}
+                        onSuccess={() => {
+                          setShowCreate(false)
+                          onRefresh()
+                        }}
+                        binCode={searchedBinCode || ''}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </tbody>
+            ) : (
+              <InventoryRows
+                grouped={grouped}
+                binCodes={binCodes}
+                ROW_HEIGHT={ROW_HEIGHT}
+                CELL_BORDER={CELL_BORDER}
+                productOptions={productOptions}
+                editBinCode={editBinCode}
+                setEditBinCode={setEditBinCode}
+                productDraft={productDraft}
+                setProductDraft={setProductDraft}
+                quantityDraft={quantityDraft}
+                setQuantityDraft={setQuantityDraft}
+                emptyDraft={emptyDraft}
+                setEmptyDraft={setEmptyDraft}
+                newRows={newRows}
+                setNewRows={setNewRows}
+                onDelete={async (inventoryID: string) => {
+                  const bin = editBinCode
+                  if (bin) setSavingBin(bin)
+                  try {
+                    await onDelete(inventoryID)
+                    pendingClearAfterRefresh.current = 'delete'
+                    onRefresh()
+                    // 删除后退出编辑，避免“空 bin 还在编辑态”
+                    setEditBinCode(null)
+                    setQuantityDraft({})
+                    setProductDraft({})
+                    setNewRows({})
+                    setEmptyDraft({})
+                  } catch {
+                    setSavingBin(null)
+                  }
+                }}
+                onAddRow={handleAddRow}
+                onDeleteNewRow={handleDeleteNewRow}
+                onSaveGroup={handleSaveGroup}
+                saving={savingBin}
+                isLoading={isLoading}
+                isEmptyBin={items =>
+                  items.length === 1 && !items[0].inventoryID
                 }
-              }}
-              onAddRow={handleAddRow}
-              onDeleteNewRow={handleDeleteNewRow}
-              onSaveGroup={handleSaveGroup}
-              saving={saving}
-              pendingBin={pendingBin}
-              onEditBin={(binCode: string) => {
-                setPendingBin(binCode)
-                onEditBin(binCode)
-              }}
-              isEmptyBin={items => items.length === 1 && !items[0].inventoryID}
-              navigateToProduct={(code: string) => {
-                navigate(
-                  `/${warehouseID}/${warehouseCode}/product?keyword=${code}`
-                )
-              }}
-            />
-          )}
-        </Table>
-      </TableContainer>
+                navigateToProduct={(code: string) => {
+                  navigate(
+                    `/${warehouseID}/${warehouseCode}/product?keyword=${code}`
+                  )
+                }}
+              />
+            )}
+          </Table>
+        </TableContainer>
+
+        {isLoading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background:
+                'linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55))',
+              pointerEvents: 'none'
+            }}
+          >
+            <CircularProgress size={28} thickness={5} />
+          </Box>
+        )}
+      </Box>
 
       <Box
         display='flex'
@@ -519,27 +520,34 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
-              setSaving(mergeDialog.binCode)
-              const newQty = mergeDialog.existingQuantity + mergeDialog.quantity
-              await onBulkUpdate([
-                {
-                  inventoryID: mergeDialog.existingInventoryID,
-                  quantity: newQty,
-                  productCode: mergeDialog.productCode
-                }
-              ])
-              setMergeDialog(prev => ({ ...prev, open: false }))
-              setPendingBin(mergeDialog.binCode)
-              onEditBin(mergeDialog.binCode)
-              setEditBinCode(null)
-              setQuantityDraft({})
-              setProductDraft({})
-              setNewRows(prev => ({ ...prev, [mergeDialog.binCode]: [] }))
-              setEmptyDraft(prev => {
-                const cp = { ...prev }
-                delete cp[mergeDialog.binCode]
-                return cp
-              })
+              const {
+                binCode,
+                existingInventoryID,
+                quantity,
+                existingQuantity,
+                productCode
+              } = mergeDialog
+              setSavingBin(binCode)
+              try {
+                await onUpsert([
+                  {
+                    inventoryID: existingInventoryID,
+                    binCode,
+                    productCode,
+                    quantity: existingQuantity + quantity
+                  }
+                ])
+                setMergeDialog(prev => ({ ...prev, open: false }))
+                pendingClearAfterRefresh.current = 'save'
+                onRefresh()
+                setEditBinCode(null)
+                setQuantityDraft({})
+                setProductDraft({})
+                setNewRows({})
+                setEmptyDraft({})
+              } catch {
+                setSavingBin(null)
+              }
             }}
             variant='contained'
             color='primary'
@@ -548,24 +556,21 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
-              setSaving(mergeDialog.binCode)
-              await onAddNewItem(
-                mergeDialog.binCode,
-                mergeDialog.productCode,
-                mergeDialog.quantity
-              )
-              setMergeDialog(prev => ({ ...prev, open: false }))
-              setPendingBin(mergeDialog.binCode)
-              onEditBin(mergeDialog.binCode)
-              setEditBinCode(null)
-              setQuantityDraft({})
-              setProductDraft({})
-              setNewRows(prev => ({ ...prev, [mergeDialog.binCode]: [] }))
-              setEmptyDraft(prev => {
-                const cp = { ...prev }
-                delete cp[mergeDialog.binCode]
-                return cp
-              })
+              const { binCode, productCode, quantity } = mergeDialog
+              setSavingBin(binCode)
+              try {
+                await onUpsert([{ binCode, productCode, quantity }])
+                setMergeDialog(prev => ({ ...prev, open: false }))
+                pendingClearAfterRefresh.current = 'save'
+                onRefresh()
+                setEditBinCode(null)
+                setQuantityDraft({})
+                setProductDraft({})
+                setNewRows({})
+                setEmptyDraft({})
+              } catch {
+                setSavingBin(null)
+              }
             }}
             variant='outlined'
           >
