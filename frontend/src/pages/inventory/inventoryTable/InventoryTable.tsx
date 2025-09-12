@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Table,
   TableHead,
@@ -67,6 +67,17 @@ const groupByBinCode = (list: InventoryItem[]) => {
   return map
 }
 
+// 替换 list 中某个 bin 的所有行
+const replaceBin = (
+  list: InventoryItem[],
+  binCode: string,
+  nextBinRows: InventoryItem[]
+) => {
+  const code = (v: InventoryItem) => v.bin?.binCode || '--'
+  const rest = list.filter(it => code(it) !== binCode)
+  return [...rest, ...nextBinRows]
+}
+
 const InventoryTable: React.FC<InventoryTableProps> = ({
   inventories,
   page,
@@ -86,6 +97,31 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     warehouseID: string
     warehouseCode: string
   }>()
+
+  // === 核心：本地渲染用的数据 + 正在等待服务端回填的 bin ===
+  const [localList, setLocalList] = useState<InventoryItem[]>(inventories)
+  const [pendingBin, setPendingBin] = useState<string | null>(null)
+
+  // props.inventories 变化：若没有等待中的 bin，就全量同步；若有，则仅用该 bin 的最新切片替换本地
+  useEffect(() => {
+    if (!pendingBin) {
+      setLocalList(inventories)
+      return
+    }
+    const freshBinRows = inventories.filter(
+      it => (it.bin?.binCode || '--') === pendingBin
+    )
+    if (freshBinRows.length > 0) {
+      setLocalList(prev => replaceBin(prev, pendingBin, freshBinRows))
+      setPendingBin(null) // 回填完成
+    }
+    // 如果这个 bin 服务器暂时没有（例如被删空），也把它替换为空列表
+    if (freshBinRows.length === 0) {
+      setLocalList(prev => replaceBin(prev, pendingBin, []))
+      setPendingBin(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inventories])
 
   const [editBinCode, setEditBinCode] = useState<string | null>(null)
   const [quantityDraft, setQuantityDraft] = useState<
@@ -121,7 +157,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const [emptyProductDialogOpen, setEmptyProductDialogOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
 
-  const grouped = useMemo(() => groupByBinCode(inventories), [inventories])
+  // —— 注意：渲染和一切编辑逻辑改为用 localList —— //
+  const grouped = useMemo(() => groupByBinCode(localList), [localList])
   const binCodes = useMemo(() => Object.keys(grouped), [grouped])
 
   const isEmptyBin = (items: InventoryItem[]) =>
@@ -181,6 +218,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
     setSaving(binCode)
     try {
+      // 1) 更新已有行
       const updates = items
         .map(i => {
           if (!i.inventoryID) return null
@@ -206,6 +244,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         await onBulkUpdate(updates)
       }
 
+      // 2) 空货位直接新增
       if (empty && emptyDraftObj) {
         await onAddNewItem(
           binCode,
@@ -214,6 +253,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         )
       }
 
+      // 3) 非空货位新增
       if (!empty) {
         for (const row of newRows[binCode] || []) {
           const targetCode = row.productCode.trim()
@@ -240,7 +280,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         }
       }
 
-      onEditBin(binCode)
+      // **关键：不整表刷新，只标记等待该 bin 的最新回填**
+      setPendingBin(binCode)
+      onEditBin(binCode) // 让父组件去拉该 bin；回传后本组件只替换该 bin
+
+      // 清理编辑态
       setEditBinCode(null)
       setQuantityDraft({})
       setProductDraft({})
@@ -255,7 +299,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     }
   }
 
-  const visibleRowCount = inventories.length
+  const visibleRowCount = localList.length
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
   const containerHeight = Math.min(
     THEAD_HEIGHT + effectiveRowCount * ROW_HEIGHT,
@@ -324,7 +368,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </TableHead>
 
           {/* Body */}
-          {isLoading ? (
+          {isLoading && localList.length === 0 ? (
             <tbody>
               <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
                 <TableCell colSpan={5} align='center'>
@@ -332,7 +376,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 </TableCell>
               </TableRow>
             </tbody>
-          ) : inventories.length === 0 ? (
+          ) : localList.length === 0 ? (
             <tbody>
               <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
                 <TableCell colSpan={5} align='center'>
@@ -381,12 +425,21 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               setEmptyDraft={setEmptyDraft}
               newRows={newRows}
               setNewRows={setNewRows}
-              onDelete={onDelete}
+              onDelete={async (inventoryID: string) => {
+                await onDelete(inventoryID)
+                if (editBinCode) {
+                  setPendingBin(editBinCode)
+                  onEditBin(editBinCode)
+                }
+              }}
               onAddRow={handleAddRow}
               onDeleteNewRow={handleDeleteNewRow}
               onSaveGroup={handleSaveGroup}
               saving={saving}
-              onEditBin={onEditBin}
+              onEditBin={(binCode: string) => {
+                setPendingBin(binCode)
+                onEditBin(binCode)
+              }}
               isEmptyBin={items => items.length === 1 && !items[0].inventoryID}
               navigateToProduct={(code: string) => {
                 navigate(
@@ -478,6 +531,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 }
               ])
               setMergeDialog(prev => ({ ...prev, open: false }))
+              setPendingBin(mergeDialog.binCode)
               onEditBin(mergeDialog.binCode)
               setEditBinCode(null)
               setQuantityDraft({})
@@ -502,6 +556,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 mergeDialog.quantity
               )
               setMergeDialog(prev => ({ ...prev, open: false }))
+              setPendingBin(mergeDialog.binCode)
               onEditBin(mergeDialog.binCode)
               setEditBinCode(null)
               setQuantityDraft({})

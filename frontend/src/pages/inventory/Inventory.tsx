@@ -28,17 +28,21 @@ const Inventory: React.FC = () => {
 
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
   const initialKeyword = searchParams.get('keyword') || ''
+
+  const urlOrder = (searchParams.get('order') || '').toLowerCase()
+  const urlSortBy = (searchParams.get('sortBy') as SortField) || 'updatedAt'
+
   const initialSortOrder: SortOrder =
-    (searchParams.get('order') || 'desc').toLowerCase() === 'asc'
+    urlOrder === 'asc' || urlOrder === 'desc'
+      ? (urlOrder as SortOrder)
+      : urlSortBy === 'binCode'
       ? 'asc'
       : 'desc'
-  const initialSortField: SortField =
-    (searchParams.get('sortBy') as SortField) || 'updatedAt'
+
+  const initialSortField: SortField = urlSortBy
 
   const [page, setPage] = useState(initialPage)
-  // 已提交/确定的关键词（用于请求&URL）
   const [keyword, setKeyword] = useState(initialKeyword)
-  // 输入框里的实时值（避免被高亮项覆盖）
   const [inputKeyword, setInputKeyword] = useState(initialKeyword)
 
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder)
@@ -59,12 +63,10 @@ const Inventory: React.FC = () => {
     addInventory
   } = useInventory()
 
-  // --- 联想控制 ---
   const MIN_CHARS = 2
   const [openSuggest, setOpenSuggest] = useState(false)
   const canSuggest = inputKeyword.trim().length >= MIN_CHARS && openSuggest
 
-  // 前缀匹配 + 最多 50 条
   const filterOptions = (opts: string[], kw: string) => {
     const q = kw.trim().toLowerCase()
     if (!q) return []
@@ -76,14 +78,12 @@ const Inventory: React.FC = () => {
     return out
   }
 
-  // 初始化
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
-  // 输入防抖自动提交
   useEffect(() => {
     const handler = setTimeout(() => {
       setKeyword(inputKeyword)
@@ -143,15 +143,22 @@ const Inventory: React.FC = () => {
     })
   }
 
+  // —— 修改点 2：切换为 binCode 时强制升序，并同步到 URL
   const handleSortFieldChange = (event: SelectChangeEvent) => {
     const selected = event.target.value as SortField
+    const nextOrder: SortOrder = selected === 'binCode' ? 'asc' : sortOrder
+
     setSortField(selected)
+    if (selected === 'binCode' && sortOrder !== 'asc') {
+      setSortOrder('asc')
+    }
     setPage(0)
+
     updateSearchParams({
       page: '1',
       keyword,
       sortBy: selected,
-      order: sortOrder
+      order: nextOrder
     })
   }
 
@@ -161,16 +168,14 @@ const Inventory: React.FC = () => {
   }
 
   return (
-    // 外层不滚动，避免出现底部横向滚动条
     <Box
       sx={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden' // 关键：外层禁止溢出
+        overflow: 'hidden'
       }}
     >
-      {/* 顶部工具栏 */}
       <Box
         sx={{
           flex: '0 0 auto',
@@ -199,7 +204,6 @@ const Inventory: React.FC = () => {
         </Button>
       </Box>
 
-      {/* 过滤行 */}
       <Box
         sx={{
           flex: '0 0 auto',
@@ -207,7 +211,7 @@ const Inventory: React.FC = () => {
           alignItems: 'center',
           gap: 2,
           mb: 2,
-          minWidth: 0 // 防止子元素把父容器撑宽
+          minWidth: 0
         }}
       >
         <Autocomplete
