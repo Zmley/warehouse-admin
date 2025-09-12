@@ -98,11 +98,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     warehouseCode: string
   }>()
 
-  // === 核心：本地渲染用的数据 + 正在等待服务端回填的 bin ===
+  // 本地渲染数据 + 正在等待服务端回填的 bin + 正在保存的 bin
   const [localList, setLocalList] = useState<InventoryItem[]>(inventories)
   const [pendingBin, setPendingBin] = useState<string | null>(null)
+  const [saving, setSaving] = useState<string | null>(null)
 
-  // props.inventories 变化：若没有等待中的 bin，就全量同步；若有，则仅用该 bin 的最新切片替换本地
   useEffect(() => {
     if (!pendingBin) {
       setLocalList(inventories)
@@ -111,15 +111,10 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     const freshBinRows = inventories.filter(
       it => (it.bin?.binCode || '--') === pendingBin
     )
-    if (freshBinRows.length > 0) {
-      setLocalList(prev => replaceBin(prev, pendingBin, freshBinRows))
-      setPendingBin(null) // 回填完成
-    }
-    // 如果这个 bin 服务器暂时没有（例如被删空），也把它替换为空列表
-    if (freshBinRows.length === 0) {
-      setLocalList(prev => replaceBin(prev, pendingBin, []))
-      setPendingBin(null)
-    }
+    setLocalList(prev => replaceBin(prev, pendingBin, freshBinRows))
+    // 一旦该 bin 回填（有或没有都视为回填完成）
+    setPendingBin(null)
+    setSaving(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inventories])
 
@@ -128,7 +123,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     Record<string, number | ''>
   >({})
   const [productDraft, setProductDraft] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState<string | null>(null)
 
   const [emptyDraft, setEmptyDraft] = useState<
     Record<string, { productCode: string; quantity: number | '' }>
@@ -157,7 +151,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const [emptyProductDialogOpen, setEmptyProductDialogOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
 
-  // —— 注意：渲染和一切编辑逻辑改为用 localList —— //
+  // 渲染用 localList
   const grouped = useMemo(() => groupByBinCode(localList), [localList])
   const binCodes = useMemo(() => Object.keys(grouped), [grouped])
 
@@ -280,9 +274,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         }
       }
 
-      // **关键：不整表刷新，只标记等待该 bin 的最新回填**
+      // 标记等待该 bin 的回填
       setPendingBin(binCode)
-      onEditBin(binCode) // 让父组件去拉该 bin；回传后本组件只替换该 bin
+      onEditBin(binCode)
 
       // 清理编辑态
       setEditBinCode(null)
@@ -294,7 +288,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         delete cp[binCode]
         return cp
       })
-    } finally {
+    } catch {
       setSaving(null)
     }
   }
@@ -425,17 +419,20 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               setEmptyDraft={setEmptyDraft}
               newRows={newRows}
               setNewRows={setNewRows}
+              // 删除时也只回填该 bin
               onDelete={async (inventoryID: string) => {
+                const bin = editBinCode
                 await onDelete(inventoryID)
-                if (editBinCode) {
-                  setPendingBin(editBinCode)
-                  onEditBin(editBinCode)
+                if (bin) {
+                  setPendingBin(bin)
+                  onEditBin(bin)
                 }
               }}
               onAddRow={handleAddRow}
               onDeleteNewRow={handleDeleteNewRow}
               onSaveGroup={handleSaveGroup}
               saving={saving}
+              pendingBin={pendingBin}
               onEditBin={(binCode: string) => {
                 setPendingBin(binCode)
                 onEditBin(binCode)
@@ -522,6 +519,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
+              setSaving(mergeDialog.binCode)
               const newQty = mergeDialog.existingQuantity + mergeDialog.quantity
               await onBulkUpdate([
                 {
@@ -550,6 +548,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           </Button>
           <Button
             onClick={async () => {
+              setSaving(mergeDialog.binCode)
               await onAddNewItem(
                 mergeDialog.binCode,
                 mergeDialog.productCode,

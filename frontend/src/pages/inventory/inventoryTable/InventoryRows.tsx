@@ -8,7 +8,8 @@ import {
   TextField,
   Tooltip,
   IconButton,
-  Typography
+  Typography,
+  CircularProgress
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
@@ -51,6 +52,7 @@ type Props = {
   onDeleteNewRow: (binCode: string, index: number) => void
   onSaveGroup: (binCode: string) => Promise<void>
   saving: string | null
+  pendingBin: string | null
 
   onEditBin: (binCode: string) => void
   isEmptyBin: (items: InventoryItem[]) => boolean
@@ -78,6 +80,7 @@ const InventoryRows: React.FC<Props> = ({
   onDeleteNewRow,
   onSaveGroup,
   saving,
+  pendingBin,
   onEditBin,
   isEmptyBin,
   navigateToProduct
@@ -92,8 +95,12 @@ const InventoryRows: React.FC<Props> = ({
         const rowSpanCount =
           items.length + (empty ? 0 : newRows[binCode]?.length || 0)
 
+        // —— 处于保存或回填中的 bin：禁用交互 + 半透明遮罩 —— //
+        const isBusy = saving === binCode || pendingBin === binCode
+
         return (
           <React.Fragment key={binCode}>
+            {/* 让这一组变半透明并拦截点击 */}
             {items.map((item, idx) => {
               const isPlaceholder = !item.inventoryID
 
@@ -108,7 +115,14 @@ const InventoryRows: React.FC<Props> = ({
               return (
                 <TableRow
                   key={item.inventoryID ?? `empty-${binCode}`}
-                  sx={{ ...tableRowStyle, height: ROW_HEIGHT }}
+                  sx={{
+                    ...tableRowStyle,
+                    height: ROW_HEIGHT,
+                    position: 'relative',
+                    ...(isBusy
+                      ? { opacity: 0.6, pointerEvents: 'none' as const }
+                      : {})
+                  }}
                 >
                   {idx === 0 && (
                     <TableCell
@@ -118,9 +132,25 @@ const InventoryRows: React.FC<Props> = ({
                         border: `1px solid ${CELL_BORDER}`,
                         fontWeight: 700,
                         fontSize: 13,
-                        p: 0
+                        p: 0,
+                        position: 'relative'
                       }}
                     >
+                      {/* 顶部右上角小圈圈（组级 Busy 时只显示一次） */}
+                      {isBusy && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <CircularProgress size={16} thickness={5} />
+                        </Box>
+                      )}
                       {binCode}
                     </TableCell>
                   )}
@@ -175,9 +205,11 @@ const InventoryRows: React.FC<Props> = ({
                                   textAlign: 'center'
                                 }
                               }}
+                              disabled={isBusy}
                             />
                           )}
                           sx={{ width: 160 }}
+                          disabled={isBusy}
                         />
                         {!isPlaceholder && (
                           <Tooltip title='Delete Item'>
@@ -195,6 +227,7 @@ const InventoryRows: React.FC<Props> = ({
                                     onDelete(item.inventoryID!)
                                   }
                                 }}
+                                disabled={isBusy}
                               >
                                 <DeleteIcon fontSize='small' />
                               </IconButton>
@@ -261,6 +294,7 @@ const InventoryRows: React.FC<Props> = ({
                             textAlign: 'center'
                           }
                         }}
+                        disabled={isBusy}
                       />
                     ) : item.inventoryID ? (
                       <Typography
@@ -289,61 +323,80 @@ const InventoryRows: React.FC<Props> = ({
                       sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                     >
                       {editing ? (
-                        <Box display='flex' justifyContent='center' gap={1}>
-                          <Tooltip title='Save'>
-                            <span>
-                              <IconButton
-                                color='success'
-                                size='small'
-                                sx={{ height: 32, width: 32, p: 0 }}
-                                disabled={saving !== null}
-                                onClick={() => onSaveGroup(binCode)}
-                              >
-                                <SaveIcon />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-
-                          <Tooltip title='Cancel'>
-                            <span>
-                              <IconButton
-                                color='secondary'
-                                size='small'
-                                sx={{ height: 32, width: 32, p: 0 }}
-                                onClick={() => {
-                                  setEditBinCode(null)
-                                  setQuantityDraft({})
-                                  setProductDraft({})
-                                  setNewRows(prev => ({
-                                    ...prev,
-                                    [binCode]: []
-                                  }))
-                                  setEmptyDraft(prev => {
-                                    const cp = { ...prev }
-                                    delete cp[binCode]
-                                    return cp
-                                  })
-                                }}
-                              >
-                                <CancelIcon />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-
-                          {!empty && (
-                            <Tooltip title='Add Product'>
+                        isBusy ? (
+                          <Box
+                            display='flex'
+                            justifyContent='center'
+                            alignItems='center'
+                            sx={{ height: 32 }}
+                          >
+                            <CircularProgress size={18} thickness={5} />
+                          </Box>
+                        ) : (
+                          <Box display='flex' justifyContent='center' gap={1}>
+                            <Tooltip title='Save'>
                               <span>
                                 <IconButton
-                                  color='primary'
+                                  color='success'
                                   size='small'
                                   sx={{ height: 32, width: 32, p: 0 }}
-                                  onClick={() => onAddRow(binCode)}
+                                  onClick={() => onSaveGroup(binCode)}
                                 >
-                                  <AddCircleOutlineIcon />
+                                  <SaveIcon />
                                 </IconButton>
                               </span>
                             </Tooltip>
-                          )}
+
+                            <Tooltip title='Cancel'>
+                              <span>
+                                <IconButton
+                                  color='secondary'
+                                  size='small'
+                                  sx={{ height: 32, width: 32, p: 0 }}
+                                  onClick={() => {
+                                    setEditBinCode(null)
+                                    setQuantityDraft({})
+                                    setProductDraft({})
+                                    setNewRows(prev => ({
+                                      ...prev,
+                                      [binCode]: []
+                                    }))
+                                    setEmptyDraft(prev => {
+                                      const cp = { ...prev }
+                                      delete cp[binCode]
+                                      return cp
+                                    })
+                                  }}
+                                >
+                                  <CancelIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+
+                            {!empty && (
+                              <Tooltip title='Add Product'>
+                                <span>
+                                  <IconButton
+                                    color='primary'
+                                    size='small'
+                                    sx={{ height: 32, width: 32, p: 0 }}
+                                    onClick={() => onAddRow(binCode)}
+                                  >
+                                    <AddCircleOutlineIcon />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        )
+                      ) : isBusy ? (
+                        <Box
+                          display='flex'
+                          justifyContent='center'
+                          alignItems='center'
+                          sx={{ height: 32 }}
+                        >
+                          <CircularProgress size={18} thickness={5} />
                         </Box>
                       ) : (
                         <Tooltip title='Edit'>
@@ -373,12 +426,18 @@ const InventoryRows: React.FC<Props> = ({
               )
             })}
 
+            {/* 编辑态新增行 */}
             {editing &&
               !empty &&
               (newRows[binCode] || []).map((row, index) => (
                 <TableRow
                   key={`new-${binCode}-${index}`}
-                  sx={{ height: ROW_HEIGHT }}
+                  sx={{
+                    height: ROW_HEIGHT,
+                    ...(isBusy
+                      ? { opacity: 0.6, pointerEvents: 'none' as const }
+                      : {})
+                  }}
                 >
                   <TableCell
                     align='center'
@@ -419,9 +478,11 @@ const InventoryRows: React.FC<Props> = ({
                                 textAlign: 'center'
                               }
                             }}
+                            disabled={isBusy}
                           />
                         )}
                         sx={{ width: 160 }}
+                        disabled={isBusy}
                       />
                       <Tooltip title='Delete'>
                         <span>
@@ -430,6 +491,7 @@ const InventoryRows: React.FC<Props> = ({
                             size='small'
                             sx={{ height: 32, width: 32, p: 0 }}
                             onClick={() => onDeleteNewRow(binCode, index)}
+                            disabled={isBusy}
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -469,6 +531,7 @@ const InventoryRows: React.FC<Props> = ({
                           textAlign: 'center'
                         }
                       }}
+                      disabled={isBusy}
                     />
                   </TableCell>
 
