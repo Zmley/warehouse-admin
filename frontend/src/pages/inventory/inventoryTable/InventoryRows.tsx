@@ -1,4 +1,3 @@
-// InventoryRows.tsx
 import React from 'react'
 import {
   TableBody,
@@ -284,7 +283,6 @@ const InventoryRows: React.FC<Props> = ({
                     ) : null}
                   </TableCell>
 
-                  {/* Updated At */}
                   <TableCell
                     align='center'
                     sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
@@ -294,7 +292,6 @@ const InventoryRows: React.FC<Props> = ({
                       : null}
                   </TableCell>
 
-                  {/* Actions（合并到首行） */}
                   {idx === 0 && (
                     <TableCell
                       align='center'
