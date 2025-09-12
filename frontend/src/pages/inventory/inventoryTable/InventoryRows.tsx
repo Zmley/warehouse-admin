@@ -80,7 +80,6 @@ const InventoryRows: React.FC<Props> = ({
   onDeleteNewRow,
   onSaveGroup,
   saving,
-  isLoading, // unused
   isEmptyBin,
   navigateToProduct
 }) => {
@@ -91,7 +90,6 @@ const InventoryRows: React.FC<Props> = ({
         const editing = editBinCode === binCode
         const empty = isEmptyBin(items)
 
-        // 空/非空都把新增行计入 rowSpan
         const rowSpanCount = items.length + (newRows[binCode]?.length || 0)
         const isBusy = saving === binCode
 
@@ -133,7 +131,6 @@ const InventoryRows: React.FC<Props> = ({
                     </TableCell>
                   )}
 
-                  {/* Product Code */}
                   <TableCell
                     align='center'
                     sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
