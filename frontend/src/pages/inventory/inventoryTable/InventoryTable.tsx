@@ -267,7 +267,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
       ]
       if (payload.length) await onUpsert(payload)
 
-      // 刷新 & 清理编辑态
       pendingClearAfterRefresh.current = 'save'
       onRefresh()
 

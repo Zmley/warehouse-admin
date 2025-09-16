@@ -6,8 +6,11 @@ import {
   Autocomplete,
   ToggleButton,
   ToggleButtonGroup,
-  InputAdornment
+  InputAdornment,
+  IconButton,
+  CircularProgress
 } from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
@@ -16,6 +19,7 @@ type Mode = 'all' | 'low'
 const ROWS_PER_PAGE = 100
 const SEARCH_WIDTH = 280
 const LS_KEY = 'lowStockMaxQty:v1'
+const ALL_MODE_MAX_QTY = 9999
 
 const Product: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -34,8 +38,10 @@ const Product: React.FC = () => {
 
   const [mode, setMode] = useState<Mode>(initialMode)
   const [page, setPage] = useState<number>(initialPage)
-  const [keyword, setKeyword] = useState<string>(keywordParam)
+  const [keyword] = useState<string>(keywordParam)
   const [qty, setQty] = useState<number>(initialMaxQty)
+
+  const [boxTypeInput, setBoxTypeInput] = useState<string>(initialBoxType)
   const [boxType, setBoxType] = useState<string>(initialBoxType)
 
   const [kwOpen, setKwOpen] = useState(false)
@@ -50,7 +56,6 @@ const Product: React.FC = () => {
     boxTypes,
     fetchProductCodes,
     fetchBoxTypes,
-    fetchProducts,
     fetchLowStockProducts
   } = useProduct()
 
@@ -63,15 +68,16 @@ const Product: React.FC = () => {
       boxType?: string
     }>
   ) => {
+    const nextMode = next.mode ?? mode
     const params: Record<string, string> = {
       keyword: next.keyword ?? keyword,
       page: String((next.page ?? page) + 1),
-      mode: next.mode ?? mode
+      mode: nextMode
     }
-    if ((next.mode ?? mode) === 'low') {
+    const bt = (next.boxType ?? boxType)?.trim()
+    if (bt) params.boxType = bt
+    if (nextMode === 'low') {
       params.maxQty = String(next.maxQty ?? qty)
-      const bt = (next.boxType ?? boxType)?.trim()
-      if (bt) params.boxType = bt
     }
     setSearchParams(params)
   }
@@ -82,24 +88,16 @@ const Product: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
-  // 拉表格
   useEffect(() => {
     if (!warehouseID) return
-    if (mode === 'low') {
-      fetchLowStockProducts({
-        keyword: keyword || undefined,
-        page: page + 1,
-        limit: ROWS_PER_PAGE,
-        maxQty: qty,
-        boxType: boxType?.trim() || undefined
-      })
-    } else {
-      fetchProducts({
-        keyword: keyword || undefined,
-        page: page + 1,
-        limit: ROWS_PER_PAGE
-      })
-    }
+
+    fetchLowStockProducts({
+      keyword: keyword || undefined,
+      page: page + 1,
+      limit: ROWS_PER_PAGE,
+      maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+      boxType: boxType?.trim() || undefined
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, mode, page, qty, boxType, keyword])
 
@@ -110,8 +108,9 @@ const Product: React.FC = () => {
   }, [qty])
 
   const isLowMode = mode === 'low'
-  const disabledTone = useMemo(
+  const qtyDisabledSx = useMemo(
     () => ({
+      width: 120,
       opacity: isLowMode ? 1 : 0.45,
       pointerEvents: isLowMode ? 'auto' : 'none',
       filter: isLowMode ? 'none' : 'grayscale(50%)'
@@ -159,8 +158,25 @@ const Product: React.FC = () => {
           inputValue={keyword}
           value={null}
           onInputChange={(_, v) => {
-            setKeyword(v)
-            setKwOpen((v ?? '').trim().length >= 1)
+            const next = (v ?? '').trim()
+            setBoxTypeInput(next)
+            setBoxType(next)
+            setPage(0)
+            syncURL({
+              page: 0,
+              mode,
+              maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+              boxType: next
+            })
+            if (next === '') {
+              fetchLowStockProducts({
+                keyword: keyword || undefined,
+                page: 1,
+                limit: ROWS_PER_PAGE,
+                maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                boxType: undefined
+              })
+            }
           }}
           open={kwOpen}
           onOpen={() => (keyword.trim().length >= 1 ? setKwOpen(true) : null)}
@@ -192,17 +208,14 @@ const Product: React.FC = () => {
           value={mode}
           onChange={(_, v: Mode | null) => {
             if (!v) return
-            const switchingToAll = v === 'all'
             setMode(v)
             setPage(0)
-            const nextBoxType = switchingToAll ? '' : boxType
-            setBoxType(nextBoxType)
             syncURL({
               page: 0,
               mode: v,
               keyword,
-              maxQty: qty,
-              boxType: nextBoxType
+              maxQty: v === 'low' ? qty : ALL_MODE_MAX_QTY,
+              boxType
             })
           }}
           size='small'
@@ -224,15 +237,19 @@ const Product: React.FC = () => {
           label='≤ Qty'
           value={qty}
           onChange={e => setQty(Math.max(0, Number(e.target.value || 0)))}
-          onBlur={() => syncURL({ page: 0, mode: 'low', maxQty: qty, boxType })}
+          onBlur={() => {
+            if (isLowMode)
+              syncURL({ page: 0, mode: 'low', maxQty: qty, boxType })
+          }}
           onKeyDown={e => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && isLowMode) {
+              e.preventDefault()
               setPage(0)
               syncURL({ page: 0, mode: 'low', maxQty: qty, boxType })
             }
           }}
           inputProps={{ min: 0 }}
-          sx={{ width: 120, ...disabledTone }}
+          sx={qtyDisabledSx}
           InputProps={{
             startAdornment: (
               <InputAdornment position='start' sx={{ mr: 0.5 }}>
@@ -242,39 +259,105 @@ const Product: React.FC = () => {
           }}
         />
 
-        <Autocomplete
-          options={boxTypes}
-          freeSolo
-          inputValue={boxType}
-          value={null}
-          onInputChange={(_, v) => {
-            const next = (v ?? '').trim()
-            setBoxType(next)
-            if (isLowMode) {
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Autocomplete
+            options={boxTypes}
+            freeSolo
+            value={boxType || null}
+            inputValue={boxTypeInput}
+            openOnFocus
+            onInputChange={(_, v) => {
+              setBoxTypeInput((v ?? '').trim())
+            }}
+            onChange={(_, v) => {
+              const next = (v ?? '').trim()
+              setBoxType(next)
               setPage(0)
-              syncURL({ page: 0, mode: 'low', maxQty: qty, boxType: next })
-            }
-          }}
-          renderInput={params => (
-            <TextField
-              {...params}
-              label='Box Type'
-              size='small'
-              placeholder='e.g. 350*350*350'
-            />
-          )}
-          sx={{ width: 220, ...disabledTone }}
-          onOpen={() => fetchBoxTypes(boxType || undefined)}
-        />
+              syncURL({
+                page: 0,
+                mode,
+                maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                boxType: next
+              })
+            }}
+            renderInput={params => (
+              <TextField
+                {...params}
+                label='Box Type'
+                size='small'
+                placeholder='e.g. 350*350*350'
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const next = boxTypeInput.trim()
+                    setBoxType(next)
+                    setPage(0)
+                    syncURL({
+                      page: 0,
+                      mode,
+                      maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                      boxType: next
+                    })
+                  }
+                }}
+              />
+            )}
+            sx={{ width: 220 }}
+          />
+          <IconButton
+            size='small'
+            sx={{ ml: 1 }}
+            onClick={() => {
+              const next = boxTypeInput.trim()
+              setBoxType(next)
+              setPage(0)
+              syncURL({
+                page: 0,
+                mode,
+                maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                boxType: next
+              })
+              fetchLowStockProducts({
+                keyword: keyword || undefined,
+                page: 1,
+                limit: ROWS_PER_PAGE,
+                maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                boxType: next || undefined
+              })
+              fetchBoxTypes()
+            }}
+          >
+            <RefreshIcon fontSize='small' />
+          </IconButton>
+        </Box>
       </Box>
 
-      <ProductTable
-        products={products}
-        isLoading={isLoading}
-        page={page}
-        total={totalProductsCount}
-        onPageChange={onChangePage}
-      />
+      <Box sx={{ position: 'relative' }}>
+        <ProductTable
+          products={products}
+          isLoading={false}
+          page={page}
+          total={totalProductsCount}
+          onPageChange={onChangePage}
+        />
+
+        {isLoading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background:
+                'linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55))',
+              pointerEvents: 'none'
+            }}
+          >
+            <CircularProgress size={28} thickness={5} />
+          </Box>
+        )}
+      </Box>
 
       {error && (
         <Typography color='error' align='center' sx={{ mt: 2 }}>
