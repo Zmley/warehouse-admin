@@ -6,7 +6,9 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  TextField
+  TextField,
+  IconButton,
+  Tooltip
 } from '@mui/material'
 import Autocomplete from '@mui/material/Autocomplete'
 import { useSearchParams, useParams } from 'react-router-dom'
@@ -16,6 +18,7 @@ import InventoryTable from 'pages/inventory/inventoryTable/InventoryTable'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 type SortOrder = 'asc' | 'desc'
 type SortField = 'updatedAt' | 'binCode'
@@ -175,6 +178,7 @@ const Inventory: React.FC = () => {
         overflow: 'hidden'
       }}
     >
+      {/* Header */}
       <Box
         sx={{
           flex: '0 0 auto',
@@ -203,6 +207,7 @@ const Inventory: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Filters + Refresh */}
       <Box
         sx={{
           flex: '0 0 auto',
@@ -210,7 +215,8 @@ const Inventory: React.FC = () => {
           alignItems: 'center',
           gap: 2,
           mb: 2,
-          minWidth: 0
+          minWidth: 0,
+          flexWrap: 'wrap' // 小屏自动换行，避免挤压
         }}
       >
         <Autocomplete
@@ -255,20 +261,58 @@ const Inventory: React.FC = () => {
               onBlur={() => setOpenSuggest(false)}
             />
           )}
-          sx={{ width: 250, flexShrink: 0 }}
+          sx={{ width: 260, flexShrink: 0 }}
         />
 
-        <Select value={sortField} onChange={handleSortFieldChange} size='small'>
+        <Select
+          value={sortField}
+          onChange={handleSortFieldChange}
+          size='small'
+          sx={{ minWidth: 160 }}
+        >
           <MenuItem value='updatedAt'>Sort by Date</MenuItem>
           <MenuItem value='binCode'>Sort by Bin Code</MenuItem>
         </Select>
 
-        <Select value={sortOrder} onChange={handleSortOrderChange} size='small'>
+        <Select
+          value={sortOrder}
+          onChange={handleSortOrderChange}
+          size='small'
+          sx={{ minWidth: 140 }}
+        >
           <MenuItem value='desc'>Descending</MenuItem>
           <MenuItem value='asc'>Ascending</MenuItem>
         </Select>
+
+        <Tooltip title='Refresh'>
+          <span>
+            <IconButton
+              size='small'
+              onClick={() => void loadCurrent()}
+              disabled={isLoading}
+              sx={{
+                ml: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(37,99,235,0.08)'
+                },
+                ...(isLoading
+                  ? {
+                      animation: 'spin 1s linear infinite',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }
+                  : {})
+              }}
+            >
+              <RefreshIcon fontSize='small' />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Box>
 
+      {/* Table */}
       <Box
         sx={{
           flex: '1 1 auto',

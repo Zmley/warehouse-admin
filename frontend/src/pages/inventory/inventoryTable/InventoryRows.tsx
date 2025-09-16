@@ -227,7 +227,6 @@ const InventoryRows: React.FC<Props> = ({
                     ) : null}
                   </TableCell>
 
-                  {/* Quantity */}
                   <TableCell
                     align='center'
                     sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
@@ -397,7 +396,6 @@ const InventoryRows: React.FC<Props> = ({
               )
             })}
 
-            {/* 编辑态新增行：空/非空都渲染 */}
             {editing &&
               (newRows[binCode] || []).map((row, index) => (
                 <TableRow
