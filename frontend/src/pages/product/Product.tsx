@@ -38,7 +38,10 @@ const Product: React.FC = () => {
 
   const [mode, setMode] = useState<Mode>(initialMode)
   const [page, setPage] = useState<number>(initialPage)
-  const [keyword] = useState<string>(keywordParam)
+
+  // FIX: keyword must be writable; add setKeyword
+  const [keyword, setKeyword] = useState<string>(keywordParam)
+
   const [qty, setQty] = useState<number>(initialMaxQty)
 
   const [boxTypeInput, setBoxTypeInput] = useState<string>(initialBoxType)
@@ -90,7 +93,6 @@ const Product: React.FC = () => {
 
   useEffect(() => {
     if (!warehouseID) return
-
     fetchLowStockProducts({
       keyword: keyword || undefined,
       page: page + 1,
@@ -152,29 +154,32 @@ const Product: React.FC = () => {
           flexWrap: 'wrap'
         }}
       >
+        {/* FIX: productCode search should control keyword, not boxType */}
         <Autocomplete
           options={productCodes}
           freeSolo
           inputValue={keyword}
           value={null}
           onInputChange={(_, v) => {
-            const next = (v ?? '').trim()
-            setBoxTypeInput(next)
-            setBoxType(next)
-            setPage(0)
-            syncURL({
-              page: 0,
-              mode,
-              maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
-              boxType: next
-            })
-            if (next === '') {
+            const next = v ?? ''
+            setKeyword(next) // <-- update keyword
+            setKwOpen(next.trim().length >= 1)
+            // optional: live sync URL as you type (only when cleared)
+            if (next.trim() === '') {
+              setPage(0)
+              syncURL({
+                page: 0,
+                keyword: '',
+                mode,
+                maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+                boxType
+              })
               fetchLowStockProducts({
-                keyword: keyword || undefined,
+                keyword: undefined,
                 page: 1,
                 limit: ROWS_PER_PAGE,
                 maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
-                boxType: undefined
+                boxType: boxType?.trim() || undefined
               })
             }
           }}
@@ -335,7 +340,7 @@ const Product: React.FC = () => {
       <Box sx={{ position: 'relative' }}>
         <ProductTable
           products={products}
-          isLoading={false}
+          isLoading={isLoading}
           page={page}
           total={totalProductsCount}
           onPageChange={onChangePage}
