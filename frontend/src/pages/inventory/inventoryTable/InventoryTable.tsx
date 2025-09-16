@@ -1,4 +1,3 @@
-// InventoryTable.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Table,
@@ -29,7 +28,7 @@ interface InventoryTableProps {
   isLoading: boolean
   onPageChange: (event: unknown, newPage: number) => void
   onDelete: (inventoryID: string) => Promise<void>
-  onEditBin: (binCode: string) => void // 保留签名，不再使用
+  onEditBin: (binCode: string) => void
   onUpsert: (
     changes: {
       inventoryID?: string
@@ -89,7 +88,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   const grouped = useMemo(() => groupByBinCode(inventories), [inventories])
   const binCodes = useMemo(() => Object.keys(grouped), [grouped])
 
-  // 编辑期草稿 & UI 状态
   const [editBinCode, setEditBinCode] = useState<string | null>(null)
   const [quantityDraft, setQuantityDraft] = useState<
     Record<string, number | ''>
@@ -102,11 +100,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     Record<string, { productCode: string; quantity: number | '' }[]>
   >({})
 
-  // 哪个 bin 正在保存/删除（只用于在 Action 列显示单个圈 & 禁交互）
   const [savingBin, setSavingBin] = useState<string | null>(null)
   const pendingClearAfterRefresh = useRef<null | 'save' | 'delete'>(null)
 
-  // 刷新结束后清除 savingBin
   useEffect(() => {
     if (!isLoading && pendingClearAfterRefresh.current) {
       setSavingBin(null)
@@ -402,7 +398,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     await onDelete(inventoryID)
                     pendingClearAfterRefresh.current = 'delete'
                     onRefresh()
-                    // 删除后退出编辑，避免“空 bin 还在编辑态”
                     setEditBinCode(null)
                     setQuantityDraft({})
                     setProductDraft({})
@@ -492,7 +487,6 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         />
       </Box>
 
-      {/* —— Dialogs —— */}
       <Dialog
         open={mergeDialog.open}
         onClose={() => setMergeDialog(prev => ({ ...prev, open: false }))}
