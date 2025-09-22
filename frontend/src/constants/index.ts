@@ -8,7 +8,8 @@ export const PageValues = {
   TASK: 'task',
   INVENTORY: 'inventory',
   PRODUCT: 'product',
-  BIN: 'bin'
+  BIN: 'bin',
+  LOG: 'log'
 } as const
 
 export type PageType = (typeof PageValues)[keyof typeof PageValues]

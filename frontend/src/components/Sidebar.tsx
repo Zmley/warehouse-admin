@@ -5,6 +5,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
 import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong' // 新增图标
 import { PageType } from 'constants/index'
 
 const sidebarItems: {
@@ -15,7 +16,8 @@ const sidebarItems: {
   { label: 'Task', page: 'task', icon: <AssignmentIcon /> },
   { label: 'Inventory', page: 'inventory', icon: <InventoryIcon /> },
   { label: 'Product', page: 'product', icon: <CategoryIcon /> },
-  { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> }
+  { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> },
+  { label: 'LOG', page: 'log', icon: <ReceiptLongIcon /> } // ✅ 新增
 ]
 
 const Sidebar: React.FC = () => {

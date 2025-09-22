@@ -74,3 +74,6 @@ export const updateBin = async (
   )
   return res.data
 }
+
+export const getInventoriesByBinCode = async (binCode: string) =>
+  apiClient.get(`/inventories/${binCode}`)

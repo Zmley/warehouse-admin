@@ -12,6 +12,7 @@ import {
   GetInventoriesParams
 } from 'types/Inventory'
 import { useParams } from 'react-router-dom'
+import { getInventoriesByBinCode } from 'api/bin'
 
 export const useInventory = () => {
   const [inventories, setInventories] = useState<InventoryItem[]>([])
@@ -135,6 +136,32 @@ export const useInventory = () => {
     []
   )
 
+  const fetchInventoriesByBinCode = useCallback(async (binCode: string) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const response = await getInventoriesByBinCode(binCode)
+
+      if (response && Array.isArray(response.data.inventories)) {
+        setInventories(response.data.inventories)
+        return { success: true, inventories: response.data.inventories }
+      } else {
+        const message = response?.data.message || '❌ Invalid inventory data.'
+        setError(message)
+        return { success: false, message }
+      }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        '❌ Failed to fetch inventories by binCode.'
+      setError(message)
+      return { success: false, message }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   return {
     uploadInventoryList,
     inventories,
@@ -144,6 +171,7 @@ export const useInventory = () => {
     fetchInventories,
     removeInventory,
     editInventoriesBulk,
-    addInventory
+    addInventory,
+    fetchInventoriesByBinCode
   }
 }
