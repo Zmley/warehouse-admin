@@ -50,7 +50,6 @@
 //   return res.data
 // }
 
-// src/api/log.ts
 import apiClient from './axiosClient.ts'
 
 export interface LogItem {
