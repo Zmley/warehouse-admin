@@ -49,7 +49,7 @@ type OneRow = {
   isCompleted: boolean
   productCode: string
   totalQty: number
-  mergedState: 'Yes' | 'No' | 'Mixed'
+  mergedState: 'Yes' | 'No'
   timestamp: string
   movements: Array<{
     destCode: string | null
@@ -75,7 +75,9 @@ const MIN_BODY_ROWS = 10
 const CONTAINER_BORDER = '#e6eaf1'
 const CONTAINER_SHADOW = '0 6px 16px rgba(16,24,40,0.06)'
 const CELL_BORDER = '#edf2f7'
-const ROW_STRIPE_BG = '#fbfdff'
+
+const ROW_STRIPE_BG = '#eef4ff'
+const ROW_DEFAULT_BG = '#f8fafc'
 
 const th = {
   border: '1px solid #e6eaf0',
@@ -107,6 +109,7 @@ export default function LogsTable({
   onBinClick: (e: React.MouseEvent<HTMLElement>, binCode: string | null) => void
 }) {
   type Atom = { s: SessionLog; item: LogItem }
+
   const atoms: Atom[] = useMemo(() => {
     const out: Atom[] = []
     const list = (Array.isArray(sessions) ? sessions : []) as SessionLog[]
@@ -136,8 +139,10 @@ export default function LogsTable({
         })
       }
 
-      const key = `${s.sessionID}|${item.productCode}`
+      const key = `${s.sessionID}|${item.logID}`
+
       if (!rowMap.has(key)) {
+        const qty = Number(item.quantity) || 0
         rowMap.set(key, {
           sessionID: s.sessionID,
           accountName: s.accountName,
@@ -145,38 +150,23 @@ export default function LogsTable({
           lastUpdatedAt: s.lastUpdatedAt,
           isCompleted: s.isCompleted,
           productCode: item.productCode,
-          totalQty: 0,
+          totalQty: qty,
           mergedState: item.isMerged ? 'Yes' : 'No',
           timestamp: item.updatedAt || item.createdAt,
-          movements: []
+          movements: [
+            {
+              destCode: item.destinationBinCode ?? null,
+              qty,
+              sources: [
+                {
+                  code: item.sourceBinCode ?? 'staging-area',
+                  qty
+                }
+              ]
+            }
+          ]
         })
       }
-
-      const row = rowMap.get(key)!
-      const qty = Number(item.quantity) || 0
-      row.totalQty += qty
-
-      const ts = item.updatedAt || item.createdAt
-      if (+new Date(ts) > +new Date(row.timestamp)) row.timestamp = ts
-      if (
-        (row.mergedState === 'Yes' && !item.isMerged) ||
-        (row.mergedState === 'No' && item.isMerged)
-      ) {
-        row.mergedState = 'Mixed'
-      }
-
-      const destCode = item.destinationBinCode ?? null
-      let mv = row.movements.find(m => m.destCode === destCode)
-      if (!mv) {
-        mv = { destCode, qty: 0, sources: [] }
-        row.movements.push(mv)
-      }
-      mv.qty += qty
-
-      const srcCode = item.sourceBinCode ?? 'staging-area'
-      const exist = mv.sources.find(s => s.code === srcCode)
-      if (exist) exist.qty += qty
-      else mv.sources.push({ code: srcCode, qty })
     }
 
     for (const row of Array.from(rowMap.values())) {
@@ -192,7 +182,9 @@ export default function LogsTable({
     return list
   }, [atoms])
 
-  const visibleRowCount = blocks.reduce((acc, b) => acc + b.rows.length, 0)
+  const visibleRowCount = blocks.reduce((acc, b) => {
+    return acc + b.rows.reduce((a, r) => a + r.movements.length, 0)
+  }, 0)
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
   const containerHeight = Math.min(
     THEAD_HEIGHT + effectiveRowCount * ROW_HEIGHT,
@@ -256,12 +248,15 @@ export default function LogsTable({
                 </TableCell>
               </TableRow>
             ) : (
-              blocks.map(block => {
+              blocks.map((block, blockIdx) => {
                 const totalRows = block.rows.reduce(
                   (acc, r) => acc + r.movements.length,
                   0
                 )
                 let rendered = 0
+
+                const sessionBg =
+                  blockIdx % 2 === 0 ? ROW_DEFAULT_BG : ROW_STRIPE_BG
 
                 return block.rows.flatMap(r =>
                   r.movements.map((m, mi) => {
@@ -276,12 +271,13 @@ export default function LogsTable({
                       <TableRow
                         key={`${block.sessionID}-${r.productCode}-${
                           m.destCode || 'PENDING'
-                        }-${mi}`}
+                        }-${mi}-${r.timestamp}`}
                         sx={{
+                          backgroundColor: sessionBg,
                           '& td': { verticalAlign: 'middle' },
-                          '&:nth-of-type(even)': {
-                            backgroundColor: ROW_STRIPE_BG
-                          }
+                          ...(isFirst && {
+                            borderTop: '2px solid #94a3b8'
+                          })
                         }}
                       >
                         {isFirst && (
@@ -429,18 +425,7 @@ export default function LogsTable({
                         </TableCell>
 
                         <TableCell sx={td}>
-                          {r.mergedState === 'Mixed' ? (
-                            <Chip
-                              size='small'
-                              label='Mixed'
-                              color='warning'
-                              variant='outlined'
-                              sx={{
-                                height: 22,
-                                '& .MuiChip-label': { px: 0.5 }
-                              }}
-                            />
-                          ) : r.mergedState === 'Yes' ? (
+                          {r.mergedState === 'Yes' ? (
                             <Chip
                               size='small'
                               label='Yes'
