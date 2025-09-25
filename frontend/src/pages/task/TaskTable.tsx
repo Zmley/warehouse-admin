@@ -73,6 +73,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
     fontSize: 14
   }
 
+  const MAX_VISIBLE_BIN = 8
+  const BIN_ITEM_APPROX_WIDTH = 10
+  const SOURCEBIN_VIEW_WIDTH = MAX_VISIBLE_BIN * BIN_ITEM_APPROX_WIDTH
+  const SOURCEBIN_MIN_WIDTH = 200
+
   const handleSave = async (task: any) => {
     let sourceBin = editedSourceBinCode
 
@@ -182,6 +187,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   (s: any) => s?.bin?.binCode
                 )
 
+                const tooManyBins =
+                  (task.sourceBins || []).length > MAX_VISIBLE_BIN
+
                 return (
                   <TableRow
                     key={task.taskID}
@@ -210,7 +218,16 @@ const TaskTable: React.FC<TaskTableProps> = ({
                       {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
                     </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
+                    <TableCell
+                      align='center'
+                      sx={{
+                        ...cellStyle,
+                        minWidth: SOURCEBIN_MIN_WIDTH,
+                        width: SOURCEBIN_VIEW_WIDTH,
+                        maxWidth: SOURCEBIN_VIEW_WIDTH,
+                        overflow: 'hidden'
+                      }}
+                    >
                       {showEditableBin ? (
                         <Box
                           display='flex'
@@ -238,7 +255,8 @@ const TaskTable: React.FC<TaskTableProps> = ({
                                     : '#ccc',
                                   backgroundColor: selected
                                     ? '#e8f5e9'
-                                    : '#f5f5f5'
+                                    : '#f5f5f5',
+                                  whiteSpace: 'nowrap'
                                 }}
                               >
                                 {selected ? '✔ ' : ''}
@@ -263,27 +281,73 @@ const TaskTable: React.FC<TaskTableProps> = ({
                           </Typography>
                         </Box>
                       ) : (
-                        <Box
-                          display='flex'
-                          flexWrap='wrap'
-                          justifyContent='center'
-                          gap={1}
-                        >
-                          {displayBinCodes.map((code: string, idx: number) => (
-                            <Typography
-                              key={`${code}-${idx}`}
-                              fontSize={14}
-                              sx={{ cursor: 'pointer', color: '#3F72AF' }}
-                              onClick={() =>
-                                navigate(
-                                  `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
-                                )
-                              }
+                        <>
+                          {tooManyBins ? (
+                            <Box
+                              sx={{
+                                display: 'block',
+                                width: '100%',
+                                whiteSpace: 'nowrap',
+                                overflowX: 'auto',
+                                textAlign: 'left',
+                                px: 1,
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                                '&::-webkit-scrollbar': { display: 'none' }
+                              }}
                             >
-                              {code}
-                            </Typography>
-                          ))}
-                        </Box>
+                              <Box
+                                component='span'
+                                sx={{ display: 'inline-flex', gap: 8 }}
+                              >
+                                {displayBinCodes.map(
+                                  (code: string, idx: number) => (
+                                    <Typography
+                                      key={`${code}-${idx}`}
+                                      fontSize={14}
+                                      sx={{
+                                        cursor: 'pointer',
+                                        color: '#3F72AF',
+                                        display: 'inline-block'
+                                      }}
+                                      onClick={() =>
+                                        navigate(
+                                          `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
+                                        )
+                                      }
+                                    >
+                                      {code}
+                                    </Typography>
+                                  )
+                                )}
+                              </Box>
+                            </Box>
+                          ) : (
+                            <Box
+                              display='flex'
+                              flexWrap='wrap'
+                              justifyContent='center'
+                              gap={1}
+                            >
+                              {displayBinCodes.map(
+                                (code: string, idx: number) => (
+                                  <Typography
+                                    key={`${code}-${idx}`}
+                                    fontSize={14}
+                                    sx={{ cursor: 'pointer', color: '#3F72AF' }}
+                                    onClick={() =>
+                                      navigate(
+                                        `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
+                                      )
+                                    }
+                                  >
+                                    {code}
+                                  </Typography>
+                                )
+                              )}
+                            </Box>
+                          )}
+                        </>
                       )}
                     </TableCell>
 
