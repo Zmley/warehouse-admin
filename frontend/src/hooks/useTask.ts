@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
 import { TaskStatusFilter } from 'constants/index'
 import { useParams } from 'react-router-dom'
-import { createPickerTask, fetchFinishedTasks } from 'api/taskApi'
+import { createPickerTask } from 'api/taskApi'
 
 interface CreateTaskPayload {
   sourceBinCode: string
@@ -21,7 +21,6 @@ interface FetchParams {
 
 export type UITask = any & {
   destinationBinCode?: string
-  /** 和未完成任务保持一致：数组里放 { bin: { binCode }, quantity? } */
   sourceBins?: Array<{
     bin?: { binCode?: string }
     quantity?: number
@@ -52,7 +51,6 @@ function normalizeFinishedTasks(list: any[]): UITask[] {
   })
 }
 
-/** 判断是否“已完结” */
 function isFinishedStatus(s?: string) {
   const up = (s || '').toUpperCase()
   return up === 'COMPLETED' || up === 'CANCELED'
@@ -157,7 +155,6 @@ export const useTask = () => {
     try {
       await taskApi.cancelTask(taskID)
       alert('✅ Task canceled successfully.')
-      // await fetchTasks(params)
     } catch (error) {
       console.error('❌ Failed to cancel task:', error)
       alert('Failed to cancel task.')
