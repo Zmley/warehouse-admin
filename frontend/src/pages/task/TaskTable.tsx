@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { MouseEvent, useEffect, useState } from 'react'
 import {
   Paper,
   Table,
@@ -14,7 +14,8 @@ import {
   Box,
   Typography,
   ToggleButton,
-  Snackbar
+  Snackbar,
+  TableContainer
 } from '@mui/material'
 import dayjs from 'dayjs'
 import EditIcon from '@mui/icons-material/Edit'
@@ -24,7 +25,9 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import { useBin } from 'hooks/useBin'
 import { useTask } from 'hooks/useTask'
-import { useNavigate, useParams } from 'react-router-dom'
+
+import BinInventoryPopover from 'components/BinInventoryPopover'
+import ProductPopover from 'components/ProductPopover'
 
 interface TaskTableProps {
   tasks: any[]
@@ -34,7 +37,19 @@ interface TaskTableProps {
   onPageChange: (event: unknown, newPage: number) => void
   onCancel: (taskID: string) => void
   onRefresh: () => void
+  serverPaginated?: boolean
+  totalCount?: number
 }
+
+type BinEntry = {
+  code: string
+  qty: number
+  inventoryID: string
+}
+
+const ROW_DEFAULT_BG = '#ffffff'
+const ROW_STRIPE_BG = '#fafafa'
+const NON_PAGINATED_MAX_HEIGHT = 560
 
 const TaskTable: React.FC<TaskTableProps> = ({
   tasks,
@@ -42,7 +57,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
   page,
   rowsPerPage,
   onPageChange,
-  onRefresh
+  onRefresh,
+  serverPaginated = false,
+  totalCount
 }) => {
   const [editTaskID, setEditTaskID] = useState<string | null>(null)
   const [editedStatus, setEditedStatus] = useState('')
@@ -53,16 +70,62 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
   const { fetchBinCodes } = useBin()
   const { updateTask } = useTask()
-  const navigate = useNavigate()
-  const { warehouseID, warehouseCode } = useParams<{
-    warehouseID: string
-    warehouseCode: string
-  }>()
 
-  const paginatedTasks = tasks.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+  // 仅在点击分页按钮时触发的“本地旋转态”，避免 Tab 切换导致误触发
+  const [pageSwitching, setPageSwitching] = useState(false)
+  useEffect(() => {
+    if (!isLoading && pageSwitching) setPageSwitching(false)
+  }, [isLoading, pageSwitching])
+
+  // Bin Popover
+  const [binPopoverOpen, setBinPopoverOpen] = useState(false)
+  const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
+    null
   )
+  const [binPopoverCode, setBinPopoverCode] = useState<string | null>(null)
+
+  const openBinPopover = (
+    evt: MouseEvent<HTMLElement>,
+    code?: string | null
+  ) => {
+    if (!code) return
+    setBinPopoverAnchor(evt.currentTarget)
+    setBinPopoverCode(code)
+    setBinPopoverOpen(true)
+  }
+  const closeBinPopover = () => {
+    setBinPopoverOpen(false)
+    setBinPopoverAnchor(null)
+    setBinPopoverCode(null)
+  }
+
+  const [prodPopoverOpen, setProdPopoverOpen] = useState(false)
+  const [prodPopoverAnchor, setProdPopoverAnchor] =
+    useState<HTMLElement | null>(null)
+  const [prodCode, setProdCode] = useState<string | null>(null)
+
+  const openProductPopover = (
+    evt: MouseEvent<HTMLElement>,
+    code?: string | null
+  ) => {
+    if (!code) return
+    setProdPopoverAnchor(evt.currentTarget)
+    setProdCode(code)
+    setProdPopoverOpen(true)
+  }
+  const closeProductPopover = () => {
+    setProdPopoverOpen(false)
+    setProdPopoverAnchor(null)
+    setProdCode(null)
+  }
+
+  const visibleRows = tasks
+  const count = serverPaginated ? totalCount ?? 0 : tasks.length
+
+  const handleLocalPageChange = (e: unknown, newPage: number) => {
+    if (serverPaginated) setPageSwitching(true)
+    onPageChange(e, newPage)
+  }
 
   const cellStyle = {
     border: '1px solid #e0e0e0',
@@ -109,18 +172,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
       sourceBin = task.sourceBins[0]?.bin?.binCode || ''
     }
 
-    await updateTask(
-      task.taskID,
-      {
-        status: editedStatus,
-        sourceBinCode: sourceBin
-      },
-      {
-        warehouseID: task.warehouseID,
-        status: task.status,
-        keyword: ''
-      }
-    )
+    await updateTask(task.taskID, {
+      status: editedStatus,
+      sourceBinCode: sourceBin
+    })
 
     setEditTaskID(null)
     setEditedSourceBinCode('')
@@ -129,348 +184,383 @@ const TaskTable: React.FC<TaskTableProps> = ({
     onRefresh()
   }
 
-  return (
-    <>
-      <Paper elevation={3} sx={{ borderRadius: 3, boxShadow: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              {[
-                'Product',
-                'Qty',
-                'Source Bin',
-                'Target Bin',
-                'Created',
-                'Updated',
-                'Status',
-                'Creator',
-                'Accepter',
-                'Action'
-              ].map(label => (
-                <TableCell
-                  key={label}
-                  align='center'
-                  sx={{ ...cellStyle, fontWeight: 600, background: '#f0f4f9' }}
-                >
-                  {label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
+  const Head = (
+    <TableHead>
+      <TableRow>
+        {[
+          'Product',
+          'Qty',
+          'Source Bin',
+          'Target Bin',
+          'Created / Updated',
+          'Status',
+          'Creator',
+          'Accepter',
+          'Action'
+        ].map(label => (
+          <TableCell
+            key={label}
+            align='center'
+            sx={{ ...cellStyle, fontWeight: 600, background: '#f0f4f9' }}
+          >
+            {label}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  )
 
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={10} align='center' sx={cellStyle}>
-                  <CircularProgress size={30} />
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedTasks.map(task => {
-                const isEditing = editTaskID === task.taskID
-                const isOutOfStock =
-                  !task.sourceBins || task.sourceBins.length === 0
-                const showEditableBin =
-                  isEditing && editedStatus === 'COMPLETED'
+  const renderRow = (task: any, idx: number) => {
+    const isEditing = editTaskID === task.taskID
+    const isOutOfStock = !task.sourceBins || task.sourceBins.length === 0
+    const showEditableBin = isEditing && editedStatus === 'COMPLETED'
 
-                const binEntries: {
-                  code: string
-                  qty: number
-                  inventoryID: string
-                }[] = (task.sourceBins || []).map((s: any) => ({
-                  code: s?.bin?.binCode ?? '',
-                  qty: Number(s?.quantity ?? 0),
-                  inventoryID: String(s?.inventoryID ?? '')
-                }))
+    const binEntries: BinEntry[] = (task.sourceBins || []).map(
+      (s: any): BinEntry => ({
+        code: s?.bin?.binCode ?? '',
+        qty: Number(s?.quantity ?? 0),
+        inventoryID: String(s?.inventoryID ?? '')
+      })
+    )
 
-                const displayBinCodes = (task.sourceBins || []).map(
-                  (s: any) => s?.bin?.binCode
-                )
+    const displayBinCodes: string[] = (task.sourceBins || []).map(
+      (s: any) => s?.bin?.binCode
+    )
 
-                const tooManyBins =
-                  (task.sourceBins || []).length > MAX_VISIBLE_BIN
+    const tooManyBins = (task.sourceBins || []).length > MAX_VISIBLE_BIN
 
+    const baseRowBg = idx % 2 === 0 ? ROW_DEFAULT_BG : ROW_STRIPE_BG
+    const rowBg = isOutOfStock ? '#fff3e0' : isEditing ? '#e8f4fd' : baseRowBg
+
+    return (
+      <TableRow
+        key={task.taskID}
+        sx={{
+          ...tableRowStyle,
+          backgroundColor: rowBg,
+          transition: 'background-color 140ms ease',
+          '& td': { verticalAlign: 'middle' }
+        }}
+      >
+        <TableCell align='center' sx={cellStyle}>
+          <Typography
+            component='span'
+            fontSize={14}
+            sx={{ cursor: 'pointer', color: '#3F72AF' }}
+            onClick={e => openProductPopover(e, task.productCode)}
+            title='Click to view product'
+          >
+            {task.productCode}
+          </Typography>
+        </TableCell>
+
+        <TableCell align='center' sx={cellStyle}>
+          {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
+        </TableCell>
+
+        <TableCell
+          align='center'
+          sx={{
+            ...cellStyle,
+            minWidth: SOURCEBIN_MIN_WIDTH,
+            width: SOURCEBIN_VIEW_WIDTH,
+            maxWidth: SOURCEBIN_VIEW_WIDTH,
+            overflow: 'hidden'
+          }}
+        >
+          {showEditableBin ? (
+            <Box display='flex' justifyContent='center' flexWrap='wrap' gap={1}>
+              {binEntries.map((entry: BinEntry) => {
+                const selected = editedSourceInventoryID === entry.inventoryID
                 return (
-                  <TableRow
-                    key={task.taskID}
+                  <ToggleButton
+                    key={entry.inventoryID}
+                    value={entry.inventoryID}
+                    selected={selected}
+                    onClick={() => {
+                      setEditedSourceInventoryID(entry.inventoryID)
+                      setEditedSourceBinCode(entry.code)
+                    }}
                     sx={{
-                      ...tableRowStyle,
-                      backgroundColor: isOutOfStock
-                        ? '#fff3e0'
-                        : isEditing
-                        ? '#e8f4fd'
-                        : undefined
+                      minWidth: 100,
+                      color: selected ? 'success.main' : '#666',
+                      borderColor: selected ? 'success.main' : '#ccc',
+                      backgroundColor: selected ? '#e8f5e9' : '#f5f5f5',
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    <TableCell
-                      align='center'
-                      sx={{ ...cellStyle, cursor: 'pointer', color: '#3F72AF' }}
-                      onClick={() =>
-                        navigate(
-                          `/${warehouseID}/${warehouseCode}/product?keyword=${task.productCode}`
-                        )
-                      }
+                    {selected ? '✔ ' : ''}
+                    {entry.code} ({entry.qty})
+                  </ToggleButton>
+                )
+              })}
+            </Box>
+          ) : isOutOfStock ? (
+            <Box
+              display='flex'
+              alignItems='center'
+              justifyContent='center'
+              gap={1}
+            >
+              <ErrorOutlineIcon sx={{ color: '#d32f2f' }} fontSize='small' />
+              <Typography fontSize={14} color='#d32f2f'>
+                Out of Stock
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {tooManyBins ? (
+                <Box
+                  sx={{
+                    display: 'block',
+                    width: '100%',
+                    whiteSpace: 'nowrap',
+                    overflowX: 'auto',
+                    textAlign: 'left',
+                    px: 1,
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    '&::-webkit-scrollbar': { display: 'none' }
+                  }}
+                >
+                  <Box component='span' sx={{ display: 'inline-flex', gap: 8 }}>
+                    {displayBinCodes.map((code: string, i: number) => (
+                      <Typography
+                        key={`${code}-${i}`}
+                        fontSize={14}
+                        sx={{
+                          cursor: 'pointer',
+                          color: '#3F72AF',
+                          display: 'inline-block'
+                        }}
+                        onClick={e => openBinPopover(e, code)}
+                        title='Click to view bin inventory'
+                      >
+                        {code}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              ) : (
+                <Box
+                  display='flex'
+                  flexWrap='wrap'
+                  justifyContent='center'
+                  gap={1}
+                >
+                  {displayBinCodes.map((code: string, i: number) => (
+                    <Typography
+                      key={`${code}-${i}`}
+                      fontSize={14}
+                      sx={{ cursor: 'pointer', color: '#3F72AF' }}
+                      onClick={e => openBinPopover(e, code)}
+                      title='Click to view bin inventory'
                     >
-                      {task.productCode}
-                    </TableCell>
+                      {code}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+            </>
+          )}
+        </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          {task.destinationBinCode ? (
+            <Typography
+              fontSize={14}
+              sx={{ cursor: 'pointer', color: '#3F72AF' }}
+              onClick={e => openBinPopover(e, task.destinationBinCode)}
+              title='Click to view bin inventory'
+            >
+              {task.destinationBinCode}
+            </Typography>
+          ) : (
+            '--'
+          )}
+        </TableCell>
 
-                    <TableCell
-                      align='center'
-                      sx={{
-                        ...cellStyle,
-                        minWidth: SOURCEBIN_MIN_WIDTH,
-                        width: SOURCEBIN_VIEW_WIDTH,
-                        maxWidth: SOURCEBIN_VIEW_WIDTH,
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {showEditableBin ? (
-                        <Box
-                          display='flex'
-                          justifyContent='center'
-                          flexWrap='wrap'
-                          gap={1}
-                        >
-                          {binEntries.map(entry => {
-                            const selected =
-                              editedSourceInventoryID === entry.inventoryID
-                            return (
-                              <ToggleButton
-                                key={entry.inventoryID}
-                                value={entry.inventoryID}
-                                selected={selected}
-                                onClick={() => {
-                                  setEditedSourceInventoryID(entry.inventoryID)
-                                  setEditedSourceBinCode(entry.code)
-                                }}
-                                sx={{
-                                  minWidth: 100,
-                                  color: selected ? 'success.main' : '#666',
-                                  borderColor: selected
-                                    ? 'success.main'
-                                    : '#ccc',
-                                  backgroundColor: selected
-                                    ? '#e8f5e9'
-                                    : '#f5f5f5',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                {selected ? '✔ ' : ''}
-                                {entry.code} ({entry.qty})
-                              </ToggleButton>
-                            )
-                          })}
-                        </Box>
-                      ) : isOutOfStock ? (
-                        <Box
-                          display='flex'
-                          alignItems='center'
-                          justifyContent='center'
-                          gap={1}
-                        >
-                          <ErrorOutlineIcon
-                            sx={{ color: '#d32f2f' }}
-                            fontSize='small'
-                          />
-                          <Typography fontSize={14} color='#d32f2f'>
-                            Out of Stock
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <>
-                          {tooManyBins ? (
-                            <Box
-                              sx={{
-                                display: 'block',
-                                width: '100%',
-                                whiteSpace: 'nowrap',
-                                overflowX: 'auto',
-                                textAlign: 'left',
-                                px: 1,
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none',
-                                '&::-webkit-scrollbar': { display: 'none' }
-                              }}
-                            >
-                              <Box
-                                component='span'
-                                sx={{ display: 'inline-flex', gap: 8 }}
-                              >
-                                {displayBinCodes.map(
-                                  (code: string, idx: number) => (
-                                    <Typography
-                                      key={`${code}-${idx}`}
-                                      fontSize={14}
-                                      sx={{
-                                        cursor: 'pointer',
-                                        color: '#3F72AF',
-                                        display: 'inline-block'
-                                      }}
-                                      onClick={() =>
-                                        navigate(
-                                          `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
-                                        )
-                                      }
-                                    >
-                                      {code}
-                                    </Typography>
-                                  )
-                                )}
-                              </Box>
-                            </Box>
-                          ) : (
-                            <Box
-                              display='flex'
-                              flexWrap='wrap'
-                              justifyContent='center'
-                              gap={1}
-                            >
-                              {displayBinCodes.map(
-                                (code: string, idx: number) => (
-                                  <Typography
-                                    key={`${code}-${idx}`}
-                                    fontSize={14}
-                                    sx={{ cursor: 'pointer', color: '#3F72AF' }}
-                                    onClick={() =>
-                                      navigate(
-                                        `/${warehouseID}/${warehouseCode}/inventory?keyword=${code}`
-                                      )
-                                    }
-                                  >
-                                    {code}
-                                  </Typography>
-                                )
-                              )}
-                            </Box>
-                          )}
-                        </>
-                      )}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          <Typography variant='caption' sx={{ display: 'block' }}>
+            {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm')}
+          </Typography>
+          <Typography variant='caption' color='text.secondary'>
+            {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm')}
+          </Typography>
+        </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {task.destinationBinCode ? (
-                        <Typography
-                          fontSize={14}
-                          sx={{ cursor: 'pointer', color: '#3F72AF' }}
-                          onClick={() =>
-                            navigate(
-                              `/${warehouseID}/${warehouseCode}/inventory?keyword=${task.destinationBinCode}`
-                            )
-                          }
-                        >
-                          {task.destinationBinCode}
-                        </Typography>
-                      ) : (
-                        '--'
-                      )}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          {isEditing ? (
+            <Select
+              value={editedStatus}
+              onChange={e => setEditedStatus(e.target.value)}
+              size='small'
+              sx={{ minWidth: 120 }}
+            >
+              <MenuItem value='PENDING'>PENDING</MenuItem>
+              <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
+              <MenuItem value='CANCELED'>CANCELED</MenuItem>
+            </Select>
+          ) : (
+            task.status
+          )}
+        </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          {task.creator
+            ? `${task.creator.firstName || ''} ${
+                task.creator.lastName || ''
+              }`.trim()
+            : 'TBD'}
+        </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {dayjs(task.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          {task.accepter
+            ? `${task.accepter.firstName || ''} ${
+                task.accepter.lastName || ''
+              }`.trim()
+            : 'TBD'}
+        </TableCell>
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {isEditing ? (
-                        <Select
-                          value={editedStatus}
-                          onChange={e => setEditedStatus(e.target.value)}
-                          size='small'
-                          sx={{ minWidth: 120 }}
-                        >
-                          <MenuItem value='PENDING'>PENDING</MenuItem>
-                          <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
-                          <MenuItem value='CANCELED'>CANCELED</MenuItem>
-                        </Select>
-                      ) : (
-                        task.status
-                      )}
-                    </TableCell>
+        <TableCell align='center' sx={cellStyle}>
+          {isEditing ? (
+            <>
+              <IconButton
+                onClick={() => handleSave(task)}
+                size='small'
+                sx={{ color: 'success.main' }}
+              >
+                <SaveIcon fontSize='small' />
+              </IconButton>
+              <IconButton
+                onClick={() => {
+                  setEditTaskID(null)
+                  setEditedSourceBinCode('')
+                  setEditedSourceInventoryID('')
+                  setEditedStatus('')
+                }}
+                size='small'
+                sx={{ color: 'purple' }}
+              >
+                <CancelIcon fontSize='small' />
+              </IconButton>
+            </>
+          ) : (
+            <IconButton
+              onClick={() => {
+                if (task.status !== 'PENDING') return
+                fetchBinCodes()
+                setEditedStatus(task.status)
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {task.creator
-                        ? `${task.creator.firstName || ''} ${
-                            task.creator.lastName || ''
-                          }`.trim()
-                        : 'TBD'}
-                    </TableCell>
+                const first = (task.sourceBins || [])[0]
+                setEditedSourceBinCode(first?.bin?.binCode || '')
+                setEditedSourceInventoryID(first?.inventoryID || '')
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {task.accepter
-                        ? `${task.accepter.firstName || ''} ${
-                            task.accepter.lastName || ''
-                          }`.trim()
-                        : 'TBD'}
-                    </TableCell>
+                setEditTaskID(task.taskID)
+              }}
+              size='small'
+              sx={{ color: task.status === 'PENDING' ? '#3F72AF' : '#ccc' }}
+              disabled={task.status !== 'PENDING'}
+            >
+              <EditIcon fontSize='small' />
+            </IconButton>
+          )}
+        </TableCell>
+      </TableRow>
+    )
+  }
 
-                    <TableCell align='center' sx={cellStyle}>
-                      {isEditing ? (
-                        <>
-                          <IconButton
-                            onClick={() => handleSave(task)}
-                            size='small'
-                            sx={{ color: 'success.main' }}
-                          >
-                            <SaveIcon fontSize='small' />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => {
-                              setEditTaskID(null)
-                              setEditedSourceBinCode('')
-                              setEditedSourceInventoryID('')
-                              setEditedStatus('')
-                            }}
-                            size='small'
-                            sx={{ color: 'purple' }}
-                          >
-                            <CancelIcon fontSize='small' />
-                          </IconButton>
-                        </>
-                      ) : (
-                        <IconButton
-                          onClick={() => {
-                            if (task.status !== 'PENDING') return
-                            fetchBinCodes()
-                            setEditedStatus(task.status)
+  const overlayActive = serverPaginated && (isLoading || pageSwitching)
 
-                            const first = (task.sourceBins || [])[0]
-                            setEditedSourceBinCode(first?.bin?.binCode || '')
-                            setEditedSourceInventoryID(first?.inventoryID || '')
-
-                            setEditTaskID(task.taskID)
-                          }}
-                          size='small'
-                          sx={{
-                            color:
-                              task.status === 'PENDING' ? '#3F72AF' : '#ccc'
-                          }}
-                          disabled={task.status !== 'PENDING'}
-                        >
-                          <EditIcon fontSize='small' />
-                        </IconButton>
-                      )}
+  return (
+    <>
+      <Paper
+        elevation={3}
+        sx={{
+          borderRadius: 3,
+          boxShadow: 2,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          {serverPaginated ? (
+            <Table>
+              {Head}
+              <TableBody>
+                {visibleRows.length === 0 && !overlayActive ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align='center' sx={cellStyle}>
+                      No data
                     </TableCell>
                   </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
+                ) : (
+                  visibleRows.map((task, idx) => renderRow(task, idx))
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <TableContainer
+              sx={{
+                maxHeight: NON_PAGINATED_MAX_HEIGHT,
+                overflowY: 'auto',
+                borderTop: '1px solid #e6eaf1'
+              }}
+            >
+              <Table stickyHeader>
+                {Head}
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} align='center' sx={cellStyle}>
+                        <CircularProgress size={30} />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    visibleRows.map((task, idx) => renderRow(task, idx))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+
+          {overlayActive && (
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(15, 23, 42, 0.04)',
+                transition: 'opacity 150ms ease',
+                zIndex: 2
+              }}
+            >
+              <CircularProgress size={28} />
+            </Box>
+          )}
+        </Box>
 
         <TablePagination
           component='div'
-          count={tasks.length}
+          count={count}
           page={page}
-          onPageChange={onPageChange}
+          onPageChange={handleLocalPageChange}
           rowsPerPage={rowsPerPage}
           rowsPerPageOptions={[rowsPerPage]}
+          sx={{
+            minHeight: 36,
+            '.MuiTablePagination-toolbar': { minHeight: 36, height: 36 },
+            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows':
+              {
+                margin: 0,
+                fontSize: 12,
+                lineHeight: 1.2
+              },
+            '.MuiInputBase-root': { height: 28, fontSize: 12 },
+            '.MuiTablePagination-actions': { margin: 0 }
+          }}
         />
       </Paper>
 
@@ -480,6 +570,20 @@ const TaskTable: React.FC<TaskTableProps> = ({
         onClose={() => setSnackOpen(false)}
         message='Please select a source bin before confirming COMPLETED'
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
+
+      <BinInventoryPopover
+        open={binPopoverOpen}
+        anchorEl={binPopoverAnchor}
+        binCode={binPopoverCode}
+        onClose={closeBinPopover}
+      />
+
+      <ProductPopover
+        open={prodPopoverOpen}
+        anchorEl={prodPopoverAnchor}
+        productCode={prodCode}
+        onClose={closeProductPopover}
       />
     </>
   )

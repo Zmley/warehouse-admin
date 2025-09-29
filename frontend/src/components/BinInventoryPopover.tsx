@@ -1,12 +1,5 @@
-// src/pages/lod/BinInventoryPopover.tsx
 import { useEffect, useState } from 'react'
-import {
-  Box,
-  CircularProgress,
-  Popover,
-  Typography,
-  Divider
-} from '@mui/material'
+import { Box, CircularProgress, Popover, Typography } from '@mui/material'
 import { useInventory } from 'hooks/useInventory'
 
 type Props = {
@@ -70,29 +63,48 @@ export default function BinInventoryPopover({
       PaperProps={{
         sx: {
           p: 0,
-          borderRadius: 1.5,
-          boxShadow: '0 8px 24px rgba(2,6,23,0.12)',
-          border: '1px solid #e6eaf1',
-          overflow: 'hidden'
+          borderRadius: 2,
+          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+          border: '2px solid #3F72AF', // ✅ 蓝色描边
+          overflow: 'hidden',
+          minWidth: 440
         }
       }}
     >
-      <Box sx={{ px: 1, py: 0.75 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          px: 2,
+          py: 1,
+          bgcolor: '#f0f6ff', // ✅ 浅蓝背景
+          borderBottom: '1px solid #d0e2ff'
+        }}
+      >
         <Typography
           variant='subtitle2'
           fontWeight={700}
-          sx={{ lineHeight: 1.2, fontSize: 13 }}
+          sx={{ lineHeight: 1.3, fontSize: 14, color: '#1e3a8a' }}
+        >
+          Bin Inventory
+        </Typography>
+        <Typography
+          sx={{
+            fontSize: 12,
+            color: '#3F72AF',
+            mt: 0.2,
+            fontFamily:
+              'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+          }}
         >
           Bin: {binCode || '--'}
         </Typography>
       </Box>
 
-      <Divider />
-
+      {/* Content */}
       <Box
         sx={{
-          px: 0.75,
-          py: 0.5,
+          px: 1,
+          py: 1,
           minWidth: 420
         }}
       >
@@ -115,20 +127,21 @@ export default function BinInventoryPopover({
           <Box
             sx={{
               border: '1px solid #e6eaf1',
-              borderRadius: 1.25,
+              borderRadius: 1.5,
               overflow: 'hidden'
             }}
           >
+            {/* 表头 */}
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(160px,1fr) 56px 140px',
+                gridTemplateColumns: 'minmax(180px,1fr) 72px 160px',
                 alignItems: 'center',
-                background: '#f9fafb',
+                background: '#f9fbff',
                 borderBottom: '1px solid #e6eaf1',
-                px: 0.75,
-                py: 0.5,
-                columnGap: 0.75
+                px: 1,
+                py: 0.75,
+                columnGap: 1
               }}
             >
               <Typography
@@ -151,16 +164,17 @@ export default function BinInventoryPopover({
               </Typography>
             </Box>
 
+            {/* 数据行 */}
             {items.map((r, idx) => (
               <Box
                 key={`${r.productCode}-${idx}`}
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(160px,1fr) 56px 140px',
+                  gridTemplateColumns: 'minmax(180px,1fr) 72px 160px',
                   alignItems: 'center',
-                  px: 0.75,
-                  py: 0.25,
-                  columnGap: 0.75,
+                  px: 1,
+                  py: 0.5,
+                  columnGap: 1,
                   borderBottom: '1px solid #f1f5f9',
                   backgroundColor: idx % 2 === 1 ? '#fdfdfd' : '#fff',
                   '&:last-of-type': { borderBottom: 'none' }
@@ -176,12 +190,16 @@ export default function BinInventoryPopover({
                       'ui-monospace, Menlo, Consolas, "Courier New", monospace',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
+                    color: '#111827'
                   }}
                 >
                   {r.productCode || '--'}
                 </Typography>
-                <Typography align='center' sx={{ fontSize: 12 }}>
+                <Typography
+                  align='center'
+                  sx={{ fontSize: 12, fontWeight: 600, color: '#1f6f54' }}
+                >
                   {r.quantity}
                 </Typography>
                 <Typography

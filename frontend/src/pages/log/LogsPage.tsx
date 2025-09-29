@@ -18,7 +18,7 @@ import ClearIcon from '@mui/icons-material/Clear'
 import CachedIcon from '@mui/icons-material/Cached'
 import { useSearchParams } from 'react-router-dom'
 import { useLog } from 'hooks/useLogs'
-import BinInventoryPopover from './BinInventoryPopover'
+import BinInventoryPopover from '../../components/BinInventoryPopover'
 import LogsTable, { SessionLog } from './LogsTable'
 
 type TypeFilter = 'INVENTORY' | 'PICK_UP'

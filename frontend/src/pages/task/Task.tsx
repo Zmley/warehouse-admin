@@ -23,7 +23,7 @@ import AddIcon from '@mui/icons-material/Add'
 const ROWS_PER_PAGE = 10
 
 const Task: React.FC = () => {
-  const { tasks, isLoading, cancelTask, fetchTasks } = useTask()
+  const { tasks, isLoading, cancelTask, fetchTasks, pagination } = useTask()
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -35,20 +35,42 @@ const Task: React.FC = () => {
   const [page, setPage] = useState(0)
 
   const updateQueryParams = (
-    status: TaskStatusFilter | 'OUT_OF_STOCK',
-    keyword: string
-  ) => {
-    setSearchParams({ status, keyword })
-  }
+    s: TaskStatusFilter | 'OUT_OF_STOCK',
+    kw: string
+  ) => setSearchParams({ status: s, keyword: kw })
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage)
+    if (
+      status === TaskStatusFilter.COMPLETED ||
+      status === TaskStatusFilter.CANCELED
+    ) {
+      if (!warehouseID) return
+      fetchTasks({
+        warehouseID,
+        status,
+        keyword,
+        page: newPage + 1,
+        pageSize: ROWS_PER_PAGE
+      })
+    }
   }
 
   const handleSearchSubmit = () => {
-    if (warehouseID) {
-      setPage(0)
-      updateQueryParams(status, keyword)
+    if (!warehouseID) return
+    setPage(0)
+    updateQueryParams(status, keyword)
+    if (
+      status === TaskStatusFilter.COMPLETED ||
+      status === TaskStatusFilter.CANCELED
+    ) {
+      fetchTasks({
+        warehouseID,
+        status,
+        keyword,
+        page: 1,
+        pageSize: ROWS_PER_PAGE
+      })
     }
   }
 
@@ -57,33 +79,82 @@ const Task: React.FC = () => {
   const combinedOptions = [...binCodes, ...productCodes]
 
   useEffect(() => {
-    if (warehouseID) {
+    if (!warehouseID) return
+
+    setPage(0)
+
+    const effStatus =
+      status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status
+
+    if (
+      status === TaskStatusFilter.COMPLETED ||
+      status === TaskStatusFilter.CANCELED
+    ) {
       fetchTasks({
         warehouseID,
-        status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
+        status,
+        keyword,
+        page: 1,
+        pageSize: ROWS_PER_PAGE
+      })
+    } else {
+      fetchTasks({
+        warehouseID,
+        status: effStatus,
         keyword
       })
-      fetchBinCodes()
-      fetchProductCodes()
     }
+
+    fetchBinCodes()
+    fetchProductCodes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, keyword, warehouseID])
 
   useEffect(() => {
     if (!warehouseID) return
 
-    const interval = setInterval(() => {
-      fetchTasks({
-        warehouseID,
-        status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
-        keyword
-      })
+    const t = setInterval(() => {
+      const effStatus =
+        status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status
+
+      if (
+        status === TaskStatusFilter.COMPLETED ||
+        status === TaskStatusFilter.CANCELED
+      ) {
+        fetchTasks({
+          warehouseID,
+          status,
+          keyword,
+          page: page + 1,
+          pageSize: ROWS_PER_PAGE
+        })
+      } else {
+        fetchTasks({
+          warehouseID,
+          status: effStatus,
+          keyword
+        })
+      }
     }, 180_000)
 
-    return () => clearInterval(interval)
-  }, [warehouseID, status, keyword])
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warehouseID, status, keyword, page])
 
   const handleRefresh = () => {
-    if (warehouseID) {
+    if (!warehouseID) return
+    if (
+      status === TaskStatusFilter.COMPLETED ||
+      status === TaskStatusFilter.CANCELED
+    ) {
+      fetchTasks({
+        warehouseID,
+        status,
+        keyword,
+        page: page + 1,
+        pageSize: ROWS_PER_PAGE
+      })
+    } else {
       fetchTasks({
         warehouseID,
         status: status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
@@ -105,6 +176,19 @@ const Task: React.FC = () => {
     }
     return task.status === status
   })
+
+  const isFinished =
+    status === TaskStatusFilter.COMPLETED ||
+    status === TaskStatusFilter.CANCELED
+
+  const effectiveRowsPerPage = isFinished
+    ? ROWS_PER_PAGE
+    : Math.max(1, filteredTasks.length)
+  const effectivePage = isFinished ? page : 0
+
+  const totalCount = isFinished
+    ? pagination?.total ?? filteredTasks.length
+    : filteredTasks.length
 
   return (
     <Box sx={{ pt: 0 }}>
@@ -129,10 +213,7 @@ const Task: React.FC = () => {
               fontWeight: 'bold',
               borderColor: '#3F72AF',
               color: '#3F72AF',
-              '&:hover': {
-                borderColor: '#2d5e8c',
-                backgroundColor: '#e3f2fd'
-              }
+              '&:hover': { borderColor: '#2d5e8c', backgroundColor: '#e3f2fd' }
             }}
           >
             Create Picker Task
@@ -148,7 +229,23 @@ const Task: React.FC = () => {
       >
         <CreatePickerTask
           onSuccess={() => {
-            fetchTasks({ warehouseID: warehouseID!, status, keyword })
+            if (!warehouseID) return
+            if (isFinished) {
+              fetchTasks({
+                warehouseID,
+                status,
+                keyword,
+                page: 1,
+                pageSize: ROWS_PER_PAGE
+              })
+            } else {
+              fetchTasks({
+                warehouseID,
+                status:
+                  status === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : status,
+                keyword
+              })
+            }
             setPickerDialogOpen(false)
           }}
           onClose={() => setPickerDialogOpen(false)}
@@ -212,8 +309,8 @@ const Task: React.FC = () => {
       <TaskTable
         tasks={filteredTasks}
         isLoading={isLoading}
-        page={page}
-        rowsPerPage={ROWS_PER_PAGE}
+        page={effectivePage}
+        rowsPerPage={effectiveRowsPerPage}
         onPageChange={handleChangePage}
         onCancel={taskID =>
           cancelTask(taskID, {
@@ -224,6 +321,8 @@ const Task: React.FC = () => {
           })
         }
         onRefresh={handleRefresh}
+        serverPaginated={isFinished}
+        totalCount={totalCount}
       />
     </Box>
   )

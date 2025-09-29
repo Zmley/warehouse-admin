@@ -5,8 +5,19 @@ export const fetchTasks = async (params: {
   status?: string
   keyword?: string
 }) => {
-  const response = await apiClient.get('/tasks', { params })
-  return response.data
+  const res = await apiClient.get('/tasks', { params })
+  return res.data as { success: boolean; tasks: any[] }
+}
+
+export const fetchFinishedTasks = async (params: {
+  warehouseID: string
+  status: 'COMPLETED' | 'CANCELED'
+  page: number
+  pageSize: number
+  keyword?: string
+}) => {
+  const res = await apiClient.get('/tasks/finished', { params })
+  return res.data as { success: boolean; data: any[]; total: number }
 }
 
 export const createTask = async (payload: {

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, MouseEvent } from 'react'
 import {
   Box,
   Chip,
@@ -12,6 +12,7 @@ import {
   Typography
 } from '@mui/material'
 import dayjs from 'dayjs'
+import ProductPopover from 'components/ProductPopover'
 
 export interface LogItem {
   logID: string
@@ -108,6 +109,21 @@ export default function LogsTable({
   error?: string | null
   onBinClick: (e: React.MouseEvent<HTMLElement>, binCode: string | null) => void
 }) {
+  const [prodOpen, setProdOpen] = useState(false)
+  const [prodAnchor, setProdAnchor] = useState<HTMLElement | null>(null)
+  const [prodCode, setProdCode] = useState<string | null>(null)
+
+  const openProduct = (e: MouseEvent<HTMLElement>, code: string) => {
+    setProdAnchor(e.currentTarget)
+    setProdCode(code)
+    setProdOpen(true)
+  }
+  const closeProduct = () => {
+    setProdOpen(false)
+    setProdAnchor(null)
+    setProdCode(null)
+  }
+
   type Atom = { s: SessionLog; item: LogItem }
 
   const atoms: Atom[] = useMemo(() => {
@@ -235,19 +251,7 @@ export default function LogsTable({
           </TableHead>
 
           <TableBody>
-            {!loading && blocks.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  align='center'
-                  sx={{ height: ROW_HEIGHT * 6 }}
-                >
-                  <Typography variant='body2' color='text.secondary'>
-                    No log data found
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
+            {loading || blocks.length > 0 ? (
               blocks.map((block, blockIdx) => {
                 const totalRows = block.rows.reduce(
                   (acc, r) => acc + r.movements.length,
@@ -275,9 +279,7 @@ export default function LogsTable({
                         sx={{
                           backgroundColor: sessionBg,
                           '& td': { verticalAlign: 'middle' },
-                          ...(isFirst && {
-                            borderTop: '2px solid #94a3b8'
-                          })
+                          ...(isFirst && { borderTop: '2px solid #94a3b8' })
                         }}
                       >
                         {isFirst && (
@@ -374,12 +376,14 @@ export default function LogsTable({
                               label={r.productCode}
                               size='small'
                               variant='outlined'
+                              onClick={e => openProduct(e, r.productCode)}
                               sx={{
                                 borderColor: '#dfe7f3',
                                 background: '#f6f9ff',
                                 color: '#3a517a',
                                 '& .MuiChip-label': { px: 0.5, py: 0 },
-                                height: 22
+                                height: 22,
+                                cursor: 'pointer'
                               }}
                             />
                             <Typography
@@ -424,6 +428,7 @@ export default function LogsTable({
                           </Typography>
                         </TableCell>
 
+                        {/* Merged */}
                         <TableCell sx={td}>
                           {r.mergedState === 'Yes' ? (
                             <Chip
@@ -453,10 +458,29 @@ export default function LogsTable({
                   })
                 )
               })
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  align='center'
+                  sx={{ height: ROW_HEIGHT * 6 }}
+                >
+                  <Typography variant='body2' color='text.secondary'>
+                    No log data found
+                  </Typography>
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <ProductPopover
+        open={prodOpen}
+        anchorEl={prodAnchor}
+        productCode={prodCode}
+        onClose={closeProduct}
+      />
     </Box>
   )
 }

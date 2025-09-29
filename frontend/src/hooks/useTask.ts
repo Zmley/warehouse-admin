@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
 import { TaskStatusFilter } from 'constants/index'
 import { useParams } from 'react-router-dom'
-import { createPickerTask } from 'api/taskApi'
+import { createPickerTask, fetchFinishedTasks } from 'api/taskApi'
 
 interface CreateTaskPayload {
   sourceBinCode: string
@@ -15,6 +15,47 @@ interface FetchParams {
   warehouseID: string
   status?: string
   keyword?: string
+  page?: number
+  pageSize?: number
+}
+
+export type UITask = any & {
+  destinationBinCode?: string
+  /** 和未完成任务保持一致：数组里放 { bin: { binCode }, quantity? } */
+  sourceBins?: Array<{
+    bin?: { binCode?: string }
+    quantity?: number
+    inventoryID?: string
+  }>
+}
+
+/** 将“进行中/未完成”的任务直接原样返回（它们本来就有 sourceBins / destinationBinCode） */
+function normalizeOpenTasks(list: any[]): UITask[] {
+  return list as UITask[]
+}
+
+/** 将“已完成/已取消”的任务归一化到 UI 期望的字段 */
+function normalizeFinishedTasks(list: any[]): UITask[] {
+  return (list || []).map(t => {
+    const destCode = t?.destinationBin?.binCode
+    const srcCode = t?.sourceBin?.binCode
+    // UI 的 Source Bin 列依赖 sourceBins 数组；给已完成任务构造一个仅含来源库位的数组
+    const sourceBins = srcCode
+      ? [{ bin: { binCode: srcCode }, quantity: t?.quantity }]
+      : []
+
+    return {
+      ...t,
+      destinationBinCode: destCode,
+      sourceBins
+    } as UITask
+  })
+}
+
+/** 判断是否“已完结” */
+function isFinishedStatus(s?: string) {
+  const up = (s || '').toUpperCase()
+  return up === 'COMPLETED' || up === 'CANCELED'
 }
 
 export const useTask = () => {
@@ -24,25 +65,89 @@ export const useTask = () => {
 
   const warehouseID = useParams().warehouseID as string
 
-  const fetchTasks = useCallback(
+  const [isPaginated, setIsPaginated] = useState(false)
+  const [pagination, setPagination] = useState<{
+    page: number
+    pageSize: number
+    total: number
+  } | null>(null)
+
+  const fetchOpenTasks = useCallback(
     async ({ warehouseID, status, keyword }: FetchParams) => {
       try {
         setIsLoading(true)
+        setError(null)
 
-        const res = await taskApi.fetchTasks({
+        const up = (status || '').toUpperCase()
+        const effectiveStatus =
+          up === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : up
+
+        const resp = await taskApi.fetchTasks({
           warehouseID,
-          status,
+          status: effectiveStatus,
           keyword
         })
-        setTasks(res.tasks)
-      } catch (err) {
-        console.error('❌ Error fetching tasks:', err)
-        setError('Failed to fetch tasks')
+        setTasks(normalizeOpenTasks(resp.tasks || []))
+        setIsPaginated(false)
+        setPagination(null)
+      } catch (e: any) {
+        console.error('fetchOpenTasks failed:', e)
+        setError(e?.message || 'Failed to fetch tasks')
       } finally {
         setIsLoading(false)
       }
     },
     []
+  )
+
+  const fetchFinishedTasksPaged = useCallback(
+    async ({
+      warehouseID,
+      status,
+      keyword,
+      page = 1,
+      pageSize = 10
+    }: FetchParams) => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const up = (status || '').toUpperCase() as 'COMPLETED' | 'CANCELED'
+        const resp = await taskApi.fetchFinishedTasks({
+          warehouseID,
+          status: up,
+          page,
+          pageSize,
+          keyword
+        })
+        setTasks(normalizeFinishedTasks(resp.data || []))
+        setIsPaginated(true)
+        setPagination({ page, pageSize, total: resp.total ?? 0 })
+      } catch (e: any) {
+        console.error('fetchFinishedTasksPaged failed:', e)
+        setError(e?.message || 'Failed to fetch finished tasks')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
+  const fetchTasks = useCallback(
+    async ({ warehouseID, status, keyword, page, pageSize }: FetchParams) => {
+      const finished = isFinishedStatus(status)
+      if (finished) {
+        return fetchFinishedTasksPaged({
+          warehouseID,
+          status,
+          keyword,
+          page,
+          pageSize
+        })
+      }
+      return fetchOpenTasks({ warehouseID, status, keyword })
+    },
+    [fetchFinishedTasksPaged, fetchOpenTasks]
   )
 
   const cancelTask = async (
@@ -52,7 +157,7 @@ export const useTask = () => {
     try {
       await taskApi.cancelTask(taskID)
       alert('✅ Task canceled successfully.')
-      await fetchTasks(params)
+      // await fetchTasks(params)
     } catch (error) {
       console.error('❌ Failed to cancel task:', error)
       alert('Failed to cancel task.')
@@ -117,8 +222,8 @@ export const useTask = () => {
 
   const updateTask = async (
     taskID: string,
-    payload: { sourceBinCode?: string; status?: string },
-    params: { warehouseID: string; status?: string; keyword?: string }
+    payload: { sourceBinCode?: string; status?: string }
+    // params: { warehouseID: string; status?: string; keyword?: string }
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)
@@ -136,6 +241,10 @@ export const useTask = () => {
     fetchTasks,
     createTask,
     createPickTask,
-    updateTask
+    updateTask,
+    isPaginated,
+    pagination,
+    fetchOpenTasks,
+    fetchFinishedTasksPaged
   }
 }
