@@ -1,3 +1,4 @@
+// src/pages/task/TaskTable.tsx
 import React, { MouseEvent, useEffect, useState } from 'react'
 import {
   Paper,
@@ -14,8 +15,7 @@ import {
   Box,
   Typography,
   ToggleButton,
-  Snackbar,
-  TableContainer
+  Snackbar
 } from '@mui/material'
 import dayjs from 'dayjs'
 import EditIcon from '@mui/icons-material/Edit'
@@ -49,7 +49,6 @@ type BinEntry = {
 
 const ROW_DEFAULT_BG = '#ffffff'
 const ROW_STRIPE_BG = '#fafafa'
-const NON_PAGINATED_MAX_HEIGHT = 560
 
 const TaskTable: React.FC<TaskTableProps> = ({
   tasks,
@@ -71,13 +70,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const { fetchBinCodes } = useBin()
   const { updateTask } = useTask()
 
-  // 仅在点击分页按钮时触发的“本地旋转态”，避免 Tab 切换导致误触发
   const [pageSwitching, setPageSwitching] = useState(false)
   useEffect(() => {
     if (!isLoading && pageSwitching) setPageSwitching(false)
   }, [isLoading, pageSwitching])
 
-  // Bin Popover
   const [binPopoverOpen, setBinPopoverOpen] = useState(false)
   const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
     null
@@ -119,19 +116,22 @@ const TaskTable: React.FC<TaskTableProps> = ({
     setProdCode(null)
   }
 
-  const visibleRows = tasks
-  const count = serverPaginated ? totalCount ?? 0 : tasks.length
+  const visibleRows = serverPaginated
+    ? tasks
+    : tasks.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   const handleLocalPageChange = (e: unknown, newPage: number) => {
     if (serverPaginated) setPageSwitching(true)
     onPageChange(e, newPage)
   }
 
+  const count = serverPaginated ? totalCount ?? 0 : tasks.length
+
   const cellStyle = {
     border: '1px solid #e0e0e0',
     whiteSpace: 'nowrap' as const,
-    padding: '6px 8px',
-    height: 40,
+    padding: '3px 8px',
+    height: 10,
     verticalAlign: 'middle' as const,
     fontSize: 14
   }
@@ -471,6 +471,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
   }
 
   const overlayActive = serverPaginated && (isLoading || pageSwitching)
+  const inlineLoading = !serverPaginated && isLoading
 
   return (
     <>
@@ -484,45 +485,26 @@ const TaskTable: React.FC<TaskTableProps> = ({
         }}
       >
         <Box sx={{ position: 'relative' }}>
-          {serverPaginated ? (
-            <Table>
-              {Head}
-              <TableBody>
-                {visibleRows.length === 0 && !overlayActive ? (
-                  <TableRow>
-                    <TableCell colSpan={9} align='center' sx={cellStyle}>
-                      No data
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  visibleRows.map((task, idx) => renderRow(task, idx))
-                )}
-              </TableBody>
-            </Table>
-          ) : (
-            <TableContainer
-              sx={{
-                maxHeight: NON_PAGINATED_MAX_HEIGHT,
-                overflowY: 'auto',
-                borderTop: '1px solid #e6eaf1'
-              }}
-            >
-              <Table stickyHeader>
-                {Head}
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} align='center' sx={cellStyle}>
-                        <CircularProgress size={30} />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    visibleRows.map((task, idx) => renderRow(task, idx))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+          <Table>
+            {Head}
+            <TableBody>
+              {inlineLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} align='center' sx={cellStyle}>
+                    <CircularProgress size={28} />
+                  </TableCell>
+                </TableRow>
+              ) : visibleRows.length === 0 && !overlayActive ? (
+                <TableRow>
+                  <TableCell colSpan={9} align='center' sx={cellStyle}>
+                    No data
+                  </TableCell>
+                </TableRow>
+              ) : (
+                visibleRows.map((task, idx) => renderRow(task, idx))
+              )}
+            </TableBody>
+          </Table>
 
           {overlayActive && (
             <Box
