@@ -65,7 +65,7 @@ export default function BinInventoryPopover({
           p: 0,
           borderRadius: 2,
           boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-          border: '2px solid #3F72AF', // ✅ 蓝色描边
+          border: '2px solid #3F72AF',
           overflow: 'hidden',
           minWidth: 440
         }
@@ -76,7 +76,7 @@ export default function BinInventoryPopover({
         sx={{
           px: 2,
           py: 1,
-          bgcolor: '#f0f6ff', // ✅ 浅蓝背景
+          bgcolor: '#f0f6ff',
           borderBottom: '1px solid #d0e2ff'
         }}
       >

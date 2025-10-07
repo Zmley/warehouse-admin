@@ -7,7 +7,8 @@ import Inventory from 'pages/inventory/Inventory'
 import ManagementLayout from 'components/ManagementLayout'
 import Product from 'pages/product/Product'
 import Bin from 'pages/bin/Bin'
-import LogsPage from 'pages/log/LogsPage' // ✅ 新增页面
+import LogsPage from 'pages/log/LogsPage'
+import TransferPage from 'pages/transfer/TrasnferPage'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
@@ -23,10 +24,11 @@ const PrivateRoutes: React.FC = () => {
 
       <Route path='/:warehouseID/:warehouseCode' element={<ManagementLayout />}>
         <Route path='task' element={<Task />} />
+        <Route path='transfer' element={<TransferPage />} />
         <Route path='inventory' element={<Inventory />} />
         <Route path='product' element={<Product />} />
         <Route path='bin' element={<Bin />} />
-        <Route path='log' element={<LogsPage />} /> {/* ✅ 新增 */}
+        <Route path='log' element={<LogsPage />} />
       </Route>
     </Routes>
   )

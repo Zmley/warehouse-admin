@@ -1,4 +1,3 @@
-// src/pages/task/TaskTable.tsx
 import React, { MouseEvent, useEffect, useState } from 'react'
 import {
   Paper,
@@ -21,13 +20,14 @@ import dayjs from 'dayjs'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import { useBin } from 'hooks/useBin'
 import { useTask } from 'hooks/useTask'
 
 import BinInventoryPopover from 'components/BinInventoryPopover'
 import ProductPopover from 'components/ProductPopover'
+import OutOfStockSourceBins from './OutOfStockSourceBins'
 
 interface TaskTableProps {
   tasks: any[]
@@ -136,14 +136,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
     fontSize: 14
   }
 
-  const MAX_VISIBLE_BIN = 8
-  const BIN_ITEM_APPROX_WIDTH = 10
-  const SOURCEBIN_VIEW_WIDTH = MAX_VISIBLE_BIN * BIN_ITEM_APPROX_WIDTH
-  const SOURCEBIN_MIN_WIDTH = 200
+  const SOURCEBIN_MIN_WIDTH = 250
+  const SOURCEBIN_VIEW_WIDTH = 320
 
   const handleSave = async (task: any) => {
     let sourceBin = editedSourceBinCode
-
     const sourceBinCount = task.sourceBins?.length || 0
     const isOutOfStock = sourceBinCount === 0
 
@@ -172,10 +169,18 @@ const TaskTable: React.FC<TaskTableProps> = ({
       sourceBin = task.sourceBins[0]?.bin?.binCode || ''
     }
 
-    await updateTask(task.taskID, {
-      status: editedStatus,
-      sourceBinCode: sourceBin
-    })
+    await updateTask(
+      task.taskID,
+      {
+        status: editedStatus,
+        sourceBinCode: sourceBin
+      },
+      {
+        warehouseID: task.warehouseID,
+        status: task.status,
+        keyword: ''
+      }
+    )
 
     setEditTaskID(null)
     setEditedSourceBinCode('')
@@ -213,6 +218,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const renderRow = (task: any, idx: number) => {
     const isEditing = editTaskID === task.taskID
     const isOutOfStock = !task.sourceBins || task.sourceBins.length === 0
+    const isTransiting = Boolean(task.hasPendingTransfer)
     const showEditableBin = isEditing && editedStatus === 'COMPLETED'
 
     const binEntries: BinEntry[] = (task.sourceBins || []).map(
@@ -227,10 +233,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
       (s: any) => s?.bin?.binCode
     )
 
-    const tooManyBins = (task.sourceBins || []).length > MAX_VISIBLE_BIN
+    const tooManyBins = (task.sourceBins || []).length > 8
 
     const baseRowBg = idx % 2 === 0 ? ROW_DEFAULT_BG : ROW_STRIPE_BG
-    const rowBg = isOutOfStock ? '#fff3e0' : isEditing ? '#e8f4fd' : baseRowBg
+    const rowBg = isEditing ? '#e8f4fd' : baseRowBg
 
     return (
       <TableRow
@@ -258,6 +264,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           {task.quantity === 0 ? 'ALL' : task.quantity ?? '--'}
         </TableCell>
 
+        {/* Source Bin */}
         <TableCell
           align='center'
           sx={{
@@ -268,7 +275,30 @@ const TaskTable: React.FC<TaskTableProps> = ({
             overflow: 'hidden'
           }}
         >
-          {showEditableBin ? (
+          {/* 1) 若已有转运任务，则只显示绿色徽章 */}
+          {isTransiting ? (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 0.6,
+                py: 0.25,
+                borderRadius: 1,
+                border: '1px dashed',
+                borderColor: 'success.light',
+                background: '#ecfdf5',
+                color: '#166534',
+                fontSize: 12.5,
+                fontWeight: 800
+              }}
+              title='Transiting task created'
+            >
+              <CompareArrowsOutlinedIcon sx={{ fontSize: 16 }} />
+              (Transiting task created)
+            </Box>
+          ) : showEditableBin ? (
+            // 2) 编辑态：可选 source bin
             <Box display='flex' justifyContent='center' flexWrap='wrap' gap={1}>
               {binEntries.map((entry: BinEntry) => {
                 const selected = editedSourceInventoryID === entry.inventoryID
@@ -296,18 +326,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
               })}
             </Box>
           ) : isOutOfStock ? (
-            <Box
-              display='flex'
-              alignItems='center'
-              justifyContent='center'
-              gap={1}
-            >
-              <ErrorOutlineIcon sx={{ color: '#d32f2f' }} fontSize='small' />
-              <Typography fontSize={14} color='#d32f2f'>
-                Out of Stock
-              </Typography>
-            </Box>
+            <OutOfStockSourceBins otherInventories={task.otherInventories} />
           ) : (
+            // 4) 常规：显示可点的 bin 列表
             <>
               {tooManyBins ? (
                 <Box
@@ -365,6 +386,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           )}
         </TableCell>
 
+        {/* Target Bin */}
         <TableCell align='center' sx={cellStyle}>
           {task.destinationBinCode ? (
             <Typography
@@ -380,6 +402,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           )}
         </TableCell>
 
+        {/* Created / Updated */}
         <TableCell align='center' sx={cellStyle}>
           <Typography variant='caption' sx={{ display: 'block' }}>
             {dayjs(task.createdAt).format('YYYY-MM-DD HH:mm')}
@@ -389,6 +412,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           </Typography>
         </TableCell>
 
+        {/* Status（不再显示蓝色提示） */}
         <TableCell align='center' sx={cellStyle}>
           {isEditing ? (
             <Select
@@ -402,7 +426,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
               <MenuItem value='CANCELED'>CANCELED</MenuItem>
             </Select>
           ) : (
-            task.status
+            <Typography>{task.status}</Typography>
           )}
         </TableCell>
 
@@ -422,6 +446,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
             : 'TBD'}
         </TableCell>
 
+        {/* Action */}
         <TableCell align='center' sx={cellStyle}>
           {isEditing ? (
             <>
@@ -451,11 +476,9 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 if (task.status !== 'PENDING') return
                 fetchBinCodes()
                 setEditedStatus(task.status)
-
                 const first = (task.sourceBins || [])[0]
                 setEditedSourceBinCode(first?.bin?.binCode || '')
                 setEditedSourceInventoryID(first?.inventoryID || '')
-
                 setEditTaskID(task.taskID)
               }}
               size='small'

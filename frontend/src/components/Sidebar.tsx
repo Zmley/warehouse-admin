@@ -5,7 +5,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
 import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong' // 新增图标
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import { PageType } from 'constants/index'
 
 const sidebarItems: {
@@ -14,10 +15,11 @@ const sidebarItems: {
   icon: React.ReactNode
 }[] = [
   { label: 'Task', page: 'task', icon: <AssignmentIcon /> },
+  { label: 'Transfer', page: 'transfer', icon: <CompareArrowsIcon /> },
   { label: 'Inventory', page: 'inventory', icon: <InventoryIcon /> },
   { label: 'Product', page: 'product', icon: <CategoryIcon /> },
   { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> },
-  { label: 'LOG', page: 'log', icon: <ReceiptLongIcon /> } // ✅ 新增
+  { label: 'Log', page: 'log', icon: <ReceiptLongIcon /> }
 ]
 
 const Sidebar: React.FC = () => {
@@ -37,8 +39,8 @@ const Sidebar: React.FC = () => {
   return (
     <Box
       sx={{
-        width: 120,
-        minWidth: 120,
+        width: 110,
+        minWidth: 110,
         backgroundColor: '#2f3e4e',
         display: 'flex',
         flexDirection: 'column',

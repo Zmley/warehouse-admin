@@ -6,6 +6,7 @@ export enum BinType {
 }
 export const PageValues = {
   TASK: 'task',
+  TRANSFER: 'transfer',
   INVENTORY: 'inventory',
   PRODUCT: 'product',
   BIN: 'bin',

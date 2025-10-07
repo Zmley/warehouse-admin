@@ -219,8 +219,8 @@ export const useTask = () => {
 
   const updateTask = async (
     taskID: string,
-    payload: { sourceBinCode?: string; status?: string }
-    // params: { warehouseID: string; status?: string; keyword?: string }
+    payload: { sourceBinCode?: string; status?: string },
+    p0: { warehouseID: any; status: any; keyword: string } // params: { warehouseID: string; status?: string; keyword?: string }
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)
