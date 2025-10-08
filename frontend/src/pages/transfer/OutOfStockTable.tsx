@@ -10,8 +10,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
-  Typography
+  Typography,
+  Button
 } from '@mui/material'
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
@@ -48,6 +48,7 @@ export type TaskRow = {
   transfersCount?: number
 }
 export const keyOf = (t: TaskRow) => String(t.taskID ?? 'no_task')
+
 export type Selection = {
   sourceBinID?: string
   sourceWarehouseID?: string
@@ -55,6 +56,7 @@ export type Selection = {
   qty: number | ''
   maxQty: number
   binCode?: string
+  selectedInvIDs?: string[]
 }
 
 const COLOR_HEADER_BG = '#f5f7fb'
@@ -80,7 +82,7 @@ const COLUMN_WIDTHS = {
   target: 130,
   sources: 200,
   created: 150,
-  qtyAction: 140
+  qtyAction: 160
 }
 
 const TransitingBadge = () => (
@@ -121,7 +123,7 @@ const CreatedPill = ({ times }: { times?: number }) => (
     }}
     title='Transfer created'
   >
-    Created{times && times > 1 ? ` ×${times}` : ''}
+    pallet{times && times > 1 ? ` ×${times}` : ''}
   </Box>
 )
 
@@ -135,7 +137,62 @@ type Props = {
   onPickBin: (task: TaskRow, inv: OtherInv) => void
   onCreate: (task: TaskRow) => void
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+  onToggleInventory: (taskKey: string, inv: OtherInv) => void
 }
+
+const CheckboxSquare = ({ checked }: { checked: boolean }) => (
+  <Box
+    sx={{
+      width: 16,
+      height: 16,
+      borderRadius: 2,
+      border: '2px solid',
+      borderColor: checked ? COLOR_GREEN : '#cbd5e1',
+      background: checked ? '#f0fdf4' : 'transparent',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      boxSizing: 'border-box'
+    }}
+  >
+    {checked && (
+      <CheckIcon sx={{ fontSize: 12, color: COLOR_GREEN, lineHeight: 1 }} />
+    )}
+  </Box>
+)
+
+const SourceBinCodeBadge: React.FC<{
+  code?: string
+  onClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+}> = ({ code, onClick }) => (
+  <Box
+    component='span'
+    onClick={e => {
+      e.stopPropagation()
+      if (code) onClick(e, code)
+    }}
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 20,
+      px: 0.6,
+      borderRadius: 4,
+      fontSize: 12,
+      lineHeight: 1,
+      fontWeight: 700,
+      border: `1px solid ${BIN_BORDER}`,
+      background: BIN_BG,
+      color: BIN_TEXT,
+      cursor: code ? 'pointer' : 'default',
+      '&:hover': { boxShadow: code ? '0 0 0 2px #dbeafe inset' : 'none' }
+    }}
+    title={code ? 'Click to view bin inventory' : undefined}
+  >
+    {code || '--'}
+  </Box>
+)
 
 const OutOfStockTable: React.FC<Props> = ({
   loading,
@@ -146,7 +203,8 @@ const OutOfStockTable: React.FC<Props> = ({
   onChangeQty,
   onPickBin,
   onCreate,
-  onBinClick
+  onBinClick,
+  onToggleInventory
 }) => {
   const Head = (
     <TableHead>
@@ -202,7 +260,7 @@ const OutOfStockTable: React.FC<Props> = ({
 
     const list = task.otherInventories || []
     const tKey = keyOf(task)
-    const pickedBinID = selection[tKey]?.sourceBinID
+    const selectedIDs = selection[tKey]?.selectedInvIDs || []
 
     if (list.length === 0) {
       return (
@@ -230,7 +288,7 @@ const OutOfStockTable: React.FC<Props> = ({
             sx={{
               border: '1px dashed #e6cf9a',
               borderRadius: 2,
-              background: '#fff7e6'
+              background: 'transparent'
             }}
           >
             <Box
@@ -268,35 +326,60 @@ const OutOfStockTable: React.FC<Props> = ({
               }}
             >
               {g.bins.map(b => {
-                const isPicked = pickedBinID && pickedBinID === b.bin?.binID
-                const label = `${b.bin?.binCode || '-'}: Qty x ${b.quantity}`
+                const isSelected = selectedIDs.includes(b.inventoryID)
                 return (
                   <Box
                     key={b.inventoryID}
-                    onClick={() => onPickBin(task, b)}
+                    onClick={() => onToggleInventory(tKey, b)}
                     sx={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr auto',
+                      gridTemplateColumns: '150px 1fr 18px', // 固定三列宽度，避免抖动
                       alignItems: 'center',
-                      border: '1px solid #e2e8f0',
-                      background: '#f8fafc',
-                      borderRadius: 10,
+                      columnGap: 12,
+                      borderRadius: 8,
                       px: 1,
                       py: 0.5,
                       cursor: 'pointer',
-                      fontSize: 12,
-                      columnGap: 8,
-                      '&:hover': { boxShadow: '0 0 0 2px #ead8ad inset' },
-                      ...(isPicked
-                        ? { outline: `2px solid ${COLOR_GREEN}33` }
-                        : {})
+                      background: 'transparent',
+                      minHeight: 30,
+                      '&:hover': { background: '#f1f5f9' },
+                      transition: 'background 0.15s ease',
+                      boxSizing: 'border-box'
                     }}
-                    title='Pick as source'
+                    title='Select this item'
                   >
-                    <span>{label}</span>
-                    {isPicked && (
-                      <CheckIcon sx={{ fontSize: 16, color: COLOR_GREEN }} />
-                    )}
+                    {/* 左列：binCode 徽章（点击仅查看库存，不影响勾选） */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        minWidth: 0
+                      }}
+                    >
+                      <SourceBinCodeBadge
+                        code={b.bin?.binCode}
+                        onClick={onBinClick}
+                      />
+                    </Box>
+
+                    {/* 中列：数量信息 */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        minWidth: 0
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 12, color: '#0f172a' }}>
+                        Qty × {b.quantity}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ width: 16, height: 16, justifySelf: 'end' }}>
+                      <CheckboxSquare checked={isSelected} />
+                    </Box>
                   </Box>
                 )
               })}
@@ -310,15 +393,14 @@ const OutOfStockTable: React.FC<Props> = ({
   const renderRow = (task: TaskRow) => {
     const key = keyOf(task)
     const sel = selection[key]
-    const qtyNum = typeof sel?.qty === 'number' ? sel.qty : undefined
-    const qtyError = !!sel && sel.maxQty > 0 && !!qtyNum && qtyNum > sel.maxQty
     const created = !!task.hasPendingTransfer
-
     const code = task?.destinationBin?.binCode || task.destinationBinCode
     const whCode = task?.destinationBin?.warehouse?.warehouseCode
+    const selectedCount = sel?.selectedInvIDs?.length || 0
 
     return (
       <TableRow key={key} sx={{ background: '#fff' }}>
+        {/* Product */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.product }}
@@ -331,7 +413,6 @@ const OutOfStockTable: React.FC<Props> = ({
               gap: 0.25
             }}
           >
-            {/* 产品更突出：大一点、加粗、等宽 */}
             <Typography
               sx={{
                 fontWeight: 800,
@@ -370,17 +451,17 @@ const OutOfStockTable: React.FC<Props> = ({
               gap: 0.25
             }}
           >
-            {/* binCode：浅蓝样式（与 TransferTaskTable 一致） */}
             <Box
               onClick={e => code && onBinClick(e, code)}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
+                height: 20,
                 px: 0.6,
-                py: 0.2,
-                borderRadius: 1,
+                borderRadius: 4,
                 fontSize: 12,
-                lineHeight: 1.3,
+                lineHeight: 1,
                 fontWeight: 700,
                 border: `1px solid ${BIN_BORDER}`,
                 background: BIN_BG,
@@ -416,15 +497,9 @@ const OutOfStockTable: React.FC<Props> = ({
               ? dayjs(task.createdAt).format('YYYY-MM-DD HH:mm')
               : '--'}
           </Typography>
-          {created ? (
-            <Typography variant='caption' color='text.secondary'>
-              —
-            </Typography>
-          ) : (
-            <Typography variant='caption' color='text.secondary'>
-              Pending
-            </Typography>
-          )}
+          <Typography variant='caption' color='text.secondary'>
+            Pending
+          </Typography>
         </TableCell>
 
         <TableCell
@@ -437,35 +512,25 @@ const OutOfStockTable: React.FC<Props> = ({
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
                 gap: 0.6
               }}
             >
-              <TextField
-                size='small'
-                type='number'
-                inputProps={{ min: 1, max: sel?.maxQty ?? undefined }}
-                placeholder='Qty'
-                value={sel?.qty ?? ''}
-                onChange={e => onChangeQty(key, e.target.value)}
-                error={!!qtyError}
-                sx={{
-                  width: 80,
-                  '& .MuiInputBase-input': {
-                    textAlign: 'center',
-                    padding: '4px 6px',
-                    fontSize: 11.5
-                  }
-                }}
-              />
               <Chip
-                label='Create'
-                color='primary'
-                clickable
-                onClick={() => onCreate(task)}
-                sx={{ height: 28, fontSize: 12, fontWeight: 700 }}
+                label={`Selected: ${selectedCount}`}
+                variant='outlined'
+                sx={{ height: 24, fontSize: 12, fontWeight: 700 }}
               />
+              <Button
+                size='small'
+                variant='contained'
+                onClick={() => onCreate(task)}
+                disabled={selectedCount < 1}
+                sx={{ minWidth: 120, fontSize: 12, py: 0.5 }}
+              >
+                Create Task
+              </Button>
             </Box>
           )}
         </TableCell>

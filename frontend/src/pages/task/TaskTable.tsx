@@ -298,7 +298,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
               (Transiting task created)
             </Box>
           ) : showEditableBin ? (
-            // 2) 编辑态：可选 source bin
             <Box display='flex' justifyContent='center' flexWrap='wrap' gap={1}>
               {binEntries.map((entry: BinEntry) => {
                 const selected = editedSourceInventoryID === entry.inventoryID
@@ -328,7 +327,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
           ) : isOutOfStock ? (
             <OutOfStockSourceBins otherInventories={task.otherInventories} />
           ) : (
-            // 4) 常规：显示可点的 bin 列表
             <>
               {tooManyBins ? (
                 <Box

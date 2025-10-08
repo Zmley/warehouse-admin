@@ -1,4 +1,4 @@
-import React, { MouseEvent, useMemo } from 'react'
+import React, { MouseEvent } from 'react'
 import {
   Box,
   CircularProgress,
@@ -84,6 +84,7 @@ const BadgeBin: React.FC<{
 
 type Props = {
   transfers: any[]
+  total: number
   loading: boolean
   page: number
   onPageChange: (page: number) => void
@@ -93,10 +94,11 @@ type Props = {
   panelWidth?: number
 }
 
-const PAGE_SIZE = 12
+const SERVER_PAGE_SIZE = 10
 
 const TransferTaskTable: React.FC<Props> = ({
   transfers,
+  total,
   loading,
   page,
   onPageChange,
@@ -105,13 +107,7 @@ const TransferTaskTable: React.FC<Props> = ({
   onBinClick,
   panelWidth = 420
 }) => {
-  const total = transfers.length
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const start = page * PAGE_SIZE
-  const slice = useMemo(
-    () => transfers.slice(start, start + PAGE_SIZE),
-    [transfers, start]
-  )
+  const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
   return (
     <Box
@@ -173,12 +169,12 @@ const TransferTaskTable: React.FC<Props> = ({
           scrollbarGutter: 'stable both-edges'
         }}
       >
-        {slice.length === 0 ? (
+        {transfers.length === 0 ? (
           <Typography variant='caption' color='text.secondary'>
             No transfers for this status.
           </Typography>
         ) : (
-          slice.map((t: any) => (
+          transfers.map((t: any) => (
             <Box
               key={t.transferID}
               sx={{
@@ -213,7 +209,6 @@ const TransferTaskTable: React.FC<Props> = ({
                 </Typography>
               </Box>
 
-              {/* WH / Bin 路径（Bin 为浅蓝样式） */}
               <Box
                 sx={{
                   display: 'flex',
@@ -262,14 +257,14 @@ const TransferTaskTable: React.FC<Props> = ({
           <IconButton
             size='small'
             onClick={() => onPageChange(Math.max(0, page - 1))}
-            disabled={page === 0}
+            disabled={page === 0 || loading}
           >
             <NavigateBeforeIcon fontSize='small' />
           </IconButton>
           <IconButton
             size='small'
             onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
-            disabled={page >= totalPages - 1}
+            disabled={page >= totalPages - 1 || loading}
           >
             <NavigateNextIcon fontSize='small' />
           </IconButton>

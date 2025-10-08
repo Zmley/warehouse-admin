@@ -40,6 +40,7 @@ const TransferPage: React.FC = () => {
     isLoading: transferLoading,
     error,
     transfers,
+    total,
     getTransfers
   } = useTransfer()
 
@@ -51,9 +52,12 @@ const TransferPage: React.FC = () => {
     open: boolean
     msg: string
     sev: 'success' | 'error' | 'info' | 'warning'
-  }>({ open: false, msg: '', sev: 'success' })
+  }>({
+    open: false,
+    msg: '',
+    sev: 'success'
+  })
 
-  // Popover（基于 anchor 定位）
   const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
     null
   )
@@ -72,21 +76,21 @@ const TransferPage: React.FC = () => {
 
   const loadTasks = useCallback(() => {
     if (!warehouseID) return
-    fetchTasks({ warehouseID, status: 'OUT_OF_STOCK', keyword: '' })
+    fetchTasks({ warehouseID, status: 'OUT_OF_STOCK' })
   }, [warehouseID, fetchTasks])
 
   const loadRecent = useCallback(
-    (status: TransferStatusUI) => {
+    (status: TransferStatusUI, page0 = 0) => {
       if (!warehouseID) return
-      getTransfers({ warehouseID, status, keyword: '' })
+      getTransfers({ warehouseID, status, page: page0 + 1 })
     },
     [warehouseID, getTransfers]
   )
 
   useEffect(() => {
     loadTasks()
-    loadRecent(recentStatus)
     setRecentPage(0)
+    loadRecent(recentStatus, 0)
   }, [warehouseID, recentStatus]) // eslint-disable-line
 
   useEffect(() => {
@@ -95,7 +99,7 @@ const TransferPage: React.FC = () => {
 
   const refreshAll = () => {
     loadTasks()
-    loadRecent(recentStatus)
+    loadRecent(recentStatus, recentPage)
   }
 
   const oosTasksAll = useMemo(
@@ -122,6 +126,19 @@ const TransferPage: React.FC = () => {
     [oosTasksAll]
   )
 
+  const toggleInventory = (taskKey: string, inv: OtherInv) => {
+    setSelection(prev => {
+      const cur = prev[taskKey] || { productCode: '', qty: '', maxQty: 0 }
+      const set = new Set(cur.selectedInvIDs || [])
+      if (set.has(inv.inventoryID)) set.delete(inv.inventoryID)
+      else set.add(inv.inventoryID)
+      return {
+        ...prev,
+        [taskKey]: { ...cur, selectedInvIDs: Array.from(set) }
+      }
+    })
+  }
+
   const pickBin = (task: TaskRow, inv: OtherInv) => {
     const key = keyOf(task)
     const need = Number(task.quantity || 0)
@@ -131,6 +148,7 @@ const TransferPage: React.FC = () => {
     setSelection(prev => ({
       ...prev,
       [key]: {
+        ...prev[key],
         sourceBinID: inv.bin?.binID,
         sourceWarehouseID: inv.bin?.warehouse?.warehouseID,
         productCode: task.productCode,
@@ -157,26 +175,12 @@ const TransferPage: React.FC = () => {
   const create = async (task: TaskRow) => {
     const key = keyOf(task)
     const sel = selection[key]
-    if (!sel?.sourceBinID || !sel?.sourceWarehouseID) {
+    const selectedIDs = sel?.selectedInvIDs || []
+
+    if (selectedIDs.length < 1) {
       setSnack({
         open: true,
-        msg: 'Please choose a source bin.',
-        sev: 'warning'
-      })
-      return
-    }
-    if (!sel.qty || Number(sel.qty) < 1) {
-      setSnack({
-        open: true,
-        msg: 'Quantity must be at least 1.',
-        sev: 'warning'
-      })
-      return
-    }
-    if (sel.maxQty > 0 && Number(sel.qty) > sel.maxQty) {
-      setSnack({
-        open: true,
-        msg: `Quantity cannot exceed ${sel.maxQty}.`,
+        msg: 'Please select at least 1 item.',
         sev: 'warning'
       })
       return
@@ -194,23 +198,36 @@ const TransferPage: React.FC = () => {
       return
     }
 
-    const res = await createTransferTask({
-      taskID: task.taskID ?? null,
-      sourceWarehouseID: sel.sourceWarehouseID!,
-      destinationWarehouseID: destWarehouseID,
-      sourceBinID: sel.sourceBinID!,
-      productCode: sel.productCode,
-      quantity: Number(sel.qty)
-    })
+    const invMap = new Map(
+      (task.otherInventories || []).map(i => [i.inventoryID, i])
+    )
 
-    if (res.success) {
-      setSnack({ open: true, msg: 'Transfer created.', sev: 'success' })
-      loadTasks()
-      loadRecent(recentStatus)
-    } else {
+    try {
+      for (const id of selectedIDs) {
+        const inv = invMap.get(id)
+        if (!inv) continue
+        await createTransferTask({
+          taskID: task.taskID ?? null,
+          sourceWarehouseID: inv.bin?.warehouse?.warehouseID!,
+          destinationWarehouseID: destWarehouseID,
+          sourceBinID: inv.bin?.binID!,
+          productCode: inv.productCode || task.productCode,
+          quantity: inv.quantity
+        })
+      }
+
       setSnack({
         open: true,
-        msg: res.message || 'Create transfer failed.',
+        msg: `Created ${selectedIDs.length} task(s).`,
+        sev: 'success'
+      })
+      loadTasks()
+      loadRecent(recentStatus, recentPage)
+    } catch (e: any) {
+      setSnack({
+        open: true,
+        msg:
+          e?.response?.data?.message || e?.message || 'Create transfer failed.',
         sev: 'error'
       })
     }
@@ -289,17 +306,23 @@ const TransferPage: React.FC = () => {
             onPickBin={pickBin}
             onCreate={create}
             onBinClick={onBinClick}
+            onToggleInventory={toggleInventory}
           />
 
           <TransferTaskTable
             transfers={transfers}
+            total={total}
             loading={transferLoading}
             page={recentPage}
-            onPageChange={setRecentPage}
+            onPageChange={p => {
+              setRecentPage(p)
+              loadRecent(recentStatus, p)
+            }}
             status={recentStatus}
-            onStatusChange={(s: any) => {
+            onStatusChange={s => {
               setRecentStatus(s)
               setRecentPage(0)
+              loadRecent(s, 0)
             }}
             onBinClick={onBinClick}
             panelWidth={RECENT_PANEL_WIDTH}

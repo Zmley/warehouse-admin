@@ -207,7 +207,6 @@ const Inventory: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Filters + Refresh */}
       <Box
         sx={{
           flex: '0 0 auto',
@@ -216,7 +215,7 @@ const Inventory: React.FC = () => {
           gap: 2,
           mb: 2,
           minWidth: 0,
-          flexWrap: 'wrap' // 小屏自动换行，避免挤压
+          flexWrap: 'wrap'
         }}
       >
         <Autocomplete
@@ -312,7 +311,6 @@ const Inventory: React.FC = () => {
         </Tooltip>
       </Box>
 
-      {/* Table */}
       <Box
         sx={{
           flex: '1 1 auto',

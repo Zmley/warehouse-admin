@@ -28,17 +28,14 @@ export type UITask = any & {
   }>
 }
 
-/** 将“进行中/未完成”的任务直接原样返回（它们本来就有 sourceBins / destinationBinCode） */
 function normalizeOpenTasks(list: any[]): UITask[] {
   return list as UITask[]
 }
 
-/** 将“已完成/已取消”的任务归一化到 UI 期望的字段 */
 function normalizeFinishedTasks(list: any[]): UITask[] {
   return (list || []).map(t => {
     const destCode = t?.destinationBin?.binCode
     const srcCode = t?.sourceBin?.binCode
-    // UI 的 Source Bin 列依赖 sourceBins 数组；给已完成任务构造一个仅含来源库位的数组
     const sourceBins = srcCode
       ? [{ bin: { binCode: srcCode }, quantity: t?.quantity }]
       : []
@@ -220,7 +217,7 @@ export const useTask = () => {
   const updateTask = async (
     taskID: string,
     payload: { sourceBinCode?: string; status?: string },
-    p0: { warehouseID: any; status: any; keyword: string } // params: { warehouseID: string; status?: string; keyword?: string }
+    p0: { warehouseID: any; status: any; keyword: string }
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)

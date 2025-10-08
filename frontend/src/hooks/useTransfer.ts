@@ -57,7 +57,6 @@ export const useTransfer = () => {
         setTransfers(res.transfers || [])
         setTotal(res.total ?? 0)
         setPage(res.page ?? params.page ?? 1)
-        setPageSize(res.pageSize ?? params.pageSize ?? 10)
 
         return res
       } catch (e: any) {
@@ -71,7 +70,6 @@ export const useTransfer = () => {
           transfers: [],
           total: 0,
           page: params.page ?? 1,
-          pageSize: params.pageSize ?? 10,
           message: msg
         }
       } finally {

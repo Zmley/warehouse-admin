@@ -9,7 +9,6 @@ export const fetchUserProfile = async () => {
   const response = await apiClient.get('/me')
   return response.data || null
 }
-//////////
 
 export type WorkerName = { name: string }
 

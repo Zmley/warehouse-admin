@@ -39,7 +39,6 @@ const Product: React.FC = () => {
   const [mode, setMode] = useState<Mode>(initialMode)
   const [page, setPage] = useState<number>(initialPage)
 
-  // FIX: keyword must be writable; add setKeyword
   const [keyword, setKeyword] = useState<string>(keywordParam)
 
   const [qty, setQty] = useState<number>(initialMaxQty)
@@ -154,7 +153,6 @@ const Product: React.FC = () => {
           flexWrap: 'wrap'
         }}
       >
-        {/* FIX: productCode search should control keyword, not boxType */}
         <Autocomplete
           options={productCodes}
           freeSolo
@@ -162,9 +160,8 @@ const Product: React.FC = () => {
           value={null}
           onInputChange={(_, v) => {
             const next = v ?? ''
-            setKeyword(next) // <-- update keyword
+            setKeyword(next)
             setKwOpen(next.trim().length >= 1)
-            // optional: live sync URL as you type (only when cleared)
             if (next.trim() === '') {
               setPage(0)
               syncURL({

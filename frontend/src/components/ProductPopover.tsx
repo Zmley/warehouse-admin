@@ -41,7 +41,6 @@ export default function ProductPopover({
   const [localLoading, setLocalLoading] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
 
-  // 每次点开都强制请求
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -49,7 +48,7 @@ export default function ProductPopover({
       setLocalError(null)
       setLocalLoading(true)
       try {
-        await fetchProducts({ keyword: productCode }) // ✅ 每次都请求
+        await fetchProducts({ keyword: productCode })
         if (cancelled) return
       } catch (e: any) {
         if (cancelled) return

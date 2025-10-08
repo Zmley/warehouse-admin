@@ -25,12 +25,8 @@ export const createTransfer = async (payload: CreateTransferPayload) => {
 
 export interface FetchTransfersParams {
   warehouseID: string
-  status?: TransferStatus
-  keyword?: string
+  status?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | 'CANCELED'
   page?: number
-  pageSize?: number
-  sortField?: 'updatedAt' | 'createdAt'
-  sortOrder?: 'ASC' | 'DESC'
 }
 
 export interface FetchTransfersResponse {
@@ -38,7 +34,6 @@ export interface FetchTransfersResponse {
   transfers: any[]
   total: number
   page: number
-  pageSize: number
   message?: string
 }
 

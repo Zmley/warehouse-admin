@@ -411,7 +411,6 @@ const BinTable: React.FC<Props> = props => {
             tableLayout: 'fixed',
             width: '100%',
             color: CELL_TEXT,
-            // 表头配色（不改尺寸）
             '& .MuiTableCell-stickyHeader': {
               background: HEADER_BG,
               color: HEADER_TEXT,
@@ -420,11 +419,9 @@ const BinTable: React.FC<Props> = props => {
               boxShadow: `inset 0 -1px 0 ${HEADER_BORDER}`,
               zIndex: 2
             },
-            // 细线与配色（表体）
             '& .MuiTableBody-root .MuiTableCell-root': {
               borderColor: CELL_BORDER
             },
-            // 斑马纹与 hover
             '& .MuiTableBody-root tr:nth-of-type(even)': {
               backgroundColor: ROW_STRIPE_BG
             },
