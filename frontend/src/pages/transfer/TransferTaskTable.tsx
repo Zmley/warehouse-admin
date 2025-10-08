@@ -1,4 +1,4 @@
-import React, { MouseEvent } from 'react'
+import React, { MouseEvent, useState } from 'react'
 import {
   Box,
   CircularProgress,
@@ -13,12 +13,7 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
-
-export type TransferStatusUI =
-  | 'PENDING'
-  | 'IN_PROCESS'
-  | 'COMPLETED'
-  | 'CANCELED'
+import { TransferStatusUI } from 'constants/index'
 
 const COLOR_BORDER = '#e5e7eb'
 const COLOR_GREEN = '#166534'
@@ -92,6 +87,8 @@ type Props = {
   onStatusChange: (s: TransferStatusUI) => void
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   panelWidth?: number
+  onCancel?: (transferID: string) => Promise<any>
+  updating?: boolean
 }
 
 const SERVER_PAGE_SIZE = 10
@@ -105,9 +102,21 @@ const TransferTaskTable: React.FC<Props> = ({
   status,
   onStatusChange,
   onBinClick,
-  panelWidth = 420
+  panelWidth = 420,
+  onCancel
 }) => {
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
+  const [cancelingId, setCancelingId] = useState<string | null>(null)
+
+  const handleCancelClick = async (id: string) => {
+    if (!onCancel || cancelingId) return
+    try {
+      setCancelingId(id)
+      await onCancel(id)
+    } finally {
+      setCancelingId(null)
+    }
+  }
 
   return (
     <Box
@@ -178,6 +187,7 @@ const TransferTaskTable: React.FC<Props> = ({
             <Box
               key={t.transferID}
               sx={{
+                position: 'relative',
                 width: '100%',
                 boxSizing: 'border-box',
                 border: `1px dashed ${COLOR_GREEN}`,
@@ -189,6 +199,38 @@ const TransferTaskTable: React.FC<Props> = ({
                 background: '#f8fafc'
               }}
             >
+              {t.status === 'PENDING' && (
+                <Box
+                  onClick={() => handleCancelClick(t.transferID)}
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    px: 1,
+                    py: 0.3,
+                    border: '1.5px solid #e57373',
+                    borderRadius: '6px',
+                    color: '#c62828',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: 1,
+                    cursor:
+                      cancelingId === t.transferID ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': { backgroundColor: '#fee2e2' }
+                  }}
+                >
+                  {cancelingId === t.transferID ? (
+                    <CircularProgress
+                      size={12}
+                      sx={{ verticalAlign: 'middle' }}
+                    />
+                  ) : (
+                    'Cancel'
+                  )}
+                </Box>
+              )}
+
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                 <LocalShippingOutlinedIcon
                   sx={{ fontSize: 20, color: COLOR_GREEN }}

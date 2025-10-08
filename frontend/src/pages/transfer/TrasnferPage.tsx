@@ -27,7 +27,8 @@ import OutOfStockTable, {
   Selection,
   keyOf
 } from './OutOfStockTable'
-import TransferTaskTable, { TransferStatusUI } from './TransferTaskTable'
+import { TransferStatusUI } from 'constants/index'
+import TransferTaskTable from './TransferTaskTable'
 
 const CONTENT_HEIGHT = 'calc(100vh - 180px)'
 const RECENT_PANEL_WIDTH = 420
@@ -43,6 +44,8 @@ const TransferPage: React.FC = () => {
     total,
     getTransfers
   } = useTransfer()
+
+  const { cancel, loading: canceling, error: cancelError } = useTransfer()
 
   const [selection, setSelection] = useState<Record<string, Selection>>({})
   const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
@@ -87,20 +90,28 @@ const TransferPage: React.FC = () => {
     [warehouseID, getTransfers]
   )
 
+  const refreshAll = useCallback(
+    (opts?: { status?: TransferStatusUI; page0?: number }) => {
+      const s = opts?.status ?? recentStatus
+      const p0 = opts?.page0 ?? recentPage
+      loadTasks()
+      loadRecent(s, p0)
+    },
+    [loadTasks, loadRecent, recentStatus, recentPage]
+  )
+
   useEffect(() => {
-    loadTasks()
-    setRecentPage(0)
-    loadRecent(recentStatus, 0)
-  }, [warehouseID, recentStatus]) // eslint-disable-line
+    refreshAll({ status: recentStatus, page0: 0 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warehouseID, recentStatus])
 
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
   }, [error])
 
-  const refreshAll = () => {
-    loadTasks()
-    loadRecent(recentStatus, recentPage)
-  }
+  useEffect(() => {
+    if (cancelError) setSnack({ open: true, msg: cancelError, sev: 'error' })
+  }, [cancelError])
 
   const oosTasksAll = useMemo(
     () =>
@@ -221,8 +232,7 @@ const TransferPage: React.FC = () => {
         msg: `Created ${selectedIDs.length} task(s).`,
         sev: 'success'
       })
-      loadTasks()
-      loadRecent(recentStatus, recentPage)
+      refreshAll()
     } catch (e: any) {
       setSnack({
         open: true,
@@ -232,6 +242,19 @@ const TransferPage: React.FC = () => {
       })
     }
   }
+
+  const handleCancel = useCallback(
+    async (transferID: string) => {
+      const r = await cancel(transferID)
+      if (r?.success) {
+        setSnack({ open: true, msg: 'Canceled.', sev: 'success' })
+        refreshAll()
+      } else if (r?.message) {
+        setSnack({ open: true, msg: r.message, sev: 'error' })
+      }
+    },
+    [cancel, refreshAll]
+  )
 
   return (
     <Box
@@ -264,8 +287,8 @@ const TransferPage: React.FC = () => {
         </Typography>
         <Tooltip title='Refresh tasks & transfers'>
           <span>
-            <IconButton onClick={refreshAll} size='small'>
-              {tasksLoading || transferLoading ? (
+            <IconButton onClick={() => refreshAll()} size='small'>
+              {tasksLoading || transferLoading || canceling ? (
                 <CircularProgress size={18} />
               ) : (
                 <RefreshIcon fontSize='small' />
@@ -316,16 +339,18 @@ const TransferPage: React.FC = () => {
             page={recentPage}
             onPageChange={p => {
               setRecentPage(p)
-              loadRecent(recentStatus, p)
+              refreshAll({ status: recentStatus, page0: p })
             }}
             status={recentStatus}
             onStatusChange={s => {
               setRecentStatus(s)
               setRecentPage(0)
-              loadRecent(s, 0)
+              refreshAll({ status: s, page0: 0 })
             }}
             onBinClick={onBinClick}
             panelWidth={RECENT_PANEL_WIDTH}
+            onCancel={handleCancel}
+            updating={transferLoading || canceling}
           />
         </Box>
       </Paper>

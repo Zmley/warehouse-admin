@@ -21,3 +21,9 @@ export enum TaskStatusFilter {
   COMPLETED = 'COMPLETED',
   IN_PROCESS = 'IN_PROCESS'
 }
+
+export type TransferStatusUI =
+  | 'PENDING'
+  | 'IN_PROCESS'
+  | 'COMPLETED'
+  | 'CANCELED'

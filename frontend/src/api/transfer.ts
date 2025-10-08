@@ -41,3 +41,6 @@ export async function fetchTransfers(params: FetchTransfersParams) {
   const res = await apiClient.get('/transfers', { params })
   return res.data as FetchTransfersResponse
 }
+
+export const cancelTransfer = (transferID: string) =>
+  apiClient.post(`/transfers/${transferID}/cancel`)

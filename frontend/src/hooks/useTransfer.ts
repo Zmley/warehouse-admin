@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import {
+  cancelTransfer,
   createTransfer,
   CreateTransferPayload,
   fetchTransfers
@@ -14,6 +15,8 @@ export const useTransfer = () => {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  const [loading, setLoading] = useState(false)
 
   const createTransferTask = useCallback(
     async (payload: CreateTransferPayload) => {
@@ -79,6 +82,22 @@ export const useTransfer = () => {
     []
   )
 
+  const cancel = useCallback(async (transferID: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      await cancelTransfer(transferID)
+      return { success: true }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || err?.message || 'Cancel failed'
+      setError(msg)
+      return { success: false, message: msg }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   return {
     transfers,
     total,
@@ -92,6 +111,8 @@ export const useTransfer = () => {
     getTransfers,
 
     setPage,
-    setPageSize
+    setPageSize,
+    loading,
+    cancel
   }
 }
