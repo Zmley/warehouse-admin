@@ -13,23 +13,30 @@ import {
   Typography,
   Button
 } from '@mui/material'
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
-import CheckIcon from '@mui/icons-material/Check'
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined'
 import dayjs from 'dayjs'
 
+import SourceBins from './SourceBins'
+
 export type OtherInv = {
   inventoryID: string
-  quantity: number
   productCode?: string
+  quantity: number
   bin?: {
     binID?: string
     binCode?: string
     warehouseID?: string
     warehouse?: { warehouseID?: string; warehouseCode?: string }
+    inventories?: Array<{
+      inventoryID: string
+      productCode: string
+      quantity: number
+      binID?: string
+    }>
   }
 }
+
 export type TaskRow = {
   taskID: string | null
   productCode: string
@@ -59,10 +66,10 @@ export type Selection = {
   selectedInvIDs?: string[]
 }
 
+/** ===== UI tokens ===== */
 const COLOR_HEADER_BG = '#f5f7fb'
 const COLOR_BORDER = '#e5e7eb'
 const COLOR_GREEN = '#166534'
-
 const BIN_BG = '#f6f9ff'
 const BIN_BORDER = '#dfe7f3'
 const BIN_TEXT = '#3a517a'
@@ -76,13 +83,12 @@ const cellBase = {
   whiteSpace: 'nowrap' as const,
   height: 32
 }
-
 const COLUMN_WIDTHS = {
   product: 140,
-  target: 130,
-  sources: 200,
-  created: 150,
-  qtyAction: 160
+  target: 120,
+  sources: 320,
+  created: 140,
+  qtyAction: 150
 }
 
 const TransitingBadge = () => (
@@ -140,68 +146,12 @@ type Props = {
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
 }
 
-const CheckboxSquare = ({ checked }: { checked: boolean }) => (
-  <Box
-    sx={{
-      width: 16,
-      height: 16,
-      borderRadius: 2,
-      border: '2px solid',
-      borderColor: checked ? COLOR_GREEN : '#cbd5e1',
-      background: checked ? '#f0fdf4' : 'transparent',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      boxSizing: 'border-box'
-    }}
-  >
-    {checked && (
-      <CheckIcon sx={{ fontSize: 12, color: COLOR_GREEN, lineHeight: 1 }} />
-    )}
-  </Box>
-)
-
-const SourceBinCodeBadge: React.FC<{
-  code?: string
-  onClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
-}> = ({ code, onClick }) => (
-  <Box
-    component='span'
-    onClick={e => {
-      e.stopPropagation()
-      if (code) onClick(e, code)
-    }}
-    sx={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: 20,
-      px: 0.6,
-      borderRadius: 4,
-      fontSize: 12,
-      lineHeight: 1,
-      fontWeight: 700,
-      border: `1px solid ${BIN_BORDER}`,
-      background: BIN_BG,
-      color: BIN_TEXT,
-      cursor: code ? 'pointer' : 'default',
-      '&:hover': { boxShadow: code ? '0 0 0 2px #dbeafe inset' : 'none' }
-    }}
-    title={code ? 'Click to view bin inventory' : undefined}
-  >
-    {code || '--'}
-  </Box>
-)
-
 const OutOfStockTable: React.FC<Props> = ({
   loading,
   todayTasks,
   previousTasks,
   totalTasks,
   selection,
-  onChangeQty,
-  onPickBin,
   onCreate,
   onBinClick,
   onToggleInventory
@@ -212,9 +162,9 @@ const OutOfStockTable: React.FC<Props> = ({
         {[
           'Product / Need',
           'Target',
-          'Source Bin (other WHs)',
+          'Sources',
           'Created / Status',
-          'Qty / Action'
+          'Action'
         ].map(h => (
           <TableCell
             key={h}
@@ -225,11 +175,9 @@ const OutOfStockTable: React.FC<Props> = ({
               background: COLOR_HEADER_BG,
               ...(h === 'Product / Need' && { width: COLUMN_WIDTHS.product }),
               ...(h === 'Target' && { width: COLUMN_WIDTHS.target }),
-              ...(h === 'Source Bin (other WHs)' && {
-                minWidth: COLUMN_WIDTHS.sources
-              }),
+              ...(h === 'Sources' && { minWidth: COLUMN_WIDTHS.sources }),
               ...(h === 'Created / Status' && { width: COLUMN_WIDTHS.created }),
-              ...(h === 'Qty / Action' && { width: COLUMN_WIDTHS.qtyAction })
+              ...(h === 'Action' && { width: COLUMN_WIDTHS.qtyAction })
             }}
           >
             {h}
@@ -239,154 +187,21 @@ const OutOfStockTable: React.FC<Props> = ({
     </TableHead>
   )
 
-  const groupByWarehouse = (list: OtherInv[]) =>
-    (list || []).reduce((acc, it) => {
-      const wCode = it.bin?.warehouse?.warehouseCode || 'Unknown'
-      if (!acc[wCode])
-        acc[wCode] = { warehouseCode: wCode, bins: [] as OtherInv[] }
-      acc[wCode].bins.push(it)
-      return acc
-    }, {} as Record<string, { warehouseCode: string; bins: OtherInv[] }>)
-
-  const SourceCell: React.FC<{ task: TaskRow }> = ({ task }) => {
-    const created = !!task.hasPendingTransfer
-    if (created) {
+  const SourcesCell: React.FC<{ task: TaskRow }> = ({ task }) => {
+    if (task.hasPendingTransfer) {
       return (
         <Box display='flex' justifyContent='center'>
           <TransitingBadge />
         </Box>
       )
     }
-
-    const list = task.otherInventories || []
-    const tKey = keyOf(task)
-    const selectedIDs = selection[tKey]?.selectedInvIDs || []
-
-    if (list.length === 0) {
-      return (
-        <Box
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-          gap={0.5}
-        >
-          <ErrorOutlineIcon sx={{ color: '#d32f2f' }} fontSize='small' />
-          <Typography fontSize={12} color='#d32f2f'>
-            Out of stock
-          </Typography>
-        </Box>
-      )
-    }
-
-    const groups = groupByWarehouse(list)
-
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {Object.values(groups).map(g => (
-          <Box
-            key={g.warehouseCode}
-            sx={{
-              border: '1px dashed #e6cf9a',
-              borderRadius: 2,
-              background: 'transparent'
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                px: 0.6,
-                py: 0.35,
-                background: '#f9eac4',
-                borderBottom: '1px solid #ead8ad'
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <WarehouseOutlinedIcon
-                  sx={{ color: '#5f4d28', fontSize: 14 }}
-                />
-                <Typography
-                  sx={{ fontSize: 12, fontWeight: 800, color: '#5f4d28' }}
-                >
-                  {g.warehouseCode}
-                </Typography>
-              </Box>
-              <Typography sx={{ fontSize: 12, color: '#6b5d3a' }}>
-                Bins: {g.bins.length}
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.4,
-                p: 0.5
-              }}
-            >
-              {g.bins.map(b => {
-                const isSelected = selectedIDs.includes(b.inventoryID)
-                return (
-                  <Box
-                    key={b.inventoryID}
-                    onClick={() => onToggleInventory(tKey, b)}
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '150px 1fr 18px', // 固定三列宽度，避免抖动
-                      alignItems: 'center',
-                      columnGap: 12,
-                      borderRadius: 8,
-                      px: 1,
-                      py: 0.5,
-                      cursor: 'pointer',
-                      background: 'transparent',
-                      minHeight: 30,
-                      '&:hover': { background: '#f1f5f9' },
-                      transition: 'background 0.15s ease',
-                      boxSizing: 'border-box'
-                    }}
-                    title='Select this item'
-                  >
-                    {/* 左列：binCode 徽章（点击仅查看库存，不影响勾选） */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        minWidth: 0
-                      }}
-                    >
-                      <SourceBinCodeBadge
-                        code={b.bin?.binCode}
-                        onClick={onBinClick}
-                      />
-                    </Box>
-
-                    {/* 中列：数量信息 */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        minWidth: 0
-                      }}
-                    >
-                      <Typography sx={{ fontSize: 12, color: '#0f172a' }}>
-                        Qty × {b.quantity}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ width: 16, height: 16, justifySelf: 'end' }}>
-                      <CheckboxSquare checked={isSelected} />
-                    </Box>
-                  </Box>
-                )
-              })}
-            </Box>
-          </Box>
-        ))}
-      </Box>
+      <SourceBins
+        task={task}
+        selection={selection}
+        onBinClick={onBinClick}
+        onToggleInventory={onToggleInventory}
+      />
     )
   }
 
@@ -439,6 +254,7 @@ const OutOfStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
+        {/* Target */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.target }}
@@ -457,10 +273,10 @@ const OutOfStockTable: React.FC<Props> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: 20,
-                px: 0.6,
+                height: 18,
+                px: 0.5,
                 borderRadius: 4,
-                fontSize: 12,
+                fontSize: 11,
                 lineHeight: 1,
                 fontWeight: 700,
                 border: `1px solid ${BIN_BORDER}`,
@@ -471,7 +287,7 @@ const OutOfStockTable: React.FC<Props> = ({
                   boxShadow: code ? '0 0 0 2px #dbeafe inset' : 'none'
                 }
               }}
-              title={code ? 'Click to view bin inventory' : undefined}
+              title={code || undefined}
             >
               {code || '--'}
             </Box>
@@ -481,13 +297,19 @@ const OutOfStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
+        {/* Sources */}
         <TableCell
           align='center'
-          sx={{ ...cellBase, minWidth: COLUMN_WIDTHS.sources }}
+          sx={{
+            ...cellBase,
+            minWidth: COLUMN_WIDTHS.sources,
+            verticalAlign: 'top' // ✅ 让 SourceBins 顶对齐，不撑高整行
+          }}
         >
-          <SourceCell task={task} />
+          <SourcesCell task={task} />
         </TableCell>
 
+        {/* Created / Status */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.created }}
@@ -502,6 +324,7 @@ const OutOfStockTable: React.FC<Props> = ({
           </Typography>
         </TableCell>
 
+        {/* Action（竖排） */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}
@@ -514,22 +337,22 @@ const OutOfStockTable: React.FC<Props> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 0.6
+                gap: 0.5
               }}
             >
               <Chip
                 label={`Selected: ${selectedCount}`}
                 variant='outlined'
-                sx={{ height: 24, fontSize: 12, fontWeight: 700 }}
+                sx={{ height: 22, fontSize: 11.5, fontWeight: 700 }}
               />
               <Button
                 size='small'
                 variant='contained'
                 onClick={() => onCreate(task)}
                 disabled={selectedCount < 1}
-                sx={{ minWidth: 120, fontSize: 12, py: 0.5 }}
+                sx={{ minWidth: 112, fontSize: 12, py: 0.5 }}
               >
-                Create Task
+                Create
               </Button>
             </Box>
           )}
@@ -578,10 +401,11 @@ const OutOfStockTable: React.FC<Props> = ({
               stickyHeader
               size='small'
               sx={{
+                tableLayout: 'fixed', // ✅ 列宽固定，防止 Sources 撑爆
                 '& th, & td': { fontSize: 12, height: 32, py: 0.4, px: 0.8 }
               }}
             >
-              {Head}
+              {Head} {/* ✅ 直接渲染，不要再包 <TableHead> */}
               <TableBody>
                 {todayTasks.map(t => renderRow(t))}
                 {todayTasks.length > 0 && previousTasks.length > 0 && (

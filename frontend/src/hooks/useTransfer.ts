@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
 import {
   cancelTransfer,
-  createTransfer,
+  createTransfer as createTransferAPI,
   CreateTransferPayload,
-  fetchTransfers
+  fetchTransfers,
+  deleteTransfersByTaskID
 } from 'api/transfer'
 import type { FetchTransfersParams, FetchTransfersResponse } from 'api/transfer'
 
@@ -18,6 +19,7 @@ export const useTransfer = () => {
 
   const [loading, setLoading] = useState(false)
 
+  /** === 创建 Transfer === */
   const createTransferTask = useCallback(
     async (payload: CreateTransferPayload) => {
       try {
@@ -29,7 +31,7 @@ export const useTransfer = () => {
           taskID: payload.taskID ?? null
         }
 
-        const res = await createTransfer(body)
+        const res = await createTransferAPI(body)
         if (!res.success) {
           setError(res.message || 'Create transfer failed')
         }
@@ -46,6 +48,7 @@ export const useTransfer = () => {
     []
   )
 
+  /** === 获取 Transfers === */
   const getTransfers = useCallback(
     async (params: FetchTransfersParams): Promise<FetchTransfersResponse> => {
       try {
@@ -82,6 +85,7 @@ export const useTransfer = () => {
     []
   )
 
+  /** === 取消 Transfer === */
   const cancel = useCallback(async (transferID: string) => {
     try {
       setLoading(true)
@@ -98,6 +102,26 @@ export const useTransfer = () => {
     }
   }, [])
 
+  /** === 删除 Transfer（仅可删除 CANCELED 的） === */
+  const removeByTaskID = useCallback(
+    async (taskID: string, sourceBinID?: string) => {
+      try {
+        setLoading(true)
+        setError(null)
+        await deleteTransfersByTaskID(taskID, sourceBinID) // ✅ 可选的 sourceBinID
+        return { success: true }
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message || err?.message || 'Delete failed'
+        setError(msg)
+        return { success: false, message: msg }
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
   return {
     transfers,
     total,
@@ -106,13 +130,14 @@ export const useTransfer = () => {
 
     isLoading,
     error,
+    loading,
 
     createTransferTask,
     getTransfers,
+    cancel,
+    removeByTaskID, // ✅ 新增 delete 功能
 
     setPage,
-    setPageSize,
-    loading,
-    cancel
+    setPageSize
   }
 }

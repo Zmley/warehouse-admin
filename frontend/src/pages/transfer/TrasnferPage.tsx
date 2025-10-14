@@ -36,6 +36,8 @@ const RECENT_PANEL_WIDTH = 420
 const TransferPage: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const { tasks, isLoading: tasksLoading, fetchTasks } = useTask()
+
+  // 创建与列表
   const {
     createTransferTask,
     isLoading: transferLoading,
@@ -45,7 +47,12 @@ const TransferPage: React.FC = () => {
     getTransfers
   } = useTransfer()
 
-  const { cancel, loading: canceling, error: cancelError } = useTransfer()
+  // 删除（独立实例）
+  const {
+    removeByTaskID,
+    loading: deleting,
+    error: deleteError
+  } = useTransfer()
 
   const [selection, setSelection] = useState<Record<string, Selection>>({})
   const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
@@ -85,7 +92,12 @@ const TransferPage: React.FC = () => {
   const loadRecent = useCallback(
     (status: TransferStatusUI, page0 = 0) => {
       if (!warehouseID) return
-      getTransfers({ warehouseID, status, page: page0 + 1 })
+      getTransfers({
+        warehouseID,
+        status,
+        page: page0 + 1,
+        limit: 200 // 每页 200
+      })
     },
     [warehouseID, getTransfers]
   )
@@ -102,16 +114,15 @@ const TransferPage: React.FC = () => {
 
   useEffect(() => {
     refreshAll({ status: recentStatus, page0: 0 })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warehouseID, recentStatus])
+  }, [warehouseID, recentStatus]) // eslint-disable-line
 
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
   }, [error])
 
   useEffect(() => {
-    if (cancelError) setSnack({ open: true, msg: cancelError, sev: 'error' })
-  }, [cancelError])
+    if (deleteError) setSnack({ open: true, msg: deleteError, sev: 'error' })
+  }, [deleteError])
 
   const oosTasksAll = useMemo(
     () =>
@@ -209,17 +220,46 @@ const TransferPage: React.FC = () => {
       return
     }
 
-    const invMap = new Map(
-      (task.otherInventories || []).map(i => [i.inventoryID, i])
-    )
+    const invMap = new Map<string, OtherInv>()
+    ;(task.otherInventories || []).forEach((oi: OtherInv) => {
+      if (oi.inventoryID) {
+        invMap.set(oi.inventoryID, {
+          ...oi,
+          bin: {
+            binID: oi.bin?.binID,
+            binCode: oi.bin?.binCode,
+            warehouseID: oi.bin?.warehouseID || oi.bin?.warehouse?.warehouseID,
+            warehouse: oi.bin?.warehouse
+          }
+        })
+      }
+      ;(oi.bin?.inventories || []).forEach(
+        (x: { inventoryID: string; productCode: string; quantity: number }) => {
+          invMap.set(x.inventoryID, {
+            inventoryID: x.inventoryID,
+            productCode: x.productCode,
+            quantity: x.quantity,
+            bin: {
+              binID: oi.bin?.binID,
+              binCode: oi.bin?.binCode,
+              warehouseID:
+                oi.bin?.warehouseID || oi.bin?.warehouse?.warehouseID,
+              warehouse: oi.bin?.warehouse
+            }
+          })
+        }
+      )
+    })
 
     try {
       for (const id of selectedIDs) {
         const inv = invMap.get(id)
         if (!inv) continue
+
         await createTransferTask({
           taskID: task.taskID ?? null,
-          sourceWarehouseID: inv.bin?.warehouse?.warehouseID!,
+          sourceWarehouseID:
+            inv.bin?.warehouse?.warehouseID || inv.bin?.warehouseID!,
           destinationWarehouseID: destWarehouseID,
           sourceBinID: inv.bin?.binID!,
           productCode: inv.productCode || task.productCode,
@@ -243,17 +283,17 @@ const TransferPage: React.FC = () => {
     }
   }
 
-  const handleCancel = useCallback(
-    async (transferID: string) => {
-      const r = await cancel(transferID)
+  const handleDelete = useCallback(
+    async (taskID: string, sourceBinID?: string) => {
+      const r = await removeByTaskID(taskID, sourceBinID)
       if (r?.success) {
-        setSnack({ open: true, msg: 'Canceled.', sev: 'success' })
+        setSnack({ open: true, msg: 'Deleted.', sev: 'success' })
         refreshAll()
       } else if (r?.message) {
         setSnack({ open: true, msg: r.message, sev: 'error' })
       }
     },
-    [cancel, refreshAll]
+    [removeByTaskID, refreshAll]
   )
 
   return (
@@ -264,8 +304,10 @@ const TransferPage: React.FC = () => {
         flexDirection: 'column',
         overflow: 'hidden',
         minHeight: 0,
-        px: 1.25,
-        py: 1
+        py: 1,
+        pr: { xs: 1.75, md: 1.5 },
+        px: 0,
+        scrollbarGutter: 'stable both-edges'
       }}
     >
       <Paper
@@ -288,7 +330,7 @@ const TransferPage: React.FC = () => {
         <Tooltip title='Refresh tasks & transfers'>
           <span>
             <IconButton onClick={() => refreshAll()} size='small'>
-              {tasksLoading || transferLoading || canceling ? (
+              {tasksLoading || transferLoading || deleting ? (
                 <CircularProgress size={18} />
               ) : (
                 <RefreshIcon fontSize='small' />
@@ -349,8 +391,8 @@ const TransferPage: React.FC = () => {
             }}
             onBinClick={onBinClick}
             panelWidth={RECENT_PANEL_WIDTH}
-            onCancel={handleCancel}
-            updating={transferLoading || canceling}
+            onDelete={handleDelete}
+            updating={transferLoading || deleting}
           />
         </Box>
       </Paper>
