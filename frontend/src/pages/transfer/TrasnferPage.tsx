@@ -1,3 +1,4 @@
+// src/pages/transfer/TransferPage.tsx
 import React, {
   useCallback,
   useEffect,
@@ -37,7 +38,6 @@ const TransferPage: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
   const { tasks, isLoading: tasksLoading, fetchTasks } = useTask()
 
-  // 创建与列表
   const {
     createTransferTask,
     isLoading: transferLoading,
@@ -47,7 +47,11 @@ const TransferPage: React.FC = () => {
     getTransfers
   } = useTransfer()
 
-  // 删除（独立实例）
+  const { transfers: pendingTransfers, getTransfers: getTransfersPending } =
+    useTransfer()
+  const { transfers: inProcessTransfers, getTransfers: getTransfersInProcess } =
+    useTransfer()
+
   const {
     removeByTaskID,
     loading: deleting,
@@ -96,11 +100,22 @@ const TransferPage: React.FC = () => {
         warehouseID,
         status,
         page: page0 + 1,
-        limit: 200 // 每页 200
+        limit: 200
       })
     },
     [warehouseID, getTransfers]
   )
+
+  const loadBlocked = useCallback(() => {
+    if (!warehouseID) return
+    getTransfersPending({ warehouseID, status: 'PENDING', page: 1, limit: 200 })
+    getTransfersInProcess({
+      warehouseID,
+      status: 'IN_PROCESS',
+      page: 1,
+      limit: 200
+    })
+  }, [warehouseID, getTransfersPending, getTransfersInProcess])
 
   const refreshAll = useCallback(
     (opts?: { status?: TransferStatusUI; page0?: number }) => {
@@ -108,13 +123,14 @@ const TransferPage: React.FC = () => {
       const p0 = opts?.page0 ?? recentPage
       loadTasks()
       loadRecent(s, p0)
+      loadBlocked()
     },
-    [loadTasks, loadRecent, recentStatus, recentPage]
+    [loadTasks, loadRecent, loadBlocked, recentStatus, recentPage]
   )
 
   useEffect(() => {
     refreshAll({ status: recentStatus, page0: 0 })
-  }, [warehouseID, recentStatus]) // eslint-disable-line
+  }, [warehouseID, recentStatus])
 
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
@@ -148,6 +164,16 @@ const TransferPage: React.FC = () => {
     [oosTasksAll]
   )
 
+  const blockedSourceBinCodes = useMemo(
+    () =>
+      new Set(
+        [...(pendingTransfers || []), ...(inProcessTransfers || [])]
+          .map((t: any) => t?.sourceBin?.binCode)
+          .filter(Boolean)
+      ),
+    [pendingTransfers, inProcessTransfers]
+  )
+
   const toggleInventory = (taskKey: string, inv: OtherInv) => {
     setSelection(prev => {
       const cur = prev[taskKey] || { productCode: '', qty: '', maxQty: 0 }
@@ -166,7 +192,6 @@ const TransferPage: React.FC = () => {
     const need = Number(task.quantity || 0)
     const avail = Math.max(0, Number(inv.quantity || 0))
     const initQty = need === 0 ? avail : Math.min(need, avail)
-
     setSelection(prev => ({
       ...prev,
       [key]: {
@@ -251,11 +276,24 @@ const TransferPage: React.FC = () => {
       )
     })
 
+    for (const id of selectedIDs) {
+      const inv = invMap.get(id)
+      if (!inv) continue
+      const code = inv.bin?.binCode
+      if (code && blockedSourceBinCodes.has(code)) {
+        setSnack({
+          open: true,
+          msg: `Bin ${code} already has a transfer task in progress.`,
+          sev: 'warning'
+        })
+        return
+      }
+    }
+
     try {
       for (const id of selectedIDs) {
         const inv = invMap.get(id)
         if (!inv) continue
-
         await createTransferTask({
           taskID: task.taskID ?? null,
           sourceWarehouseID:
@@ -266,7 +304,6 @@ const TransferPage: React.FC = () => {
           quantity: inv.quantity
         })
       }
-
       setSnack({
         open: true,
         msg: `Created ${selectedIDs.length} task(s).`,
@@ -372,6 +409,7 @@ const TransferPage: React.FC = () => {
             onCreate={create}
             onBinClick={onBinClick}
             onToggleInventory={toggleInventory}
+            blockedBinCodes={blockedSourceBinCodes}
           />
 
           <TransferTaskTable

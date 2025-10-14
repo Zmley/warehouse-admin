@@ -19,21 +19,29 @@ const C_ITEM_BG = '#F9FAFB'
 
 const R_SM = 3
 
-const RoundToggle = ({ checked }: { checked: boolean }) => (
+const RoundToggle = ({
+  checked,
+  disabled = false
+}: {
+  checked: boolean
+  disabled?: boolean
+}) => (
   <Box
     sx={{
       width: 18,
       height: 18,
       borderRadius: '50%',
-      border: `1.6px solid ${checked ? C_OK : '#CBD5E1'}`,
-      background: checked ? '#DCFCE7' : '#FFFFFF',
+      border: `1.6px solid ${
+        disabled ? '#E2E8F0' : checked ? C_OK : '#CBD5E1'
+      }`,
+      background: disabled ? '#F3F4F6' : checked ? '#DCFCE7' : '#FFFFFF',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       transition: 'all .15s ease'
     }}
   >
-    {checked && <CheckIcon sx={{ fontSize: 12, color: C_OK }} />}
+    {!disabled && checked && <CheckIcon sx={{ fontSize: 12, color: C_OK }} />}
   </Box>
 )
 
@@ -63,7 +71,8 @@ const BinBadge = ({
       color: '#243B53',
       cursor: code ? 'pointer' : 'default',
       boxShadow: '0 1px 0 rgba(0,0,0,.03)',
-      '&:hover': { filter: 'brightness(0.98)' }
+      '&:hover': { filter: 'brightness(0.98)' },
+      whiteSpace: 'nowrap'
     }}
   >
     {code || '--'}
@@ -121,13 +130,15 @@ export type SourceBinsProps = {
   selection: Record<string, Selection>
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
+  blockedBinCodes: Set<string>
 }
 
 const SourceBins: React.FC<SourceBinsProps> = ({
   task,
   selection,
   onBinClick,
-  onToggleInventory
+  onToggleInventory,
+  blockedBinCodes
 }) => {
   const tKey = keyOf(task)
   const list = task.otherInventories || []
@@ -139,11 +150,14 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   if (list.length === 0) {
     return (
       <Box
-        display='flex'
-        alignItems='center'
-        justifyContent='center'
-        gap={0.5}
-        my={0.5}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 0.5,
+          height: '100%',
+          minHeight: 28
+        }}
       >
         <ErrorOutlineIcon sx={{ color: C_DANGER }} fontSize='small' />
         <Typography fontSize={12} color={C_DANGER}>
@@ -185,8 +199,14 @@ const SourceBins: React.FC<SourceBinsProps> = ({
       warehouseID?: string
       warehouseCode: string
     },
-    items: Array<{ inventoryID: string; productCode: string; quantity: number }>
+    items: Array<{
+      inventoryID: string
+      productCode: string
+      quantity: number
+    }>,
+    disabled: boolean
   ) => {
+    if (disabled) return
     const total = items.length
     const picked = items.reduce(
       (n, it) => n + (selectedIDs.has(it.inventoryID) ? 1 : 0),
@@ -271,15 +291,20 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                 0
               )
               const allSelected = total > 0 && selectedCount === total
+              const blocked = !!(
+                bin.binCode && blockedBinCodes.has(bin.binCode)
+              )
 
               return (
                 <Box
                   key={bin.binID || bin.binCode}
+                  aria-disabled={blocked}
                   sx={{
-                    border: `1px dashed ${C_BORDER}`,
+                    border: `1px dashed ${blocked ? '#E5E7EB' : C_BORDER}`,
                     borderRadius: R_SM,
-                    background: '#FFFFFF',
-                    overflow: 'hidden'
+                    background: blocked ? '#F8FAFC' : '#FFFFFF',
+                    overflow: 'hidden',
+                    opacity: blocked ? 0.8 : 1
                   }}
                 >
                   <Box
@@ -289,14 +314,35 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       alignItems: 'center',
                       px: 0.75,
                       py: 0.5,
-                      background: C_BIN_HEAD_BG,
+                      background: blocked ? '#F3F4F6' : C_BIN_HEAD_BG,
                       borderBottom: `1px solid ${C_BORDER}`
                     }}
                   >
                     <Box />
-                    <Box sx={{ justifySelf: 'center' }}>
+                    <Box
+                      sx={{
+                        justifySelf: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        minWidth: 0
+                      }}
+                    >
                       <BinBadge code={bin.binCode} onClick={onBinClick} />
+                      {blocked && (
+                        <Typography
+                          sx={{
+                            fontSize: 10,
+                            color: C_DANGER,
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          In transfer
+                        </Typography>
+                      )}
                     </Box>
+
                     <Box
                       onClick={e => {
                         e.stopPropagation()
@@ -307,29 +353,37 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                             warehouseID: bin.warehouseID,
                             warehouseCode: g.warehouseCode
                           },
-                          items
+                          items,
+                          blocked
                         )
                       }}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
-                        cursor: 'pointer',
-                        justifySelf: 'end'
+                        justifySelf: 'end',
+                        cursor: blocked ? 'not-allowed' : 'pointer',
+                        color: blocked ? '#9CA3AF' : undefined
                       }}
-                      aria-label={
-                        allSelected
-                          ? 'Unselect all in bin'
-                          : 'Select all in bin'
+                      aria-disabled={blocked}
+                      title={
+                        blocked
+                          ? 'This bin is in transfer'
+                          : allSelected
+                          ? 'Unselect all'
+                          : 'Select all'
                       }
-                      title={allSelected ? 'Unselect all' : 'Select all'}
                     >
                       <Typography
-                        sx={{ fontSize: 11, fontWeight: 700, color: C_MUTED }}
+                        sx={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: blocked ? '#9CA3AF' : C_MUTED
+                        }}
                       >
                         {selectedCount}/{total}
                       </Typography>
-                      <RoundToggle checked={allSelected} />
+                      <RoundToggle checked={allSelected} disabled={blocked} />
                     </Box>
                   </Box>
 
@@ -339,33 +393,41 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       gridTemplateColumns: 'repeat(2, minmax(0,1fr))',
                       gap: 0.5,
                       p: 0.6,
-                      background: C_ITEM_BG
+                      background: blocked ? '#F3F4F6' : C_ITEM_BG
                     }}
                   >
                     {items.map(p => {
                       const selected = selectedIDs.has(p.inventoryID)
                       const isCurrent = p.productCode === task.productCode
+                      const clickable = !blocked
                       return (
                         <Box
                           key={p.inventoryID}
-                          onClick={() =>
-                            onToggleInventory(
-                              tKey,
-                              toOtherInv(
-                                {
-                                  binID: bin.binID,
-                                  binCode: bin.binCode,
-                                  warehouseID: bin.warehouseID,
-                                  warehouseCode: g.warehouseCode
-                                },
-                                p
-                              )
-                            )
+                          onClick={
+                            clickable
+                              ? () =>
+                                  onToggleInventory(
+                                    tKey,
+                                    toOtherInv(
+                                      {
+                                        binID: bin.binID,
+                                        binCode: bin.binCode,
+                                        warehouseID: bin.warehouseID,
+                                        warehouseCode: g.warehouseCode
+                                      },
+                                      p
+                                    )
+                                  )
+                              : undefined
                           }
                           title={`${p.productCode} × ${p.quantity}`}
                           sx={{
                             border: `1px solid ${
-                              selected ? '#86EFAC' : '#E2E8F0'
+                              blocked
+                                ? '#E5E7EB'
+                                : selected
+                                ? '#86EFAC'
+                                : '#E2E8F0'
                             }`,
                             borderRadius: R_SM,
                             px: 0.6,
@@ -373,20 +435,28 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: selected ? '#ECFDF5' : '#FFFFFF',
-                            cursor: 'pointer',
+                            background: blocked
+                              ? '#FFFFFF'
+                              : selected
+                              ? '#ECFDF5'
+                              : '#FFFFFF',
+                            cursor: blocked ? 'not-allowed' : 'pointer',
                             transition:
                               'border-color .12s ease, background .12s ease',
-                            '&:hover': { borderColor: '#BFD3FF' }
+                            '&:hover': blocked ? {} : { borderColor: '#BFD3FF' }
                           }}
                         >
                           <Typography
                             sx={{
                               fontSize: 12,
                               fontWeight: isCurrent ? 900 : 700,
-                              color: C_TEXT,
+                              color: blocked ? '#9CA3AF' : C_TEXT,
                               fontFamily:
-                                'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+                                'ui-monospace, Menlo, Consolas, "Courier New", monospace',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '100%'
                             }}
                           >
                             {p.productCode} × {p.quantity}

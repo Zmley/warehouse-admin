@@ -66,7 +66,6 @@ export type Selection = {
   selectedInvIDs?: string[]
 }
 
-/** ===== UI tokens ===== */
 const COLOR_HEADER_BG = '#f5f7fb'
 const COLOR_BORDER = '#e5e7eb'
 const COLOR_GREEN = '#166534'
@@ -86,7 +85,7 @@ const cellBase = {
 const COLUMN_WIDTHS = {
   product: 140,
   target: 120,
-  sources: 320,
+  sources: 360,
   created: 140,
   qtyAction: 150
 }
@@ -129,7 +128,7 @@ const CreatedPill = ({ times }: { times?: number }) => (
     }}
     title='Transfer created'
   >
-    pallet{times && times > 1 ? ` ×${times}` : ''}
+    Product{times && times > 1 ? ` ×${times}` : ''}
   </Box>
 )
 
@@ -144,6 +143,7 @@ type Props = {
   onCreate: (task: TaskRow) => void
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
+  blockedBinCodes: Set<string>
 }
 
 const OutOfStockTable: React.FC<Props> = ({
@@ -154,7 +154,8 @@ const OutOfStockTable: React.FC<Props> = ({
   selection,
   onCreate,
   onBinClick,
-  onToggleInventory
+  onToggleInventory,
+  blockedBinCodes
 }) => {
   const Head = (
     <TableHead>
@@ -175,7 +176,7 @@ const OutOfStockTable: React.FC<Props> = ({
               background: COLOR_HEADER_BG,
               ...(h === 'Product / Need' && { width: COLUMN_WIDTHS.product }),
               ...(h === 'Target' && { width: COLUMN_WIDTHS.target }),
-              ...(h === 'Sources' && { minWidth: COLUMN_WIDTHS.sources }),
+              ...(h === 'Sources' && { width: COLUMN_WIDTHS.sources }),
               ...(h === 'Created / Status' && { width: COLUMN_WIDTHS.created }),
               ...(h === 'Action' && { width: COLUMN_WIDTHS.qtyAction })
             }}
@@ -190,7 +191,15 @@ const OutOfStockTable: React.FC<Props> = ({
   const SourcesCell: React.FC<{ task: TaskRow }> = ({ task }) => {
     if (task.hasPendingTransfer) {
       return (
-        <Box display='flex' justifyContent='center'>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            minHeight: 28
+          }}
+        >
           <TransitingBadge />
         </Box>
       )
@@ -201,6 +210,7 @@ const OutOfStockTable: React.FC<Props> = ({
         selection={selection}
         onBinClick={onBinClick}
         onToggleInventory={onToggleInventory}
+        blockedBinCodes={blockedBinCodes}
       />
     )
   }
@@ -215,7 +225,6 @@ const OutOfStockTable: React.FC<Props> = ({
 
     return (
       <TableRow key={key} sx={{ background: '#fff' }}>
-        {/* Product */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.product }}
@@ -254,7 +263,6 @@ const OutOfStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Target */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.target }}
@@ -297,19 +305,20 @@ const OutOfStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Sources */}
         <TableCell
           align='center'
           sx={{
             ...cellBase,
-            minWidth: COLUMN_WIDTHS.sources,
-            verticalAlign: 'top' // ✅ 让 SourceBins 顶对齐，不撑高整行
+            width: COLUMN_WIDTHS.sources,
+            overflow: 'hidden',
+            verticalAlign: 'middle'
           }}
         >
-          <SourcesCell task={task} />
+          <Box sx={{ minWidth: 0 }}>
+            <SourcesCell task={task} />
+          </Box>
         </TableCell>
 
-        {/* Created / Status */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.created }}
@@ -324,7 +333,6 @@ const OutOfStockTable: React.FC<Props> = ({
           </Typography>
         </TableCell>
 
-        {/* Action（竖排） */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}
@@ -401,18 +409,26 @@ const OutOfStockTable: React.FC<Props> = ({
               stickyHeader
               size='small'
               sx={{
-                tableLayout: 'fixed', // ✅ 列宽固定，防止 Sources 撑爆
+                tableLayout: 'fixed',
                 '& th, & td': { fontSize: 12, height: 32, py: 0.4, px: 0.8 }
               }}
             >
-              {Head} {/* ✅ 直接渲染，不要再包 <TableHead> */}
+              <colgroup>
+                <col style={{ width: COLUMN_WIDTHS.product }} />
+                <col style={{ width: COLUMN_WIDTHS.target }} />
+                <col style={{ width: COLUMN_WIDTHS.sources }} />
+                <col style={{ width: COLUMN_WIDTHS.created }} />
+                <col style={{ width: COLUMN_WIDTHS.qtyAction }} />
+              </colgroup>
+
+              {Head}
               <TableBody>
                 {todayTasks.map(t => renderRow(t))}
                 {todayTasks.length > 0 && previousTasks.length > 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={5}
-                      sx={{ p: 0, borderColor: COLOR_BORDER, bgcolor: '#fff' }}
+                      sx={{ p: 0, borderColor: '#e5e7eb', bgcolor: '#fff' }}
                     >
                       <Box
                         sx={{
