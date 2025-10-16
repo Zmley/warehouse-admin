@@ -20,7 +20,6 @@ import dayjs from 'dayjs'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
-import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined'
 import { tableRowStyle } from 'styles/tableRowStyle'
 import { useBin } from 'hooks/useBin'
 import { useTask } from 'hooks/useTask'
@@ -218,7 +217,6 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const renderRow = (task: any, idx: number) => {
     const isEditing = editTaskID === task.taskID
     const isOutOfStock = !task.sourceBins || task.sourceBins.length === 0
-    const isTransiting = Boolean(task.hasPendingTransfer)
     const showEditableBin = isEditing && editedStatus === 'COMPLETED'
 
     const binEntries: BinEntry[] = (task.sourceBins || []).map(
@@ -275,29 +273,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
             overflow: 'hidden'
           }}
         >
-          {/* 1) 若已有转运任务，则只显示绿色徽章 */}
-          {isTransiting ? (
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 0.6,
-                py: 0.25,
-                borderRadius: 1,
-                border: '1px dashed',
-                borderColor: 'success.light',
-                background: '#ecfdf5',
-                color: '#166534',
-                fontSize: 12.5,
-                fontWeight: 800
-              }}
-              title='Transiting task created'
-            >
-              <CompareArrowsOutlinedIcon sx={{ fontSize: 16 }} />
-              (Transiting task created)
-            </Box>
-          ) : showEditableBin ? (
+          {showEditableBin ? (
             <Box display='flex' justifyContent='center' flexWrap='wrap' gap={1}>
               {binEntries.map((entry: BinEntry) => {
                 const selected = editedSourceInventoryID === entry.inventoryID
@@ -410,7 +386,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           </Typography>
         </TableCell>
 
-        {/* Status（不再显示蓝色提示） */}
+        {/* Status */}
         <TableCell align='center' sx={cellStyle}>
           {isEditing ? (
             <Select

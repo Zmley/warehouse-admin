@@ -19,7 +19,6 @@ export const useTransfer = () => {
 
   const [loading, setLoading] = useState(false)
 
-  /** === 创建 Transfer === */
   const createTransferTask = useCallback(
     async (payload: CreateTransferPayload) => {
       try {
@@ -102,13 +101,12 @@ export const useTransfer = () => {
     }
   }, [])
 
-  /** === 删除 Transfer（仅可删除 CANCELED 的） === */
   const removeByTaskID = useCallback(
     async (taskID: string, sourceBinID?: string) => {
       try {
         setLoading(true)
         setError(null)
-        await deleteTransfersByTaskID(taskID, sourceBinID) // ✅ 可选的 sourceBinID
+        await deleteTransfersByTaskID(taskID, sourceBinID)
         return { success: true }
       } catch (err: any) {
         const msg =
@@ -135,7 +133,7 @@ export const useTransfer = () => {
     createTransferTask,
     getTransfers,
     cancel,
-    removeByTaskID, // ✅ 新增 delete 功能
+    removeByTaskID,
 
     setPage,
     setPageSize
