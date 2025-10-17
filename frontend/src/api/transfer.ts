@@ -18,9 +18,14 @@ export type CreateTransferPayload = {
   status?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | 'CANCELED'
 }
 
-export const createTransfer = async (payload: CreateTransferPayload) => {
-  const res = await apiClient.post('/transfers', payload)
-  return res.data
+// export const createTransfer = async (payload: CreateTransferPayload) => {
+//   const res = await apiClient.post('/transfers', payload)
+//   return res.data
+// }
+
+export const createTransfersAPI = async (items: CreateTransferPayload[]) => {
+  const { data } = await apiClient.post('/transfers', { items })
+  return data // { success, createdCount?, message? }
 }
 
 export interface FetchTransfersParams {
@@ -57,3 +62,16 @@ export const deleteTransfersByTaskID = (taskID: string, sourceBinID?: string) =>
     `/transfers/${encodeURIComponent(taskID)}`,
     sourceBinID ? { params: { sourceBinID } } : undefined
   )
+
+export interface ConfirmItem {
+  transferID: string
+  productCode: string
+  productID?: string | null
+  quantity: number
+}
+
+export const updateReceiveStatus = (items: ConfirmItem[], action: string) =>
+  apiClient.post('/transfers/receive', { items, action })
+
+export const completeReceive = (items: ConfirmItem[]) =>
+  updateReceiveStatus(items, 'COMPLETE')

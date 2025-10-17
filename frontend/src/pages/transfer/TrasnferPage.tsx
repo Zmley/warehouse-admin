@@ -1,4 +1,3 @@
-// src/pages/transfer/TransferPage.tsx
 import React, {
   useCallback,
   useEffect,
@@ -39,7 +38,8 @@ const TransferPage: React.FC = () => {
   const { tasks, isLoading: tasksLoading, fetchTasks } = useTask()
 
   const {
-    createTransferTask,
+    // ⬇️ 使用批量创建
+    createTransferTasks,
     isLoading: transferLoading,
     error,
     transfers,
@@ -47,8 +47,11 @@ const TransferPage: React.FC = () => {
     getTransfers
   } = useTransfer()
 
-  const { transfers: pendingTransfers, getTransfers: getTransfersPending } =
-    useTransfer()
+  const {
+    transfers: pendingTransfers,
+    getTransfers: getTransfersPending,
+    handleCompleteReceive
+  } = useTransfer()
   const { transfers: inProcessTransfers, getTransfers: getTransfersInProcess } =
     useTransfer()
 
@@ -276,6 +279,7 @@ const TransferPage: React.FC = () => {
       )
     })
 
+    // 被占用的 bin 拦截
     for (const id of selectedIDs) {
       const inv = invMap.get(id)
       if (!inv) continue
@@ -291,25 +295,40 @@ const TransferPage: React.FC = () => {
     }
 
     try {
-      for (const id of selectedIDs) {
-        const inv = invMap.get(id)
-        if (!inv) continue
-        await createTransferTask({
+      // ★ 组装成批量 payloads
+      const payloads = selectedIDs
+        .map(id => invMap.get(id))
+        .filter(Boolean)
+        .map(inv => ({
           taskID: task.taskID ?? null,
           sourceWarehouseID:
-            inv.bin?.warehouse?.warehouseID || inv.bin?.warehouseID!,
+            inv!.bin?.warehouse?.warehouseID || inv!.bin!.warehouseID!,
           destinationWarehouseID: destWarehouseID,
-          sourceBinID: inv.bin?.binID!,
-          productCode: inv.productCode || task.productCode,
-          quantity: inv.quantity
+          sourceBinID: inv!.bin!.binID!,
+          productCode: inv!.productCode || task.productCode,
+          quantity: inv!.quantity
+        }))
+
+      const res = await createTransferTasks(payloads)
+      const ok = (res as any)?.success ?? (res as any)?.data?.success
+      const message = (res as any)?.message ?? (res as any)?.data?.message
+      const createdCount =
+        (res as any)?.createdCount ?? (res as any)?.data?.createdCount
+
+      if (ok) {
+        setSnack({
+          open: true,
+          msg: `Created ${createdCount ?? payloads.length} task(s).`,
+          sev: 'success'
+        })
+        refreshAll()
+      } else {
+        setSnack({
+          open: true,
+          msg: message || 'Create transfer failed.',
+          sev: 'error'
         })
       }
-      setSnack({
-        open: true,
-        msg: `Created ${selectedIDs.length} task(s).`,
-        sev: 'success'
-      })
-      refreshAll()
     } catch (e: any) {
       setSnack({
         open: true,
@@ -331,6 +350,36 @@ const TransferPage: React.FC = () => {
       }
     },
     [removeByTaskID, refreshAll]
+  )
+
+  const handleCompleteGroup = useCallback(
+    async (groupItems: any[]) => {
+      const items = groupItems
+        .map(t => ({
+          transferID: t?.transferID,
+          productCode: t?.productCode,
+          quantity: t?.quantity ?? 0
+        }))
+        .filter(x => x.transferID && x.productCode)
+
+      if (items.length === 0) return
+
+      const r = await handleCompleteReceive(items)
+      const success = (r as any)?.success ?? (r as any)?.data?.success
+      const message = (r as any)?.message ?? (r as any)?.data?.message
+
+      if (success) {
+        setSnack({ open: true, msg: 'Marked as completed.', sev: 'success' })
+        refreshAll({ status: recentStatus, page0: recentPage })
+      } else {
+        setSnack({
+          open: true,
+          msg: message || 'Complete failed.',
+          sev: 'error'
+        })
+      }
+    },
+    [handleCompleteReceive, refreshAll, recentStatus, recentPage]
   )
 
   return (
@@ -431,6 +480,7 @@ const TransferPage: React.FC = () => {
             panelWidth={RECENT_PANEL_WIDTH}
             onDelete={handleDelete}
             updating={transferLoading || deleting}
+            onComplete={handleCompleteGroup}
           />
         </Box>
       </Paper>

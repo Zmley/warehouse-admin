@@ -1,12 +1,17 @@
 import { useState, useCallback } from 'react'
 import {
   cancelTransfer,
-  createTransfer as createTransferAPI,
   CreateTransferPayload,
   fetchTransfers,
-  deleteTransfersByTaskID
+  deleteTransfersByTaskID,
+  completeReceive,
+  createTransfersAPI
 } from 'api/transfer'
-import type { FetchTransfersParams, FetchTransfersResponse } from 'api/transfer'
+import type {
+  ConfirmItem,
+  FetchTransfersParams,
+  FetchTransfersResponse
+} from 'api/transfer'
 
 export const useTransfer = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -19,21 +24,14 @@ export const useTransfer = () => {
 
   const [loading, setLoading] = useState(false)
 
-  const createTransferTask = useCallback(
-    async (payload: CreateTransferPayload) => {
+  const createTransferTasks = useCallback(
+    async (items: CreateTransferPayload[]) => {
       try {
         setIsLoading(true)
         setError(null)
-
-        const body: CreateTransferPayload = {
-          ...payload,
-          taskID: payload.taskID ?? null
-        }
-
-        const res = await createTransferAPI(body)
-        if (!res.success) {
-          setError(res.message || 'Create transfer failed')
-        }
+        const body = items.map(i => ({ ...i, taskID: i.taskID ?? null }))
+        const res = await createTransfersAPI(body)
+        if (!res?.success) setError(res?.message || 'Create transfer failed')
         return res
       } catch (e: any) {
         const msg =
@@ -47,7 +45,6 @@ export const useTransfer = () => {
     []
   )
 
-  /** === 获取 Transfers === */
   const getTransfers = useCallback(
     async (params: FetchTransfersParams): Promise<FetchTransfersResponse> => {
       try {
@@ -84,7 +81,6 @@ export const useTransfer = () => {
     []
   )
 
-  /** === 取消 Transfer === */
   const cancel = useCallback(async (transferID: string) => {
     try {
       setLoading(true)
@@ -120,6 +116,18 @@ export const useTransfer = () => {
     []
   )
 
+  const handleCompleteReceive = async (items: ConfirmItem[]) => {
+    setLoading(true)
+    try {
+      return await completeReceive(items)
+    } catch (err: any) {
+      console.error('completeReceive error:', err)
+      return { success: false, message: err.message }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     transfers,
     total,
@@ -129,8 +137,8 @@ export const useTransfer = () => {
     isLoading,
     error,
     loading,
-
-    createTransferTask,
+    handleCompleteReceive,
+    createTransferTasks,
     getTransfers,
     cancel,
     removeByTaskID,

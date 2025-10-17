@@ -51,6 +51,8 @@ export type TaskRow = {
   }
   otherInventories?: OtherInv[]
   sourceBins?: unknown[]
+
+  transferStatus?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | null
   hasPendingTransfer?: boolean
   transfersCount?: number
 }
@@ -111,6 +113,59 @@ const TransitingBadge = () => (
     (Transiting task created)
   </Box>
 )
+
+const StatusBadge = ({ status }: { status: TaskRow['transferStatus'] }) => {
+  if (!status) return null
+  const s = String(status).toUpperCase() as NonNullable<
+    TaskRow['transferStatus']
+  >
+  const map: Record<
+    NonNullable<TaskRow['transferStatus']>,
+    { text: string; color: string; border: string; title: string }
+  > = {
+    PENDING: {
+      text: 'Transiting task created',
+      color: '#334155',
+      border: '#94a3b8',
+      title: 'Transiting task created'
+    },
+    IN_PROCESS: {
+      text: 'Worker confirmed receiving',
+      color: COLOR_GREEN,
+      border: COLOR_GREEN,
+      title: 'Worker confirmed receiving'
+    },
+    COMPLETED: {
+      text: 'Admin confirmed received',
+      color: '#334155',
+      border: '#475569',
+      title: 'Admin confirmed received'
+    }
+  }
+  const info = map[s]
+
+  return (
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.5,
+        borderRadius: 1.5,
+        border: `1px dashed ${info.border}`,
+        background: 'transparent',
+        color: info.color,
+        fontSize: 12.5,
+        fontWeight: 700
+      }}
+      title={info.title}
+    >
+      <CompareArrowsOutlinedIcon sx={{ fontSize: 16, color: info.color }} />
+      {info.text}
+    </Box>
+  )
+}
 
 const CreatedPill = ({ times }: { times?: number }) => (
   <Box
@@ -189,7 +244,7 @@ const OutOfStockTable: React.FC<Props> = ({
   )
 
   const SourcesCell: React.FC<{ task: TaskRow }> = ({ task }) => {
-    if (task.hasPendingTransfer) {
+    if (task.transferStatus) {
       return (
         <Box
           sx={{
@@ -200,7 +255,7 @@ const OutOfStockTable: React.FC<Props> = ({
             minHeight: 28
           }}
         >
-          <TransitingBadge />
+          <StatusBadge status={task.transferStatus} />
         </Box>
       )
     }
@@ -218,7 +273,7 @@ const OutOfStockTable: React.FC<Props> = ({
   const renderRow = (task: TaskRow) => {
     const key = keyOf(task)
     const sel = selection[key]
-    const created = !!task.hasPendingTransfer
+    const created = !!task.transferStatus
     const code = task?.destinationBin?.binCode || task.destinationBinCode
     const whCode = task?.destinationBin?.warehouse?.warehouseCode
     const selectedCount = sel?.selectedInvIDs?.length || 0
@@ -338,7 +393,17 @@ const OutOfStockTable: React.FC<Props> = ({
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}
         >
           {created ? (
-            <CreatedPill times={task.transfersCount} />
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 0.35
+              }}
+            >
+              <CreatedPill times={task.transfersCount} />
+              {/* 状态已移到 Sources，不再在 Action 重复显示 */}
+            </Box>
           ) : (
             <Box
               sx={{

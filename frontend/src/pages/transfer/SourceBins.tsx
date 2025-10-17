@@ -399,35 +399,14 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                     {items.map(p => {
                       const selected = selectedIDs.has(p.inventoryID)
                       const isCurrent = p.productCode === task.productCode
-                      const clickable = !blocked
+                      // ✅ 这里移除了“单个产品点击选择”，仅保留展示与选中态样式
                       return (
                         <Box
                           key={p.inventoryID}
-                          onClick={
-                            clickable
-                              ? () =>
-                                  onToggleInventory(
-                                    tKey,
-                                    toOtherInv(
-                                      {
-                                        binID: bin.binID,
-                                        binCode: bin.binCode,
-                                        warehouseID: bin.warehouseID,
-                                        warehouseCode: g.warehouseCode
-                                      },
-                                      p
-                                    )
-                                  )
-                              : undefined
-                          }
                           title={`${p.productCode} × ${p.quantity}`}
                           sx={{
                             border: `1px solid ${
-                              blocked
-                                ? '#E5E7EB'
-                                : selected
-                                ? '#86EFAC'
-                                : '#E2E8F0'
+                              selected ? '#86EFAC' : '#E2E8F0'
                             }`,
                             borderRadius: R_SM,
                             px: 0.6,
@@ -435,22 +414,17 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: blocked
-                              ? '#FFFFFF'
-                              : selected
-                              ? '#ECFDF5'
-                              : '#FFFFFF',
-                            cursor: blocked ? 'not-allowed' : 'pointer',
-                            transition:
-                              'border-color .12s ease, background .12s ease',
-                            '&:hover': blocked ? {} : { borderColor: '#BFD3FF' }
+                            background: selected ? '#ECFDF5' : '#FFFFFF',
+                            // 不可点击
+                            cursor: 'default',
+                            pointerEvents: 'none'
                           }}
                         >
                           <Typography
                             sx={{
                               fontSize: 12,
                               fontWeight: isCurrent ? 900 : 700,
-                              color: blocked ? '#9CA3AF' : C_TEXT,
+                              color: C_TEXT,
                               fontFamily:
                                 'ui-monospace, Menlo, Consolas, "Courier New", monospace',
                               whiteSpace: 'nowrap',

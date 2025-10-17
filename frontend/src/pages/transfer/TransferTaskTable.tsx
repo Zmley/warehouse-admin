@@ -12,9 +12,12 @@ import {
 } from '@mui/material'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
+import PrintIcon from '@mui/icons-material/Print' // ✅ 新增
 import { TransferStatusUI } from 'constants/index'
+import { printPendingTransfers } from './printPending' // ✅ 新增
 
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
@@ -144,7 +147,6 @@ const useBatchGroups = (transfers: any[]) => {
       const dz = first?.destinationZone || ''
       const sourceBinID = first?.sourceBinID || first?.sourceBin?.binID || ''
 
-      // ❗️逐条产品，不聚合；尽量保留稳定 id
       const products = list.map((t: any, idx: number) => ({
         id:
           t?.transferID?.toString?.() ||
@@ -190,16 +192,36 @@ const BatchCard: React.FC<{
   status: TransferStatusUI
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   onDelete?: (taskID: string, sourceBinID?: string) => Promise<any>
-}> = ({ g, status, onBinClick, onDelete }) => {
+  onComplete?: (items: any[]) => Promise<any>
+}> = ({ g, status, onBinClick, onDelete, onComplete }) => {
   const [busy, setBusy] = useState(false)
   const isDeletable = status === 'PENDING'
+  const canComplete = status === 'IN_PROCESS'
   const timeLabel = new Date(g.createdAt || Date.now()).toLocaleString()
 
   const handleDelete = async () => {
     if (!onDelete || busy) return
+    const ok = window.confirm(
+      'Are you sure you want to delete this task (the whole group for this source bin)?'
+    )
+    if (!ok) return
     try {
       setBusy(true)
       await onDelete(g.taskID, g.sourceBinID)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleComplete = async () => {
+    if (!onComplete || busy) return
+    const ok = window.confirm(
+      'Confirm receipt and mark this group as Completed?'
+    )
+    if (!ok) return
+    try {
+      setBusy(true)
+      await onComplete(g.items)
     } finally {
       setBusy(false)
     }
@@ -237,31 +259,56 @@ const BatchCard: React.FC<{
           </Typography>
         </Box>
 
-        {isDeletable && (
-          <Tooltip title='Delete this task (this source bin)'>
-            <span>
-              <IconButton
-                size='small'
-                onClick={handleDelete}
-                disabled={busy}
-                sx={{
-                  border: '1px solid #f5c2c7',
-                  background: '#fff',
-                  '&:hover': { background: '#fff5f5' }
-                }}
-              >
-                {busy ? (
-                  <CircularProgress size={16} />
-                ) : (
-                  <DeleteOutlineIcon
-                    fontSize='small'
-                    sx={{ color: '#c62828' }}
-                  />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+          {canComplete && (
+            <Tooltip title='确认收货（标记为 Completed）'>
+              <span>
+                <IconButton
+                  size='small'
+                  onClick={handleComplete}
+                  disabled={busy}
+                  sx={{
+                    border: '1px solid #bbf7d0',
+                    background: '#ecfdf5',
+                    '&:hover': { background: '#dcfce7' }
+                  }}
+                >
+                  {busy ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <DoneAllIcon fontSize='small' sx={{ color: '#166534' }} />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {isDeletable && (
+            <Tooltip title='Delete this task (this source bin)'>
+              <span>
+                <IconButton
+                  size='small'
+                  onClick={handleDelete}
+                  disabled={busy}
+                  sx={{
+                    border: '1px solid #f5c2c7',
+                    background: '#fff',
+                    '&:hover': { background: '#fff5f5' }
+                  }}
+                >
+                  {busy ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <DeleteOutlineIcon
+                      fontSize='small'
+                      sx={{ color: '#c62828' }}
+                    />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
 
       {/* 路径 */}
@@ -360,6 +407,7 @@ type Props = {
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   panelWidth?: number
   onDelete?: (taskID: string, sourceBinID?: string) => Promise<any>
+  onComplete?: (items: any[]) => Promise<any>
   updating?: boolean
 }
 
@@ -373,7 +421,8 @@ const TransferTaskTable: React.FC<Props> = ({
   onStatusChange,
   onBinClick,
   panelWidth = 420,
-  onDelete
+  onDelete,
+  onComplete
 }) => {
   const groups = useBatchGroups(transfers)
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
@@ -396,25 +445,48 @@ const TransferTaskTable: React.FC<Props> = ({
         <Typography sx={{ fontWeight: 800, fontSize: 13 }}>
           Recent Transfers
         </Typography>
-        <Tabs
-          value={status}
-          onChange={(_, s: TransferStatusUI) => onStatusChange(s)}
-          textColor='primary'
-          indicatorColor='primary'
-          sx={{
-            minHeight: 30,
-            '& .MuiTab-root': {
+
+        {/* ✅ Tabs + Print */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tabs
+            value={status}
+            onChange={(_, s: TransferStatusUI) => onStatusChange(s)}
+            textColor='primary'
+            indicatorColor='primary'
+            sx={{
               minHeight: 30,
-              px: 1,
-              fontSize: 12,
-              fontWeight: 700
+              '& .MuiTab-root': {
+                minHeight: 30,
+                px: 1,
+                fontSize: 12,
+                fontWeight: 700
+              }
+            }}
+          >
+            <Tab label='Pending' value='PENDING' />
+            <Tab label='In Process' value='IN_PROCESS' />
+            <Tab label='Completed' value='COMPLETED' />
+          </Tabs>
+
+          <Tooltip
+            title={
+              status === 'PENDING'
+                ? 'Print pending transfers'
+                : 'Switch to Pending to print'
             }
-          }}
-        >
-          <Tab label='Pending' value='PENDING' />
-          <Tab label='In Process' value='IN_PROCESS' />
-          <Tab label='Completed' value='COMPLETED' />
-        </Tabs>
+          >
+            <span>
+              <IconButton
+                size='small'
+                onClick={() => printPendingTransfers(transfers)}
+                disabled={status !== 'PENDING' || loading || !transfers?.length}
+              >
+                <PrintIcon fontSize='small' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+
         <Divider sx={{ my: 0.5 }} />
       </Box>
 
@@ -450,6 +522,7 @@ const TransferTaskTable: React.FC<Props> = ({
               status={status}
               onBinClick={onBinClick}
               onDelete={onDelete}
+              onComplete={onComplete}
             />
           ))
         )}
