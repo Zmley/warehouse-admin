@@ -17,7 +17,6 @@ export const useTransfer = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const [transfers, setTransfers] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -49,17 +48,13 @@ export const useTransfer = () => {
     try {
       setIsLoading(true)
       setError(null)
-
       const res = await fetchTransfersAPI(params)
       const data = res.data as FetchTransfersResponse
-
       if (!data.success)
         throw new Error(data.message || 'Failed to fetch transfers')
-
       setTransfers(data.transfers || [])
       setTotal(data.total ?? 0)
       setPage(data.page ?? params.page ?? 1)
-
       return data
     } catch (e: any) {
       const msg =
@@ -125,7 +120,6 @@ export const useTransfer = () => {
       setLoading(false)
     }
   }
-
   return {
     transfers,
     total,
