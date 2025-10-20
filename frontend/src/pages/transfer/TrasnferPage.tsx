@@ -27,7 +27,7 @@ import OutOfStockTable, {
   Selection,
   keyOf
 } from './OutOfStockTable'
-import { TransferStatusUI } from 'constants/index'
+import { TaskStatusFilter, TransferStatusUI } from 'constants/index'
 import TransferTaskTable from './TransferTaskTable'
 
 const CONTENT_HEIGHT = 'calc(100vh - 180px)'
@@ -101,7 +101,7 @@ const TransferPage: React.FC = () => {
       if (!warehouseID) return
       getTransfers({
         warehouseID,
-        status,
+        status: status as TaskStatusFilter,
         page: page0 + 1,
         limit: 200
       })
@@ -111,10 +111,15 @@ const TransferPage: React.FC = () => {
 
   const loadBlocked = useCallback(() => {
     if (!warehouseID) return
-    getTransfersPending({ warehouseID, status: 'PENDING', page: 1, limit: 200 })
+    getTransfersPending({
+      warehouseID,
+      status: TaskStatusFilter.PENDING,
+      page: 1,
+      limit: 200
+    })
     getTransfersInProcess({
       warehouseID,
-      status: 'IN_PROCESS',
+      status: TaskStatusFilter.IN_PROCESS,
       page: 1,
       limit: 200
     })

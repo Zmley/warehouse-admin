@@ -1,9 +1,6 @@
-export type TransferStatus =
-  | 'PENDING'
-  | 'IN_PROCESS'
-  | 'COMPLETED'
-  | 'CANCELED'
-  | 'ALL'
+import { TaskStatusFilter } from 'constants/index'
+
+export type TransferStatus = TaskStatusFilter
 
 export type CreateTransferPayload = {
   taskID?: string | null
@@ -13,12 +10,12 @@ export type CreateTransferPayload = {
   productCode: string
   quantity: number
   createdBy?: string
-  status?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | 'CANCELED'
+  status?: TaskStatusFilter
 }
 
 export interface FetchTransfersParams {
   warehouseID: string
-  status?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | 'CANCELED'
+  status?: TaskStatusFilter
   page?: number
   limit?: number
 }
