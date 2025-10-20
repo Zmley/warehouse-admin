@@ -16,7 +16,6 @@ import {
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined'
 import dayjs from 'dayjs'
-
 import SourceBins from './SourceBins'
 
 export type OtherInv = {
@@ -91,28 +90,6 @@ const COLUMN_WIDTHS = {
   created: 140,
   qtyAction: 150
 }
-
-const TransitingBadge = () => (
-  <Box
-    sx={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 0.5,
-      px: 1,
-      py: 0.5,
-      borderRadius: 1.5,
-      border: `1px dashed ${COLOR_GREEN}`,
-      background: 'transparent',
-      color: COLOR_GREEN,
-      fontSize: 12.5,
-      fontWeight: 700
-    }}
-    title='Transiting task created'
-  >
-    <CompareArrowsOutlinedIcon sx={{ fontSize: 16, color: COLOR_GREEN }} />
-    (Transiting task created)
-  </Box>
-)
 
 const StatusBadge = ({ status }: { status: TaskRow['transferStatus'] }) => {
   if (!status) return null
@@ -270,6 +247,15 @@ const OutOfStockTable: React.FC<Props> = ({
     )
   }
 
+  const getRowSx = (status?: TaskRow['transferStatus']) => {
+    const s = String(status || '').toUpperCase()
+    const isLight = s === 'PENDING' || s === 'COMPLETED'
+    return {
+      background: isLight ? '#f9fafb' : '#fff',
+      '& td': { background: isLight ? '#f9fafb' : '#fff' }
+    }
+  }
+
   const renderRow = (task: TaskRow) => {
     const key = keyOf(task)
     const sel = selection[key]
@@ -279,7 +265,7 @@ const OutOfStockTable: React.FC<Props> = ({
     const selectedCount = sel?.selectedInvIDs?.length || 0
 
     return (
-      <TableRow key={key} sx={{ background: '#fff' }}>
+      <TableRow key={key} sx={getRowSx(task.transferStatus)}>
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.product }}
@@ -383,9 +369,6 @@ const OutOfStockTable: React.FC<Props> = ({
               ? dayjs(task.createdAt).format('YYYY-MM-DD HH:mm')
               : '--'}
           </Typography>
-          <Typography variant='caption' color='text.secondary'>
-            Pending
-          </Typography>
         </TableCell>
 
         <TableCell
@@ -402,7 +385,6 @@ const OutOfStockTable: React.FC<Props> = ({
               }}
             >
               <CreatedPill times={task.transfersCount} />
-              {/* 状态已移到 Sources，不再在 Action 重复显示 */}
             </Box>
           ) : (
             <Box

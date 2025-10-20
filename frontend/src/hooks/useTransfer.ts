@@ -1,17 +1,17 @@
 import { useState, useCallback } from 'react'
 import {
   cancelTransfer,
-  CreateTransferPayload,
   fetchTransfers,
   deleteTransfersByTaskID,
   completeReceive,
   createTransfersAPI
 } from 'api/transfer'
-import type {
+import {
   ConfirmItem,
+  CreateTransferPayload,
   FetchTransfersParams,
   FetchTransfersResponse
-} from 'api/transfer'
+} from 'types/Transfer'
 
 export const useTransfer = () => {
   const [isLoading, setIsLoading] = useState(false)

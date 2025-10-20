@@ -15,10 +15,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
-import PrintIcon from '@mui/icons-material/Print' // ✅ 新增
+import PrintIcon from '@mui/icons-material/Print'
 import { TransferStatusUI } from 'constants/index'
-import { printPendingTransfers } from './printPending' // ✅ 新增
 
+import PrintPreviewDialog, { buildPendingTransfersHtml } from './PrintPreview'
+
+/* ---------------- UI Constants ---------------- */
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
 const EMP = '#0f172a'
@@ -43,6 +45,7 @@ const PANEL_BG = '#f7f9fc'
 const R = 4
 const SERVER_PAGE_SIZE = 200
 
+/* ---------------- Small UI Bits ---------------- */
 const Badge = ({
   text,
   dashed = false,
@@ -109,8 +112,9 @@ const ZoneBadge: React.FC<{ text?: string }> = ({ text }) =>
     </Box>
   )
 
+/* ---------------- Types ---------------- */
 type BatchGroup = {
-  key: string // 唯一：taskID|sourceBinID
+  key: string // taskID|sourceBinID
   taskID: string
   sourceBinID: string
   sourceWarehouse: string
@@ -123,6 +127,7 @@ type BatchGroup = {
   createdAt: number
 }
 
+/* ---------------- Grouping Hook ---------------- */
 const useBatchGroups = (transfers: any[]) => {
   return useMemo<BatchGroup[]>(() => {
     if (!transfers || transfers.length === 0) return []
@@ -187,6 +192,7 @@ const useBatchGroups = (transfers: any[]) => {
   }, [transfers])
 }
 
+/* ---------------- Single Batch Card ---------------- */
 const BatchCard: React.FC<{
   g: BatchGroup
   status: TransferStatusUI
@@ -311,7 +317,7 @@ const BatchCard: React.FC<{
         </Box>
       </Box>
 
-      {/* 路径 */}
+      {/* Path */}
       <Box
         sx={{
           display: 'flex',
@@ -342,7 +348,7 @@ const BatchCard: React.FC<{
       {g.products.length > 0 && (
         <Box
           sx={{
-            border: `1px dashed ${BORDER}`,
+            border: `1px dashed ${CHIP_BORDER}`,
             borderRadius: R,
             background: INV_BG,
             p: 0.4
@@ -396,6 +402,7 @@ const BatchCard: React.FC<{
   )
 }
 
+/* ---------------- Props ---------------- */
 type Props = {
   transfers: any[]
   total: number
@@ -411,6 +418,7 @@ type Props = {
   updating?: boolean
 }
 
+/* ---------------- Main Component ---------------- */
 const TransferTaskTable: React.FC<Props> = ({
   transfers,
   total,
@@ -426,6 +434,16 @@ const TransferTaskTable: React.FC<Props> = ({
 }) => {
   const groups = useBatchGroups(transfers)
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
+
+  // 打印预览 Dialog
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('')
+
+  const openPreview = () => {
+    const html = buildPendingTransfersHtml(transfers)
+    setPreviewHtml(html)
+    setPreviewOpen(true)
+  }
 
   return (
     <Box
@@ -446,7 +464,7 @@ const TransferTaskTable: React.FC<Props> = ({
           Recent Transfers
         </Typography>
 
-        {/* ✅ Tabs + Print */}
+        {/* Tabs + Print */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tabs
             value={status}
@@ -478,7 +496,7 @@ const TransferTaskTable: React.FC<Props> = ({
             <span>
               <IconButton
                 size='small'
-                onClick={() => printPendingTransfers(transfers)}
+                onClick={openPreview}
                 disabled={status !== 'PENDING' || loading || !transfers?.length}
               >
                 <PrintIcon fontSize='small' />
@@ -490,6 +508,7 @@ const TransferTaskTable: React.FC<Props> = ({
         <Divider sx={{ my: 0.5 }} />
       </Box>
 
+      {/* List */}
       <Box
         sx={{
           flex: 1,
@@ -528,6 +547,7 @@ const TransferTaskTable: React.FC<Props> = ({
         )}
       </Box>
 
+      {/* Footer */}
       <Divider sx={{ m: 0 }} />
       <Stack
         direction='row'
@@ -555,6 +575,13 @@ const TransferTaskTable: React.FC<Props> = ({
           </IconButton>
         </Box>
       </Stack>
+
+      {/* Print Preview Dialog */}
+      <PrintPreviewDialog
+        open={previewOpen}
+        html={previewHtml}
+        onClose={() => setPreviewOpen(false)}
+      />
     </Box>
   )
 }
