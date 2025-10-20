@@ -16,7 +16,7 @@ export const cancelTransfer = (transferID: string) =>
 
 export const deleteTransfersByTaskID = (taskID: string, sourceBinID?: string) =>
   apiClient.delete(`/transfers/${taskID}`, {
-    params: sourceBinID && { sourceBinID }
+    params: sourceBinID ? { sourceBinID } : {}
   })
 
 export const updateReceiveStatus = (

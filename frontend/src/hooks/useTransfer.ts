@@ -45,49 +45,43 @@ export const useTransfer = () => {
     []
   )
 
-  const getTransfers = useCallback(
-    async (params: FetchTransfersParams): Promise<FetchTransfersResponse> => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  const getTransfers = useCallback(async (params: FetchTransfersParams) => {
+    try {
+      setIsLoading(true)
+      setError(null)
 
-        const res = await fetchTransfersAPI(params)
-        const data = res.data as FetchTransfersResponse
+      const res = await fetchTransfersAPI(params)
+      const data = res.data as FetchTransfersResponse
 
-        if (!data.success) {
-          throw new Error(data.message || 'Failed to fetch transfers')
-        }
+      if (!data.success)
+        throw new Error(data.message || 'Failed to fetch transfers')
 
-        setTransfers(data.transfers || [])
-        setTotal(data.total ?? 0)
-        setPage(data.page ?? params.page ?? 1)
+      setTransfers(data.transfers || [])
+      setTotal(data.total ?? 0)
+      setPage(data.page ?? params.page ?? 1)
 
-        return data
-      } catch (e: any) {
-        const msg =
-          e?.response?.data?.message ||
-          e?.message ||
-          'Failed to fetch transfers'
-        setError(msg)
-        return {
-          success: false,
-          transfers: [],
-          total: 0,
-          page: params.page ?? 1,
-          message: msg
-        }
-      } finally {
-        setIsLoading(false)
+      return data
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message || e?.message || 'Failed to fetch transfers'
+      setError(msg)
+      return {
+        success: false,
+        transfers: [],
+        total: 0,
+        page: params.page ?? 1,
+        message: msg
       }
-    },
-    []
-  )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   const cancel = useCallback(async (transferID: string) => {
     try {
       setLoading(true)
       setError(null)
-      await cancelTransfer(transferID) // 不解析，成功即 OK
+      await cancelTransfer(transferID)
       return { success: true }
     } catch (err: any) {
       const msg =
@@ -104,7 +98,7 @@ export const useTransfer = () => {
       try {
         setLoading(true)
         setError(null)
-        await deleteTransfersByTaskID(taskID, sourceBinID) // 不解析，成功即 OK
+        await deleteTransfersByTaskID(taskID, sourceBinID)
         return { success: true }
       } catch (err: any) {
         const msg =
@@ -122,7 +116,7 @@ export const useTransfer = () => {
     setLoading(true)
     try {
       const res = await completeReceive(items)
-      return res.data // 在 hook 里解析
+      return res.data
     } catch (err: any) {
       const msg =
         err?.response?.data?.message || err?.message || 'Complete failed'
@@ -137,17 +131,14 @@ export const useTransfer = () => {
     total,
     page,
     pageSize,
-
     isLoading,
     loading,
     error,
-
     createTransferTasks,
     getTransfers,
     cancel,
     removeByTaskID,
     handleCompleteReceive,
-
     setPage,
     setPageSize
   }

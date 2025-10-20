@@ -428,7 +428,6 @@ const TransferTaskTable: React.FC<Props> = ({
   const groups = useBatchGroups(transfers)
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
-  // 打印预览 Dialog
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
 
