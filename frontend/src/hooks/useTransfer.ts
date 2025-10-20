@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react'
 import {
   cancelTransfer,
-  fetchTransfers,
+  fetchTransfers as fetchTransfersAPI,
   deleteTransfersByTaskID,
   completeReceive,
   createTransfersAPI
 } from 'api/transfer'
-import {
+import type {
   ConfirmItem,
   CreateTransferPayload,
   FetchTransfersParams,
@@ -15,14 +15,13 @@ import {
 
 export const useTransfer = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [transfers, setTransfers] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-
-  const [loading, setLoading] = useState(false)
 
   const createTransferTasks = useCallback(
     async (items: CreateTransferPayload[]) => {
@@ -31,8 +30,9 @@ export const useTransfer = () => {
         setError(null)
         const body = items.map(i => ({ ...i, taskID: i.taskID ?? null }))
         const res = await createTransfersAPI(body)
-        if (!res?.success) setError(res?.message || 'Create transfer failed')
-        return res
+        const data = res.data as { success?: boolean; message?: string }
+        if (!data?.success) setError(data?.message || 'Create transfer failed')
+        return data
       } catch (e: any) {
         const msg =
           e?.response?.data?.message || e?.message || 'Create transfer failed'
@@ -51,16 +51,18 @@ export const useTransfer = () => {
         setIsLoading(true)
         setError(null)
 
-        const res = await fetchTransfers(params)
-        if (!res.success) {
-          throw new Error(res.message || 'Failed to fetch transfers')
+        const res = await fetchTransfersAPI(params)
+        const data = res.data as FetchTransfersResponse
+
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to fetch transfers')
         }
 
-        setTransfers(res.transfers || [])
-        setTotal(res.total ?? 0)
-        setPage(res.page ?? params.page ?? 1)
+        setTransfers(data.transfers || [])
+        setTotal(data.total ?? 0)
+        setPage(data.page ?? params.page ?? 1)
 
-        return res
+        return data
       } catch (e: any) {
         const msg =
           e?.response?.data?.message ||
@@ -85,7 +87,7 @@ export const useTransfer = () => {
     try {
       setLoading(true)
       setError(null)
-      await cancelTransfer(transferID)
+      await cancelTransfer(transferID) // 不解析，成功即 OK
       return { success: true }
     } catch (err: any) {
       const msg =
@@ -102,7 +104,7 @@ export const useTransfer = () => {
       try {
         setLoading(true)
         setError(null)
-        await deleteTransfersByTaskID(taskID, sourceBinID)
+        await deleteTransfersByTaskID(taskID, sourceBinID) // 不解析，成功即 OK
         return { success: true }
       } catch (err: any) {
         const msg =
@@ -119,10 +121,12 @@ export const useTransfer = () => {
   const handleCompleteReceive = async (items: ConfirmItem[]) => {
     setLoading(true)
     try {
-      return await completeReceive(items)
+      const res = await completeReceive(items)
+      return res.data // 在 hook 里解析
     } catch (err: any) {
-      console.error('completeReceive error:', err)
-      return { success: false, message: err.message }
+      const msg =
+        err?.response?.data?.message || err?.message || 'Complete failed'
+      return { success: false, message: msg }
     } finally {
       setLoading(false)
     }
@@ -135,13 +139,14 @@ export const useTransfer = () => {
     pageSize,
 
     isLoading,
-    error,
     loading,
-    handleCompleteReceive,
+    error,
+
     createTransferTasks,
     getTransfers,
     cancel,
     removeByTaskID,
+    handleCompleteReceive,
 
     setPage,
     setPageSize
