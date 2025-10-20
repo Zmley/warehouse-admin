@@ -284,7 +284,6 @@ const TransferPage: React.FC = () => {
       )
     })
 
-    // 被占用的 bin 拦截
     for (const id of selectedIDs) {
       const inv = invMap.get(id)
       if (!inv) continue
@@ -300,7 +299,6 @@ const TransferPage: React.FC = () => {
     }
 
     try {
-      // ★ 组装成批量 payloads
       const payloads = selectedIDs
         .map(id => invMap.get(id))
         .filter(Boolean)

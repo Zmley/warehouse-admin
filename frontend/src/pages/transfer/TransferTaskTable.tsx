@@ -20,7 +20,6 @@ import { TransferStatusUI } from 'constants/index'
 
 import PrintPreviewDialog, { buildPendingTransfersHtml } from './PrintPreview'
 
-/* ---------------- UI Constants ---------------- */
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
 const EMP = '#0f172a'
@@ -45,7 +44,6 @@ const PANEL_BG = '#f7f9fc'
 const R = 4
 const SERVER_PAGE_SIZE = 200
 
-/* ---------------- Small UI Bits ---------------- */
 const Badge = ({
   text,
   dashed = false,
@@ -112,9 +110,8 @@ const ZoneBadge: React.FC<{ text?: string }> = ({ text }) =>
     </Box>
   )
 
-/* ---------------- Types ---------------- */
 type BatchGroup = {
-  key: string // taskID|sourceBinID
+  key: string
   taskID: string
   sourceBinID: string
   sourceWarehouse: string
@@ -127,7 +124,6 @@ type BatchGroup = {
   createdAt: number
 }
 
-/* ---------------- Grouping Hook ---------------- */
 const useBatchGroups = (transfers: any[]) => {
   return useMemo<BatchGroup[]>(() => {
     if (!transfers || transfers.length === 0) return []
@@ -192,7 +188,6 @@ const useBatchGroups = (transfers: any[]) => {
   }, [transfers])
 }
 
-/* ---------------- Single Batch Card ---------------- */
 const BatchCard: React.FC<{
   g: BatchGroup
   status: TransferStatusUI
@@ -402,7 +397,6 @@ const BatchCard: React.FC<{
   )
 }
 
-/* ---------------- Props ---------------- */
 type Props = {
   transfers: any[]
   total: number
@@ -418,7 +412,6 @@ type Props = {
   updating?: boolean
 }
 
-/* ---------------- Main Component ---------------- */
 const TransferTaskTable: React.FC<Props> = ({
   transfers,
   total,
@@ -458,13 +451,11 @@ const TransferTaskTable: React.FC<Props> = ({
         bgcolor: PANEL_BG
       }}
     >
-      {/* Header */}
       <Box sx={{ flexShrink: 0, px: 1.25, pt: 1, pb: 0.5 }}>
         <Typography sx={{ fontWeight: 800, fontSize: 13 }}>
           Recent Transfers
         </Typography>
 
-        {/* Tabs + Print */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tabs
             value={status}
@@ -508,7 +499,6 @@ const TransferTaskTable: React.FC<Props> = ({
         <Divider sx={{ my: 0.5 }} />
       </Box>
 
-      {/* List */}
       <Box
         sx={{
           flex: 1,
@@ -547,7 +537,6 @@ const TransferTaskTable: React.FC<Props> = ({
         )}
       </Box>
 
-      {/* Footer */}
       <Divider sx={{ m: 0 }} />
       <Stack
         direction='row'
@@ -576,7 +565,6 @@ const TransferTaskTable: React.FC<Props> = ({
         </Box>
       </Stack>
 
-      {/* Print Preview Dialog */}
       <PrintPreviewDialog
         open={previewOpen}
         html={previewHtml}
