@@ -70,15 +70,28 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
   const handleConfirmUpload = async () => {
     setIsUploading(true)
     try {
-      const { data } = await uploadInventoryList(inventories)
+      // const { data } = await uploadInventoryList(inventories)
 
-      if (data.success) {
+      // if (data.success) {
+      //   setInventories([])
+      //   setSuccessMessage(
+      //     `✅ Inserted ${data.insertedCount}, Updated ${data.updatedCount} inventory item(s).`
+      //   )
+      // } else {
+      //   setError(data.message || 'Upload failed.')
+      // }
+
+      const result = await uploadInventoryList(inventories) // result 就是 { success, insertedCount, ... }
+
+      if (result?.success) {
+        setError('')
         setInventories([])
         setSuccessMessage(
-          `✅ Inserted ${data.insertedCount}, Updated ${data.updatedCount} inventory item(s).`
+          `✅ Inserted ${result.insertedCount}, Updated ${result.updatedCount} inventory item(s).`
         )
       } else {
-        setError(data.message || 'Upload failed.')
+        setSuccessMessage('')
+        setError(result?.message || 'Upload failed.')
       }
     } catch (err: any) {
       setError(

@@ -333,10 +333,10 @@ const BatchCard: React.FC<{
           →
         </Typography>
         <Badge text={g.destinationWarehouse} dashed />
-        <Badge
+        {/* <Badge
           text={g.destinationBin}
           onClick={e => onBinClick(e, g.destinationBin)}
-        />
+        /> */}
         {g.destinationZone && <ZoneBadge text={g.destinationZone} />}
       </Box>
 

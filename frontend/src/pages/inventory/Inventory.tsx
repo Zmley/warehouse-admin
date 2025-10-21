@@ -178,7 +178,6 @@ const Inventory: React.FC = () => {
         overflow: 'hidden'
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           flex: '0 0 auto',
