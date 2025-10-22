@@ -44,7 +44,6 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
   const MM = String(now.getMinutes()).padStart(2, '0')
   const timeLabel = `${M}/${D} ${HH}:${MM}`
 
-  // 按来源仓库分组
   const bySrc: Record<string, AnyT[]> = {}
   for (const r of rows) {
     const key = r.srcWh || 'Unknown'
@@ -95,7 +94,7 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
     return `
       <section class="section">
         <div class="sub">${escapeHtml(title)}</div>
-        <table>
+        <table class="compact">
           <thead>
             <tr>
               <th style="width:8%">#</th>
@@ -115,16 +114,45 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
 <title>Warehouse Transfer</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 10px; font-size: 11px; color:#111; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft Yahei",Arial,sans-serif; }
-  h1 { text-align:center; font-size:13px; margin:4px 0; font-weight:800; }
-  .sub { text-align:center; font-size:11px; font-weight:700; margin:6px 0 8px; }
-  table { width:100%; border-collapse:collapse; margin-bottom:10px; table-layout:fixed; }
-  th, td { border:1px solid #111827; padding:4px 6px; font-size:11px; text-align:center; vertical-align:middle; }
-  th { background:#f3f4f6; }
+  body {
+    margin: 8mm;
+    font-size: 15px; 
+    color:#111;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft Yahei",Arial,sans-serif;
+  }
+  .paper { max-width: 760px; margin: 0 auto; } 
+  h1 {
+    text-align:center;
+    font-size:18px; 
+    margin:6px 0 10px;
+    font-weight:800;
+  }
+  .sub {
+    text-align:center;
+    font-size:14px;
+    font-weight:700;
+    margin:6px 0 8px;
+  }
+  table {
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:8px;
+    table-layout:fixed;
+  }
+  th, td {
+    border:1px solid #111827;
+    padding: 3px 5px;
+    font-size: 15px;
+    line-height: 1.25;
+    text-align:center;
+    vertical-align:middle;
+  }
+  th { background:#f3f4f6; font-weight:800; }
   .mono { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 800; }
   .c { text-align:center; }
   .empty { text-align:center; color:#64748b; }
   .section { page-break-inside: avoid; }
+
   @media print {
     body { margin: 6mm; }
     thead { display: table-header-group; }
@@ -132,8 +160,10 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
   }
 </style></head>
 <body>
-  <h1>Warehouse Transfer</h1>
-  ${sections.join('')}
+  <div class="paper">
+    <h1>Warehouse Transfer</h1>
+    ${sections.join('')}
+  </div>
 </body></html>`
   return html
 }
@@ -169,7 +199,7 @@ export const PrintPreviewDialog: React.FC<{
             <CloseIcon />
           </IconButton>
           <Typography sx={{ flex: 1, fontWeight: 800 }}>
-            Warehouse Transfer — Print Preview
+            FCS Warehouse Transfer — Print Preview
           </Typography>
           <Button
             variant='contained'
@@ -177,7 +207,7 @@ export const PrintPreviewDialog: React.FC<{
             startIcon={<PrintIcon />}
             sx={{ fontWeight: 700 }}
           >
-            Priint
+            Print
           </Button>
         </Toolbar>
       </AppBar>
@@ -187,7 +217,7 @@ export const PrintPreviewDialog: React.FC<{
           sx={{
             width: '100%',
             height: '100%',
-            maxWidth: '1100px',
+            maxWidth: '860px',
             borderRadius: 2,
             overflow: 'hidden',
             boxShadow: '0 10px 30px rgba(0,0,0,.4)',
