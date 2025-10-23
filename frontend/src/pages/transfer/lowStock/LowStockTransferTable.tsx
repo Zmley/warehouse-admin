@@ -1,3 +1,4 @@
+// lowStock/LowStockTransferTable.tsx
 import React, {
   MouseEvent,
   useCallback,
@@ -73,7 +74,6 @@ export type Selection = {
   selectedInvIDs?: string[]
 }
 
-/* 与 OOS 完全一致的视觉常量 */
 const COLOR_HEADER_BG = '#f5f7fb'
 const COLOR_BORDER = '#e5e7eb'
 const COLOR_GREEN = '#166534'
@@ -147,6 +147,7 @@ const LowStockTable: React.FC<Props> = ({
   const [page, setPage] = useState(0)
   const [selection, setSelection] = useState<Record<string, Selection>>({})
   const [errMsg, setErrMsg] = useState<string>('')
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   const rowKeyOf = (t: TaskRow) => {
     const pc = t.productCode
@@ -172,6 +173,11 @@ const LowStockTable: React.FC<Props> = ({
     setPage(0)
     loadList()
   }, [loadList, reloadTick])
+
+  useEffect(() => {
+    // 当二次刷新时不再用全屏 Loading，以避免闪烁
+    if (!isLoading) setHasLoadedOnce(true)
+  }, [isLoading])
 
   const allRows: TaskRowWithQty[] = useMemo(
     () =>
@@ -500,9 +506,8 @@ const LowStockTable: React.FC<Props> = ({
         boxSizing: 'border-box'
       }}
     >
-      {/* 外层滚动容器 —— 去掉右侧预留，防止视觉偏移 */}
       <Box sx={{ flex: 1, overflow: 'auto', pr: 0, minHeight: 0 }}>
-        {isLoading ? (
+        {isLoading && !hasLoadedOnce ? (
           <Box
             display='flex'
             justifyContent='center'
@@ -523,7 +528,6 @@ const LowStockTable: React.FC<Props> = ({
             <Typography color='text.secondary'>No records found.</Typography>
           </Box>
         ) : (
-          // 关键：去掉左右 padding，表格紧贴 Paper 边框
           <Box sx={{ px: 0, pb: 0 }}>
             <Table
               stickyHeader

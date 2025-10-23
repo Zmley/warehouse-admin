@@ -546,4 +546,4 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   )
 }
 
-export default SourceBins
+export default React.memo(SourceBins)
