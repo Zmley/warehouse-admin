@@ -36,10 +36,10 @@ export type TaskRow = {
   }
   otherInventories?: OtherInv[]
   sourceBins?: unknown[]
-
   transferStatus?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | null
   hasPendingTransfer?: boolean
   transfersCount?: number
+  hasPendingOutofstockTask?: string | null
 }
 export const keyOf = (t: TaskRow) => String(t.taskID ?? 'no_task')
 
@@ -92,14 +92,17 @@ const RoundToggle = ({
   </Box>
 )
 
+/** ✅ 去掉 COMPLETED（Admin confirmed received）显示 */
 const StatusChip = ({ status }: { status?: TaskRow['transferStatus'] }) => {
   if (!status) return null
   const s = String(status).toUpperCase() as NonNullable<
     TaskRow['transferStatus']
   >
-  const map: Record<
-    NonNullable<TaskRow['transferStatus']>,
-    { text: string; color: string; border: string; title: string }
+  const map: Partial<
+    Record<
+      NonNullable<TaskRow['transferStatus']>,
+      { text: string; color: string; border: string; title: string }
+    >
   > = {
     PENDING: {
       text: 'Transiting task created',
@@ -112,15 +115,11 @@ const StatusChip = ({ status }: { status?: TaskRow['transferStatus'] }) => {
       color: '#166534',
       border: '#166534',
       title: 'Worker confirmed receiving'
-    },
-    COMPLETED: {
-      text: 'Admin confirmed received',
-      color: '#334155',
-      border: '#475569',
-      title: 'Admin confirmed received'
     }
+    // COMPLETED: 不显示（原先是 Admin confirmed received）
   }
   const info = map[s]
+  if (!info) return null
   return (
     <Chip
       size='small'
@@ -342,7 +341,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
             overflow: 'hidden'
           }}
         >
-          {/* 头部：仓名 +（右侧）转运状态徽标 */}
+          {/* 头部：仓名 +（右侧）转运状态徽标（已去掉 COMPLETED 文案） */}
           <Box
             sx={{
               display: 'grid',
@@ -369,7 +368,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
               {g.warehouseCode}
             </Typography>
 
-            {/* 在 Sources 区域右侧展示状态（只显示一个总览 chip，不展开细节） */}
             <Box sx={{ justifySelf: 'end' }}>
               <StatusChip status={task.transferStatus ?? null} />
             </Box>

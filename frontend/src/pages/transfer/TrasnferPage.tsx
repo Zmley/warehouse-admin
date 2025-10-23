@@ -7,14 +7,12 @@ import React, {
 } from 'react'
 import {
   Box,
-  Typography,
   Tooltip,
   Snackbar,
   Alert,
   Paper,
   TextField,
   InputAdornment,
-  Button,
   IconButton
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -26,7 +24,7 @@ import { TaskStatusFilter, TransferStatusUI } from 'constants/index'
 import TransferTaskTable from './TransferTaskTable'
 import LowStockTable from './lowStock/LowStockTransferTable'
 
-const CONTENT_HEIGHT = 'calc(100vh - 160px)'
+const CONTENT_HEIGHT = 'calc(100vh - 170px)'
 const RECENT_PANEL_WIDTH = 420
 
 const TransferPage: React.FC = () => {
@@ -193,13 +191,16 @@ const TransferPage: React.FC = () => {
       <Paper
         elevation={0}
         sx={{
-          px: 1,
-          py: 0.25, // 更薄的高度
-          my: 0.25, // 上下留白一致、更靠近顶部
+          px: 1.25,
+          // 与上方 topbar、下方 table 距离一致
+          mt: 0.75,
+          mb: 0.75,
+          // 让这条本身有明确高度（视觉更稳）
+          minHeight: 48,
           borderRadius: 12,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center', // 让控件组居中
+          justifyContent: 'center', // 控件组居中
           border: '1px solid #e6eaf2',
           background:
             'linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.99) 100%)',
@@ -207,7 +208,6 @@ const TransferPage: React.FC = () => {
           flexShrink: 0
         }}
       >
-        {/* 中间控件组（统一高度 32px，精致圆角胶囊） */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 'auto' }}>
           <TextField
             size='small'
@@ -227,7 +227,7 @@ const TransferPage: React.FC = () => {
             sx={{
               width: { xs: 210, sm: 260 },
               '& .MuiOutlinedInput-root': {
-                height: 32,
+                height: 34, // 控件视觉高度
                 borderRadius: 999
               }
             }}
@@ -242,7 +242,7 @@ const TransferPage: React.FC = () => {
             onKeyDown={e => {
               if (e.key === 'Enter') setLowRefreshTick(x => x + 1)
             }}
-            InputLabelProps={{ shrink: true }} // 确保“Qty”不被顶上去
+            InputLabelProps={{ shrink: true }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position='start'>≤</InputAdornment>
@@ -251,13 +251,12 @@ const TransferPage: React.FC = () => {
             sx={{
               width: 120,
               '& .MuiOutlinedInput-root': {
-                height: 32,
+                height: 34, // 控件视觉高度
                 borderRadius: 999
               }
             }}
           />
 
-          {/* Refresh 图标按钮（替代原来的大按钮） */}
           <Tooltip title='Refresh'>
             <span>
               <IconButton
@@ -265,8 +264,8 @@ const TransferPage: React.FC = () => {
                 disabled={transferLoading || deleting}
                 size='small'
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   borderRadius: 10,
                   border: '1px solid #e6eaf2',
                   bgcolor: '#fff',
