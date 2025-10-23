@@ -17,7 +17,6 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import PrintIcon from '@mui/icons-material/Print'
 import { TransferStatusUI } from 'constants/index'
-
 import PrintPreviewDialog, { buildPendingTransfersHtml } from './PrintPreview'
 
 const BORDER = '#e5e7eb'
@@ -192,7 +191,7 @@ const BatchCard: React.FC<{
   g: BatchGroup
   status: TransferStatusUI
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
-  onDelete?: (taskID: string, sourceBinID?: string) => Promise<any>
+  onDelete?: (transferIDs: string[]) => Promise<any>
   onComplete?: (items: any[]) => Promise<any>
 }> = ({ g, status, onBinClick, onDelete, onComplete }) => {
   const [busy, setBusy] = useState(false)
@@ -203,12 +202,13 @@ const BatchCard: React.FC<{
   const handleDelete = async () => {
     if (!onDelete || busy) return
     const ok = window.confirm(
-      'Are you sure you want to delete this task (the whole group for this source bin)?'
+      'Are you sure you want to delete this transfer group?'
     )
     if (!ok) return
     try {
       setBusy(true)
-      await onDelete(g.taskID, g.sourceBinID)
+      const ids = (g.items || []).map((t: any) => t?.transferID).filter(Boolean)
+      await onDelete(ids)
     } finally {
       setBusy(false)
     }
@@ -285,7 +285,7 @@ const BatchCard: React.FC<{
           )}
 
           {isDeletable && (
-            <Tooltip title='Delete this task (this source bin)'>
+            <Tooltip title='Delete this transfer group'>
               <span>
                 <IconButton
                   size='small'
@@ -333,10 +333,6 @@ const BatchCard: React.FC<{
           →
         </Typography>
         <Badge text={g.destinationWarehouse} dashed />
-        {/* <Badge
-          text={g.destinationBin}
-          onClick={e => onBinClick(e, g.destinationBin)}
-        /> */}
         {g.destinationZone && <ZoneBadge text={g.destinationZone} />}
       </Box>
 
@@ -407,7 +403,7 @@ type Props = {
   onStatusChange: (s: TransferStatusUI) => void
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   panelWidth?: number
-  onDelete?: (taskID: string, sourceBinID?: string) => Promise<any>
+  onDelete?: (transferIDs: string[]) => Promise<any>
   onComplete?: (items: any[]) => Promise<any>
   updating?: boolean
 }

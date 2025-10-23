@@ -41,3 +41,6 @@ export const getBoxTypes = async (params?: {
   const { data } = await apiClient.get('/products/box-types', { params })
   return data
 }
+
+export const getLowStockWithOthersAPI = (params: any) =>
+  apiClient.get('/products/low-stock-with-others', { params })

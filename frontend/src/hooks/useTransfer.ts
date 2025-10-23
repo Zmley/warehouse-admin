@@ -2,9 +2,9 @@ import { useState, useCallback } from 'react'
 import {
   cancelTransfer,
   fetchTransfers as fetchTransfersAPI,
-  deleteTransfersByTaskID,
   completeReceive,
-  createTransfersAPI
+  createTransfersAPI,
+  deleteTransfersByIDsAPI
 } from 'api/transfer'
 import type {
   ConfirmItem,
@@ -88,24 +88,40 @@ export const useTransfer = () => {
     }
   }, [])
 
-  const removeByTaskID = useCallback(
-    async (taskID: string, sourceBinID?: string) => {
-      try {
-        setLoading(true)
-        setError(null)
-        await deleteTransfersByTaskID(taskID, sourceBinID)
-        return { success: true }
-      } catch (err: any) {
-        const msg =
-          err?.response?.data?.message || err?.message || 'Delete failed'
-        setError(msg)
-        return { success: false, message: msg }
-      } finally {
-        setLoading(false)
-      }
-    },
-    []
-  )
+  //   const removeByTaskID = useCallback(
+  //     async (taskID: string, sourceBinID?: string) => {
+  //       try {
+  //         setLoading(true)
+  //         setError(null)
+  //         await deleteTransfersByTaskID(taskID, sourceBinID)
+  //         return { success: true }
+  //       } catch (err: any) {
+  //         const msg =
+  //           err?.response?.data?.message || err?.message || 'Delete failed'
+  //         setError(msg)
+  //         return { success: false, message: msg }
+  //       } finally {
+  //         setLoading(false)
+  //       }
+  //     },
+  //     []
+  //   )
+
+  const removeByTransferIDs = useCallback(async (transferIDs: string[]) => {
+    try {
+      setLoading(true)
+      setError(null)
+      await deleteTransfersByIDsAPI(transferIDs)
+      return { success: true }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || err?.message || 'Delete failed'
+      setError(msg)
+      return { success: false, message: msg }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const handleCompleteReceive = async (items: ConfirmItem[]) => {
     setLoading(true)
@@ -131,7 +147,7 @@ export const useTransfer = () => {
     createTransferTasks,
     getTransfers,
     cancel,
-    removeByTaskID,
+    removeByTransferIDs,
     handleCompleteReceive,
     setPage,
     setPageSize

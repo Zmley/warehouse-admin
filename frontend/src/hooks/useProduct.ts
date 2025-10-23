@@ -3,6 +3,7 @@ import {
   addProducts,
   getBoxTypes,
   getLowStockProducts,
+  getLowStockWithOthersAPI,
   getProductCodes,
   getProducts
 } from '../api/product'
@@ -43,10 +44,8 @@ export const useProduct = () => {
   const fetchProducts = useCallback(
     async (params?: FetchParams) => {
       if (!warehouseID) return
-
       setIsLoading(true)
       setError(null)
-
       try {
         const res = await getProducts({ warehouseID, ...params })
         if (res.success) {
@@ -68,7 +67,6 @@ export const useProduct = () => {
   const uploadProductList = useCallback(async (list: ProductsUploadType[]) => {
     try {
       const res = await addProducts(list)
-
       if (!res.success) {
         return {
           success: false,
@@ -76,7 +74,6 @@ export const useProduct = () => {
           result: res.result
         }
       }
-
       return res
     } catch (error) {
       console.error('❌ Upload failed', error)
@@ -87,9 +84,7 @@ export const useProduct = () => {
     }
   }, [])
 
-  type LowStockParams = FetchParams & {
-    maxQty: number
-  }
+  type LowStockParams = FetchParams & { maxQty: number }
 
   const fetchLowStockProducts = useCallback(
     async (params: LowStockParams) => {
@@ -107,6 +102,31 @@ export const useProduct = () => {
       } catch (err) {
         console.error('❌ Failed to load low-stock products:', err)
         setError('Failed to load low-stock products')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [warehouseID]
+  )
+
+  // ✅ 新增：获取低库存 + 其他仓有库存的产品
+  const fetchLowStockWithOthers = useCallback(
+    async (params: { keyword?: string; maxQty: number; boxType?: string }) => {
+      if (!warehouseID) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const res = await getLowStockWithOthersAPI({ warehouseID, ...params })
+        if (res?.data?.success || res?.status === 200) {
+          const list = res.data?.products || res.data?.data?.products || []
+          setProducts(list)
+          setTotalProductsCount(list.length)
+        } else {
+          throw new Error('Invalid response')
+        }
+      } catch (err) {
+        console.error('❌ Failed to load low-stock-with-others:', err)
+        setError('Failed to load low-stock-with-others')
       } finally {
         setIsLoading(false)
       }
@@ -133,6 +153,7 @@ export const useProduct = () => {
     isLoading,
     error,
     fetchLowStockProducts,
+    fetchLowStockWithOthers, // 👈 新增
     boxTypes,
     fetchBoxTypes
   }

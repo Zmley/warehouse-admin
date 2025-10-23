@@ -1,10 +1,57 @@
 import React, { MouseEvent, useMemo } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Chip } from '@mui/material'
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CheckIcon from '@mui/icons-material/Check'
 
-import { OtherInv, TaskRow, Selection, keyOf } from './OutOfStockTable'
+export type OtherInv = {
+  inventoryID: string
+  productCode?: string
+  quantity: number
+  bin?: {
+    binID?: string
+    binCode?: string
+    warehouseID?: string
+    warehouse?: { warehouseID?: string; warehouseCode?: string }
+    inventories?: Array<{
+      inventoryID: string
+      productCode: string
+      quantity: number
+      binID?: string
+    }>
+  }
+}
+
+export type TaskRow = {
+  taskID: string | null
+  productCode: string
+  quantity: number
+  createdAt?: string
+  destinationBinCode?: string
+  destinationBin?: {
+    binID?: string
+    binCode?: string
+    warehouseID?: string
+    warehouse?: { warehouseID?: string; warehouseCode?: string }
+  }
+  otherInventories?: OtherInv[]
+  sourceBins?: unknown[]
+
+  transferStatus?: 'PENDING' | 'IN_PROCESS' | 'COMPLETED' | null
+  hasPendingTransfer?: boolean
+  transfersCount?: number
+}
+export const keyOf = (t: TaskRow) => String(t.taskID ?? 'no_task')
+
+export type Selection = {
+  sourceBinID?: string
+  sourceWarehouseID?: string
+  productCode: string
+  qty: number | ''
+  maxQty: number
+  binCode?: string
+  selectedInvIDs?: string[]
+}
 
 const C_DANGER = '#D32F2F'
 const C_OK = '#15803D'
@@ -44,6 +91,54 @@ const RoundToggle = ({
     {!disabled && checked && <CheckIcon sx={{ fontSize: 12, color: C_OK }} />}
   </Box>
 )
+
+const StatusChip = ({ status }: { status?: TaskRow['transferStatus'] }) => {
+  if (!status) return null
+  const s = String(status).toUpperCase() as NonNullable<
+    TaskRow['transferStatus']
+  >
+  const map: Record<
+    NonNullable<TaskRow['transferStatus']>,
+    { text: string; color: string; border: string; title: string }
+  > = {
+    PENDING: {
+      text: 'Transiting task created',
+      color: '#334155',
+      border: '#94a3b8',
+      title: 'Transiting task created'
+    },
+    IN_PROCESS: {
+      text: 'Worker confirmed receiving',
+      color: '#166534',
+      border: '#166534',
+      title: 'Worker confirmed receiving'
+    },
+    COMPLETED: {
+      text: 'Admin confirmed received',
+      color: '#334155',
+      border: '#475569',
+      title: 'Admin confirmed received'
+    }
+  }
+  const info = map[s]
+  return (
+    <Chip
+      size='small'
+      variant='outlined'
+      title={info.title}
+      label={info.text}
+      sx={{
+        height: 22,
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: info.color,
+        borderColor: info.border,
+        background: 'transparent',
+        '& .MuiChip-label': { px: 0.75 }
+      }}
+    />
+  )
+}
 
 const BinBadge = ({
   code,
@@ -131,6 +226,8 @@ export type SourceBinsProps = {
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
   blockedBinCodes: Set<string>
+  /** 允许父组件传入自定义的 key（low stock 用行 key） */
+  taskKeyOverride?: string
 }
 
 const SourceBins: React.FC<SourceBinsProps> = ({
@@ -138,9 +235,11 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   selection,
   onBinClick,
   onToggleInventory,
-  blockedBinCodes
+  blockedBinCodes,
+  taskKeyOverride
 }) => {
-  const tKey = keyOf(task)
+  const tKey = taskKeyOverride ?? keyOf(task)
+
   const list = task.otherInventories || []
   const selectedIDs = useMemo(
     () => new Set(selection[tKey]?.selectedInvIDs || []),
@@ -243,6 +342,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
             overflow: 'hidden'
           }}
         >
+          {/* 头部：仓名 +（右侧）转运状态徽标 */}
           <Box
             sx={{
               display: 'grid',
@@ -268,13 +368,14 @@ const SourceBins: React.FC<SourceBinsProps> = ({
             >
               {g.warehouseCode}
             </Typography>
-            <Typography
-              sx={{ justifySelf: 'end', fontSize: 11, color: C_MUTED }}
-            >
-              {g.bins.length} bin{g.bins.length > 1 ? 's' : ''}
-            </Typography>
+
+            {/* 在 Sources 区域右侧展示状态（只显示一个总览 chip，不展开细节） */}
+            <Box sx={{ justifySelf: 'end' }}>
+              <StatusChip status={task.transferStatus ?? null} />
+            </Box>
           </Box>
 
+          {/* Bins */}
           <Box
             sx={{
               display: 'flex',
@@ -399,7 +500,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                     {items.map(p => {
                       const selected = selectedIDs.has(p.inventoryID)
                       const isCurrent = p.productCode === task.productCode
-                      // ✅ 这里移除了“单个产品点击选择”，仅保留展示与选中态样式
                       return (
                         <Box
                           key={p.inventoryID}
@@ -415,7 +515,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                             alignItems: 'center',
                             justifyContent: 'center',
                             background: selected ? '#ECFDF5' : '#FFFFFF',
-                            // 不可点击
                             cursor: 'default',
                             pointerEvents: 'none'
                           }}

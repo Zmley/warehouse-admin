@@ -1,50 +1,43 @@
 import React, {
+  MouseEvent,
   useCallback,
   useEffect,
   useMemo,
-  useState,
-  MouseEvent
+  useState
 } from 'react'
 import {
   Box,
   Typography,
-  IconButton,
   Tooltip,
   Snackbar,
   Alert,
-  CircularProgress,
-  Paper
+  Paper,
+  TextField,
+  InputAdornment,
+  Button,
+  IconButton
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import dayjs from 'dayjs'
+import SearchIcon from '@mui/icons-material/Search'
 import { useParams } from 'react-router-dom'
-import { useTask } from 'hooks/useTask'
 import { useTransfer } from 'hooks/useTransfer'
 import BinInventoryPopover from 'components/BinInventoryPopover'
-import OutOfStockTable, {
-  OtherInv,
-  TaskRow,
-  Selection,
-  keyOf
-} from './OutOfStockTable'
 import { TaskStatusFilter, TransferStatusUI } from 'constants/index'
 import TransferTaskTable from './TransferTaskTable'
+import LowStockTable from './lowStock/LowStockTransferTable'
 
-const CONTENT_HEIGHT = 'calc(100vh - 180px)'
+const CONTENT_HEIGHT = 'calc(100vh - 160px)'
 const RECENT_PANEL_WIDTH = 420
 
 const TransferPage: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
-  const { tasks, isLoading: tasksLoading, fetchTasks } = useTask()
-
   const {
-    // ⬇️ 使用批量创建
-    createTransferTasks,
     isLoading: transferLoading,
     error,
     transfers,
     total,
-    getTransfers
+    getTransfers,
+    removeByTransferIDs
   } = useTransfer()
 
   const {
@@ -54,32 +47,24 @@ const TransferPage: React.FC = () => {
   } = useTransfer()
   const { transfers: inProcessTransfers, getTransfers: getTransfersInProcess } =
     useTransfer()
+  const { loading: deleting, error: deleteError } = useTransfer()
 
-  const {
-    removeByTaskID,
-    loading: deleting,
-    error: deleteError
-  } = useTransfer()
+  // 顶部筛选（受控给 LowStockTable）
+  const [keyword, setKeyword] = useState('')
+  const [maxQty, setMaxQty] = useState<number>(10)
+  const [lowRefreshTick, setLowRefreshTick] = useState(0)
 
-  const [selection, setSelection] = useState<Record<string, Selection>>({})
   const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
   const [recentPage, setRecentPage] = useState(0)
-
   const [snack, setSnack] = useState<{
     open: boolean
     msg: string
     sev: 'success' | 'error' | 'info' | 'warning'
-  }>({
-    open: false,
-    msg: '',
-    sev: 'success'
-  })
-
+  }>({ open: false, msg: '', sev: 'success' })
   const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
     null
   )
   const [binPopoverCode, setBinPopoverCode] = useState<string | null>(null)
-  const popoverOpen = Boolean(binPopoverAnchor && binPopoverCode)
 
   const onBinClick = (evt: MouseEvent<HTMLElement>, code?: string | null) => {
     if (!code) return
@@ -90,11 +75,6 @@ const TransferPage: React.FC = () => {
     setBinPopoverAnchor(null)
     setBinPopoverCode(null)
   }
-
-  const loadTasks = useCallback(() => {
-    if (!warehouseID) return
-    fetchTasks({ warehouseID, status: 'OUT_OF_STOCK' })
-  }, [warehouseID, fetchTasks])
 
   const loadRecent = useCallback(
     (status: TransferStatusUI, page0 = 0) => {
@@ -129,49 +109,24 @@ const TransferPage: React.FC = () => {
     (opts?: { status?: TransferStatusUI; page0?: number }) => {
       const s = opts?.status ?? recentStatus
       const p0 = opts?.page0 ?? recentPage
-      loadTasks()
       loadRecent(s, p0)
       loadBlocked()
+      setLowRefreshTick(x => x + 1) // 同步刷新左侧 LowStock 表
     },
-    [loadTasks, loadRecent, loadBlocked, recentStatus, recentPage]
+    [loadRecent, loadBlocked, recentStatus, recentPage]
   )
 
   useEffect(() => {
     refreshAll({ status: recentStatus, page0: 0 })
   }, [warehouseID, recentStatus])
-
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
   }, [error])
-
   useEffect(() => {
     if (deleteError) setSnack({ open: true, msg: deleteError, sev: 'error' })
   }, [deleteError])
 
-  const oosTasksAll = useMemo(
-    () =>
-      (tasks || []).filter(
-        (t: TaskRow) =>
-          !Array.isArray(t.sourceBins) || t.sourceBins.length === 0
-      ),
-    [tasks]
-  )
-
-  const todayTasks = useMemo(
-    () =>
-      oosTasksAll.filter(
-        t => t.createdAt && dayjs(t.createdAt).isSame(dayjs(), 'day')
-      ),
-    [oosTasksAll]
-  )
-  const previousTasks = useMemo(
-    () =>
-      oosTasksAll.filter(
-        t => !t.createdAt || !dayjs(t.createdAt).isSame(dayjs(), 'day')
-      ),
-    [oosTasksAll]
-  )
-
+  // 被占用货位（PENDING+IN_PROCESS）
   const blockedSourceBinCodes = useMemo(
     () =>
       new Set(
@@ -182,177 +137,16 @@ const TransferPage: React.FC = () => {
     [pendingTransfers, inProcessTransfers]
   )
 
-  const toggleInventory = (taskKey: string, inv: OtherInv) => {
-    setSelection(prev => {
-      const cur = prev[taskKey] || { productCode: '', qty: '', maxQty: 0 }
-      const set = new Set(cur.selectedInvIDs || [])
-      if (set.has(inv.inventoryID)) set.delete(inv.inventoryID)
-      else set.add(inv.inventoryID)
-      return {
-        ...prev,
-        [taskKey]: { ...cur, selectedInvIDs: Array.from(set) }
-      }
-    })
-  }
-
-  const pickBin = (task: TaskRow, inv: OtherInv) => {
-    const key = keyOf(task)
-    const need = Number(task.quantity || 0)
-    const avail = Math.max(0, Number(inv.quantity || 0))
-    const initQty = need === 0 ? avail : Math.min(need, avail)
-    setSelection(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        sourceBinID: inv.bin?.binID,
-        sourceWarehouseID: inv.bin?.warehouse?.warehouseID,
-        productCode: task.productCode,
-        binCode: inv.bin?.binCode,
-        qty: initQty,
-        maxQty: avail
-      }
-    }))
-  }
-
-  const changeQty = (key: string, v: string) => {
-    setSelection(prev => {
-      const sel = prev[key]
-      if (!sel) return prev
-      if (v === '') return { ...prev, [key]: { ...sel, qty: '' } }
-      let n = Math.floor(Number(v))
-      if (isNaN(n)) n = 0
-      if (n < 1) n = 1
-      if (sel.maxQty > 0) n = Math.min(n, sel.maxQty)
-      return { ...prev, [key]: { ...sel, qty: n } }
-    })
-  }
-
-  const create = async (task: TaskRow) => {
-    const key = keyOf(task)
-    const sel = selection[key]
-    const selectedIDs = sel?.selectedInvIDs || []
-
-    if (selectedIDs.length < 1) {
-      setSnack({
-        open: true,
-        msg: 'Please select at least 1 item.',
-        sev: 'warning'
-      })
-      return
-    }
-
-    const destWarehouseID =
-      task?.destinationBin?.warehouse?.warehouseID ||
-      task?.destinationBin?.warehouseID
-    if (!destWarehouseID) {
-      setSnack({
-        open: true,
-        msg: 'Missing destination warehouse.',
-        sev: 'error'
-      })
-      return
-    }
-
-    const invMap = new Map<string, OtherInv>()
-    ;(task.otherInventories || []).forEach((oi: OtherInv) => {
-      if (oi.inventoryID) {
-        invMap.set(oi.inventoryID, {
-          ...oi,
-          bin: {
-            binID: oi.bin?.binID,
-            binCode: oi.bin?.binCode,
-            warehouseID: oi.bin?.warehouseID || oi.bin?.warehouse?.warehouseID,
-            warehouse: oi.bin?.warehouse
-          }
-        })
-      }
-      ;(oi.bin?.inventories || []).forEach(
-        (x: { inventoryID: string; productCode: string; quantity: number }) => {
-          invMap.set(x.inventoryID, {
-            inventoryID: x.inventoryID,
-            productCode: x.productCode,
-            quantity: x.quantity,
-            bin: {
-              binID: oi.bin?.binID,
-              binCode: oi.bin?.binCode,
-              warehouseID:
-                oi.bin?.warehouseID || oi.bin?.warehouse?.warehouseID,
-              warehouse: oi.bin?.warehouse
-            }
-          })
-        }
-      )
-    })
-
-    for (const id of selectedIDs) {
-      const inv = invMap.get(id)
-      if (!inv) continue
-      const code = inv.bin?.binCode
-      if (code && blockedSourceBinCodes.has(code)) {
-        setSnack({
-          open: true,
-          msg: `Bin ${code} already has a transfer task in progress.`,
-          sev: 'warning'
-        })
-        return
-      }
-    }
-
-    try {
-      const payloads = selectedIDs
-        .map(id => invMap.get(id))
-        .filter(Boolean)
-        .map(inv => ({
-          taskID: task.taskID ?? null,
-          sourceWarehouseID:
-            inv!.bin?.warehouse?.warehouseID || inv!.bin!.warehouseID!,
-          destinationWarehouseID: destWarehouseID,
-          sourceBinID: inv!.bin!.binID!,
-          productCode: inv!.productCode || task.productCode,
-          quantity: inv!.quantity
-        }))
-
-      const res = await createTransferTasks(payloads)
-      const ok = (res as any)?.success ?? (res as any)?.data?.success
-      const message = (res as any)?.message ?? (res as any)?.data?.message
-      const createdCount =
-        (res as any)?.createdCount ?? (res as any)?.data?.createdCount
-
-      if (ok) {
-        setSnack({
-          open: true,
-          msg: `Created ${createdCount ?? payloads.length} task(s).`,
-          sev: 'success'
-        })
-        refreshAll()
-      } else {
-        setSnack({
-          open: true,
-          msg: message || 'Create transfer failed.',
-          sev: 'error'
-        })
-      }
-    } catch (e: any) {
-      setSnack({
-        open: true,
-        msg:
-          e?.response?.data?.message || e?.message || 'Create transfer failed.',
-        sev: 'error'
-      })
-    }
-  }
-
-  const handleDelete = useCallback(
-    async (taskID: string, sourceBinID?: string) => {
-      const r = await removeByTaskID(taskID, sourceBinID)
+  const handleDeleteGroup = useCallback(
+    async (transferIDs: string[]) => {
+      const r = await removeByTransferIDs(transferIDs)
       if (r?.success) {
         setSnack({ open: true, msg: 'Deleted.', sev: 'success' })
         refreshAll()
-      } else if (r?.message) {
+      } else if (r?.message)
         setSnack({ open: true, msg: r.message, sev: 'error' })
-      }
     },
-    [removeByTaskID, refreshAll]
+    [removeByTransferIDs, refreshAll]
   )
 
   const handleCompleteGroup = useCallback(
@@ -364,23 +158,19 @@ const TransferPage: React.FC = () => {
           quantity: t?.quantity ?? 0
         }))
         .filter(x => x.transferID && x.productCode)
-
       if (items.length === 0) return
-
       const r = await handleCompleteReceive(items)
       const success = (r as any)?.success ?? (r as any)?.data?.success
       const message = (r as any)?.message ?? (r as any)?.data?.message
-
       if (success) {
         setSnack({ open: true, msg: 'Marked as completed.', sev: 'success' })
         refreshAll({ status: recentStatus, page0: recentPage })
-      } else {
+      } else
         setSnack({
           open: true,
           msg: message || 'Complete failed.',
           sev: 'error'
         })
-      }
     },
     [handleCompleteReceive, refreshAll, recentStatus, recentPage]
   )
@@ -393,42 +183,104 @@ const TransferPage: React.FC = () => {
         flexDirection: 'column',
         overflow: 'hidden',
         minHeight: 0,
-        py: 1,
+        py: 0.25, // 上移整体，贴近 topbar
         pr: { xs: 1.75, md: 1.5 },
         px: 0,
         scrollbarGutter: 'stable both-edges'
       }}
     >
+      {/* 顶部工具条（仅此处样式升级，其余不变） */}
       <Paper
         elevation={0}
         sx={{
-          p: 1,
-          mb: 1,
-          borderRadius: 2,
+          px: 1,
+          py: 0.25, // 更薄的高度
+          my: 0.25, // 上下留白一致、更靠近顶部
+          borderRadius: 12,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          border: '1px solid #e5e7eb',
-          background: '#fff',
+          justifyContent: 'center', // 让控件组居中
+          border: '1px solid #e6eaf2',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.99) 100%)',
+          boxShadow: '0 1px 0 rgba(16,24,40,.02), 0 1px 2px rgba(16,24,40,.05)',
           flexShrink: 0
         }}
       >
-        <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>
-          Create Transfer Tasks
-        </Typography>
-        <Tooltip title='Refresh tasks & transfers'>
-          <span>
-            <IconButton onClick={() => refreshAll()} size='small'>
-              {tasksLoading || transferLoading || deleting ? (
-                <CircularProgress size={18} />
-              ) : (
+        {/* 中间控件组（统一高度 32px，精致圆角胶囊） */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 'auto' }}>
+          <TextField
+            size='small'
+            placeholder='Search productCode'
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') setLowRefreshTick(x => x + 1)
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position='start'>
+                  <SearchIcon fontSize='small' sx={{ opacity: 0.7 }} />
+                </InputAdornment>
+              )
+            }}
+            sx={{
+              width: { xs: 210, sm: 260 },
+              '& .MuiOutlinedInput-root': {
+                height: 32,
+                borderRadius: 999
+              }
+            }}
+          />
+
+          <TextField
+            size='small'
+            type='number'
+            label='Qty'
+            value={maxQty}
+            onChange={e => setMaxQty(Math.max(0, Number(e.target.value || 0)))}
+            onKeyDown={e => {
+              if (e.key === 'Enter') setLowRefreshTick(x => x + 1)
+            }}
+            InputLabelProps={{ shrink: true }} // 确保“Qty”不被顶上去
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position='start'>≤</InputAdornment>
+              )
+            }}
+            sx={{
+              width: 120,
+              '& .MuiOutlinedInput-root': {
+                height: 32,
+                borderRadius: 999
+              }
+            }}
+          />
+
+          {/* Refresh 图标按钮（替代原来的大按钮） */}
+          <Tooltip title='Refresh'>
+            <span>
+              <IconButton
+                onClick={() => refreshAll()}
+                disabled={transferLoading || deleting}
+                size='small'
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  border: '1px solid #e6eaf2',
+                  bgcolor: '#fff',
+                  '&:hover': { bgcolor: '#f5f7fb' }
+                }}
+              >
                 <RefreshIcon fontSize='small' />
-              )}
-            </IconButton>
-          </span>
-        </Tooltip>
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
       </Paper>
 
+      {/* 内容区：左 1fr（LowStock），右 420px（Recent） */}
       <Paper
         elevation={0}
         sx={{
@@ -450,19 +302,17 @@ const TransferPage: React.FC = () => {
             '& > *': { minWidth: 0 }
           }}
         >
-          <OutOfStockTable
-            loading={tasksLoading}
-            todayTasks={todayTasks}
-            previousTasks={previousTasks}
-            totalTasks={oosTasksAll.length}
-            selection={selection}
-            onChangeQty={changeQty}
-            onPickBin={pickBin}
-            onCreate={create}
-            onBinClick={onBinClick}
-            onToggleInventory={toggleInventory}
-            blockedBinCodes={blockedSourceBinCodes}
-          />
+          {warehouseID && (
+            <LowStockTable
+              warehouseID={warehouseID}
+              onBinClick={onBinClick}
+              blockedBinCodes={blockedSourceBinCodes}
+              onCreated={() => refreshAll()}
+              keyword={keyword}
+              maxQty={maxQty}
+              reloadTick={lowRefreshTick}
+            />
+          )}
 
           <TransferTaskTable
             transfers={transfers}
@@ -481,7 +331,7 @@ const TransferPage: React.FC = () => {
             }}
             onBinClick={onBinClick}
             panelWidth={RECENT_PANEL_WIDTH}
-            onDelete={handleDelete}
+            onDelete={handleDeleteGroup}
             updating={transferLoading || deleting}
             onComplete={handleCompleteGroup}
           />
@@ -505,7 +355,7 @@ const TransferPage: React.FC = () => {
       </Snackbar>
 
       <BinInventoryPopover
-        open={popoverOpen}
+        open={Boolean(binPopoverAnchor && binPopoverCode)}
         anchorEl={binPopoverAnchor}
         binCode={binPopoverCode}
         onClose={closeBinPopover}
