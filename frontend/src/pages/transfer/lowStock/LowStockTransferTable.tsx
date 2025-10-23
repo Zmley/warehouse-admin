@@ -272,11 +272,15 @@ const LowStockTable: React.FC<Props> = ({
       }
     }
 
+    // ✅ 关键逻辑修改：仅当当前仓数量为 0 时带 taskID，否则一律 null
     const payloads = selectedIDs
       .map(id => invMap.get(id))
       .filter(Boolean)
       .map(inv => ({
-        taskID: task.hasPendingOutofstockTask ?? null,
+        taskID:
+          Number(task.currentQty) === 0
+            ? task.hasPendingOutofstockTask ?? null
+            : null,
         sourceWarehouseID:
           inv!.bin?.warehouse?.warehouseID || inv!.bin!.warehouseID!,
         destinationWarehouseID: destWarehouseID,
@@ -338,32 +342,64 @@ const LowStockTable: React.FC<Props> = ({
     }
   }
 
-  const OutOfStockTag = ({ taskID }: { taskID: string }) => (
-    <Box
-      sx={{
-        mt: 0.25,
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 0.5,
-        px: 0.6,
-        py: 0.2,
-        borderRadius: 1,
-        fontSize: 11.5,
-        fontWeight: 800,
-        lineHeight: 1,
-        color: COLOR_GREEN,
-        border: `1px dashed ${COLOR_GREEN_BORDER}`,
-        background: COLOR_GREEN_BG_SOFT,
-        maxWidth: '100%',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-        overflow: 'hidden'
-      }}
-      title={`Pending OOS Task: ${taskID}`}
-    >
-      Pick Up Task
-    </Box>
-  )
+  // 动态 Pick Up 徽标：qty===0 → 红色 Out of stock；>0 → 绿色 Pending
+  const PickUpBadge = ({ qty }: { qty: number }) => {
+    const isOut = Number(qty) === 0
+
+    // 红色（缺货）样式
+    const RED = '#B91C1C' // 深红（文字）
+    const RED_BORDER = '#FCA5A5' // 浅红（虚线边框）
+    const RED_BG = '#FEF2F2' // 很浅的红色背景
+    // 绿色（有量，待取货）样式
+    const GREEN = '#166534' // 深绿（文字）
+    const GREEN_BORDER = '#86EFAC' // 浅绿（虚线边框）
+    const GREEN_BG = '#ECFDF5' // 很浅的绿色背景
+
+    const styles = isOut
+      ? {
+          bg: RED_BG,
+          color: RED,
+          border: RED_BORDER,
+          title: 'Pick Up · Out of stock',
+          sub: 'Out of stock'
+        }
+      : {
+          bg: GREEN_BG,
+          color: GREEN,
+          border: GREEN_BORDER,
+          title: 'Pick Up · Pending',
+          sub: 'Pending'
+        }
+
+    return (
+      <Box
+        sx={{
+          mt: 0.5,
+          display: 'inline-flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.35,
+          px: 0.9,
+          py: 0.45,
+          borderRadius: 1,
+          border: `1px dashed ${styles.border}`,
+          background: styles.bg,
+          color: styles.color,
+          lineHeight: 1,
+          fontWeight: 800,
+          userSelect: 'none'
+        }}
+        title={styles.title}
+      >
+        <Typography sx={{ fontSize: 12.5, fontWeight: 900 }}>
+          Pick Up
+        </Typography>
+        <Typography sx={{ fontSize: 11.5, fontWeight: 800 }}>
+          {styles.sub}
+        </Typography>
+      </Box>
+    )
+  }
 
   const renderRow = (task: TaskRowWithQty) => {
     const rowKey = rowKeyOf(task)
@@ -402,47 +438,34 @@ const LowStockTable: React.FC<Props> = ({
               {task.productCode}
             </Typography>
 
-            {oosTaskID && <OutOfStockTag taskID={oosTaskID} />}
-
-            <Chip
-              size='small'
-              label={task.quantity === 0 ? 'ALL' : `Need: ${task.quantity}`}
-              sx={{
-                height: 20,
-                fontSize: 11.5,
-                fontWeight: 700,
-                '& .MuiChip-label': { px: 0.75 }
-              }}
-              variant='outlined'
-            />
+            {oosTaskID && <PickUpBadge qty={curQty} />}
           </Box>
         </TableCell>
 
+        {/* Qty Column */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.target }}
         >
-          <Box
+          <Typography
+            title='Qty in current warehouse'
             sx={{
+              fontSize: 12,
+              fontWeight: 900,
+              lineHeight: 1.15,
+              color: curQty === 0 ? '#6B7280' : '#0F172A',
+              fontFamily:
+                'ui-monospace, Menlo, Consolas, "Courier New", monospace',
               display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              height: 18,
-              px: 0.5,
-              borderRadius: 4,
-              fontSize: 11,
-              lineHeight: 1,
-              fontWeight: 700,
-              border: `1px solid ${BIN_BORDER}`,
-              background: BIN_BG,
-              color: BIN_TEXT
+              justifyContent: 'center'
             }}
-            title='Qty in current warehouse'
           >
-            {curQty}
-          </Box>
+            {`Qty × ${curQty}`}
+          </Typography>
         </TableCell>
 
+        {/* Sources Column */}
         <TableCell
           align='center'
           sx={{
@@ -464,6 +487,7 @@ const LowStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
+        {/* Action Column */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}

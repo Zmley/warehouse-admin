@@ -61,8 +61,17 @@ const TransferPage: React.FC = () => {
 
   // 顶部筛选（传给 LowStockTable）
   const [keyword, setKeyword] = useState('')
-  const [maxQty, setMaxQty] = useState<number>(10)
+  // ✅ 从 localStorage 初始化 maxQty
+  const [maxQty, setMaxQty] = useState<number>(() => {
+    const saved = localStorage.getItem('lowStockMaxQty')
+    return saved ? Number(saved) : 10
+  })
   const [lowRefreshTick, setLowRefreshTick] = useState(0)
+
+  // ✅ 当 maxQty 改变时保存到 localStorage
+  useEffect(() => {
+    localStorage.setItem('lowStockMaxQty', String(maxQty))
+  }, [maxQty])
 
   const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
   const [recentPage, setRecentPage] = useState(0)
@@ -102,7 +111,7 @@ const TransferPage: React.FC = () => {
     [warehouseID, getTransfers]
   )
 
-  // 拉被占用货位（PENDING + IN_PROCESS）—— 同一入口并发一次
+  // 拉被占用货位（PENDING + IN_PROCESS）
   const loadBlocked = useCallback(async () => {
     if (!warehouseID) return
     const [p, i] = await Promise.all([
@@ -129,16 +138,14 @@ const TransferPage: React.FC = () => {
     setLowRefreshTick(x => x + 1)
   }, [loadRecent, loadBlocked, recentStatus, recentPage])
 
-  // 初次 / 仓库变化：拉取一次
+  // 初次 / 仓库变化
   useEffect(() => {
     if (!warehouseID) return
     setRecentPage(0)
-    // 不 await，避免阻塞首次渲染
     loadRecent(recentStatus, 0)
     loadBlocked()
     setLowRefreshTick(x => x + 1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warehouseID])
+  }, [warehouseID]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 错误提示
   useEffect(() => {
@@ -148,7 +155,7 @@ const TransferPage: React.FC = () => {
     if (mutateError) setSnack({ open: true, msg: mutateError, sev: 'error' })
   }, [mutateError])
 
-  // 计算被占用的源货位集合（用于 LowStock 的 “In transfer” 显示）
+  // 被占用源货位集合
   const blockedSourceBinCodes = useMemo(
     () =>
       new Set(
@@ -159,7 +166,7 @@ const TransferPage: React.FC = () => {
     [pendingTransfers, inProcessTransfers]
   )
 
-  // 删除一组
+  // 删除组
   const handleDeleteGroup = useCallback(
     async (transferIDs: string[]) => {
       const r = await removeByTransferIDs(transferIDs)
@@ -198,7 +205,7 @@ const TransferPage: React.FC = () => {
     [handleCompleteReceive, refreshAll]
   )
 
-  // 切 Tab：只刷新右侧 Recent
+  // 切换 Tab
   const handleStatusChange = useCallback(
     async (s: TransferStatusUI) => {
       setRecentStatus(s)
@@ -208,7 +215,7 @@ const TransferPage: React.FC = () => {
     [loadRecent]
   )
 
-  // 翻页：只刷新右侧 Recent
+  // 翻页
   const handleRecentPageChange = useCallback(
     async (p: number) => {
       setRecentPage(p)
@@ -322,7 +329,7 @@ const TransferPage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* 内容区：左 LowStock，右 Recent */}
+      {/* 内容区 */}
       <Paper
         elevation={0}
         sx={{
