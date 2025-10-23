@@ -121,45 +121,53 @@ type BatchGroup = {
   items: any[]
   products: Array<{ id: string; productCode: string; quantity: number }>
   createdAt: number
+  batchID?: string | null
 }
 
 const useBatchGroups = (transfers: any[]) => {
   return useMemo<BatchGroup[]>(() => {
     if (!transfers || transfers.length === 0) return []
 
-    const byTaskAndBin: Record<string, any[]> = {}
+    const buckets: Record<string, any[]> = {}
     for (const t of transfers) {
-      const taskID = t?.taskID || 'UNKNOWN_TASK'
-      const sourceBinID = t?.sourceBinID || t?.sourceBin?.binID || 'UNKNOWN_BIN'
-      const key = `${taskID}|${sourceBinID}`
-      if (!byTaskAndBin[key]) byTaskAndBin[key] = []
-      byTaskAndBin[key].push(t)
+      const batchID: string | null = t?.batchID ?? null
+      const sourceBinID: string =
+        t?.sourceBinID || t?.sourceBin?.binID || 'UNKNOWN_BIN'
+
+      const legacyKey = `LEGACY:${sourceBinID}|X:${t?.taskID || t?.transferID}`
+      const key = batchID ? `B:${batchID}|S:${sourceBinID}` : legacyKey
+
+      if (!buckets[key]) buckets[key] = []
+      buckets[key].push(t)
     }
 
     const groups: BatchGroup[] = []
-    for (const [k, list] of Object.entries(byTaskAndBin)) {
+    for (const [k, list] of Object.entries(buckets)) {
       if (!list.length) continue
       const first = list[0]
+
+      const sourceBinID: string =
+        first?.sourceBinID || first?.sourceBin?.binID || ''
       const sw = first?.sourceWarehouse?.warehouseCode || '--'
       const sb = first?.sourceBin?.binCode || '--'
       const dw = first?.destinationWarehouse?.warehouseCode || '--'
       const db = first?.destinationBin?.binCode || '--'
       const dz = first?.destinationZone || ''
-      const sourceBinID = first?.sourceBinID || first?.sourceBin?.binID || ''
+      const batchID: string | null = first?.batchID ?? null
 
-      const products = list.map((t: any, idx: number) => ({
-        id:
-          t?.transferID?.toString?.() ||
-          t?.id?.toString?.() ||
-          t?.inventoryID?.toString?.() ||
-          `${idx}`,
-        productCode: t?.productCode || 'UNKNOWN',
-        quantity: Number(t?.quantity || 0)
-      }))
-
-      products.sort((a, b) =>
-        String(a.productCode).localeCompare(String(b.productCode))
-      )
+      const products = list
+        .map((t: any, idx: number) => ({
+          id:
+            t?.transferID?.toString?.() ||
+            t?.id?.toString?.() ||
+            t?.inventoryID?.toString?.() ||
+            `${idx}`,
+          productCode: t?.productCode || 'UNKNOWN',
+          quantity: Number(t?.quantity || 0)
+        }))
+        .sort((a, b) =>
+          String(a.productCode).localeCompare(String(b.productCode))
+        )
 
       const newest = list.reduce(
         (max: number, t: any) =>
@@ -178,7 +186,8 @@ const useBatchGroups = (transfers: any[]) => {
         destinationZone: dz || undefined,
         items: list,
         products,
-        createdAt: newest
+        createdAt: newest,
+        batchID
       })
     }
 

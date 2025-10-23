@@ -11,6 +11,7 @@ export type CreateTransferPayload = {
   quantity: number
   createdBy?: string
   status?: TaskStatusFilter
+  batchID?: string | null
 }
 
 export interface FetchTransfersParams {
