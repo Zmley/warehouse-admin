@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react'
 import {
@@ -26,26 +27,39 @@ import LowStockTable from './lowStock/LowStockTransferTable'
 
 const CONTENT_HEIGHT = 'calc(100vh - 170px)'
 const RECENT_PANEL_WIDTH = 420
+const SERVER_PAGE_SIZE = 200
+const BLOCKED_POLL_MS = 20000 // 20 秒轮询被占用货位
+
+// 将各种可能的返回结构统一成 rows[]
+const toRows = (res: any): any[] => {
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.rows)) return res.rows
+  if (Array.isArray(res?.data?.rows)) return res.data.rows
+  if (Array.isArray(res?.data)) return res.data
+  return []
+}
 
 const TransferPage: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
+
+  // —— 主列表（Recent Transfers）+ 增删改 —— //
   const {
     isLoading: transferLoading,
     error,
     transfers,
     total,
-    getTransfers,
-    removeByTransferIDs
+    getTransfers, // 拉取 Recent（不同 status）
+    removeByTransferIDs,
+    handleCompleteReceive,
+    loading: mutating,
+    error: mutateError
   } = useTransfer()
 
-  const {
-    transfers: pendingTransfers,
-    getTransfers: getTransfersPending,
-    handleCompleteReceive
-  } = useTransfer()
-  const { transfers: inProcessTransfers, getTransfers: getTransfersInProcess } =
-    useTransfer()
-  const { loading: deleting, error: deleteError } = useTransfer()
+  // —— 被占用货位来源（仅用于集合），避免影响主列表 —— //
+  const { getTransfers: getTransfersBlocked } = useTransfer()
+  const [pendingTransfers, setPendingTransfers] = useState<any[]>([])
+  const [inProcessTransfers, setInProcessTransfers] = useState<any[]>([])
+  const blockedTimer = useRef<number | null>(null)
 
   // 顶部筛选（受控给 LowStockTable）
   const [keyword, setKeyword] = useState('')
@@ -54,11 +68,13 @@ const TransferPage: React.FC = () => {
 
   const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
   const [recentPage, setRecentPage] = useState(0)
+
   const [snack, setSnack] = useState<{
     open: boolean
     msg: string
     sev: 'success' | 'error' | 'info' | 'warning'
   }>({ open: false, msg: '', sev: 'success' })
+
   const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
     null
   )
@@ -74,79 +90,107 @@ const TransferPage: React.FC = () => {
     setBinPopoverCode(null)
   }
 
+  // 拉“Recent Transfers”
   const loadRecent = useCallback(
-    (status: TransferStatusUI, page0 = 0) => {
+    async (status: TransferStatusUI, page0 = 0) => {
       if (!warehouseID) return
-      getTransfers({
+      await getTransfers({
         warehouseID,
         status: status as TaskStatusFilter,
         page: page0 + 1,
-        limit: 200
+        limit: SERVER_PAGE_SIZE
       })
     },
     [warehouseID, getTransfers]
   )
 
-  const loadBlocked = useCallback(() => {
+  // 拉被占用货位（PENDING + IN_PROCESS）— 单一入口并发（用于禁选源货位）
+  const loadBlocked = useCallback(async () => {
     if (!warehouseID) return
-    getTransfersPending({
-      warehouseID,
-      status: TaskStatusFilter.PENDING,
-      page: 1,
-      limit: 200
-    })
-    getTransfersInProcess({
-      warehouseID,
-      status: TaskStatusFilter.IN_PROCESS,
-      page: 1,
-      limit: 200
-    })
-  }, [warehouseID, getTransfersPending, getTransfersInProcess])
+    const [p, i] = await Promise.all([
+      getTransfersBlocked({
+        warehouseID,
+        status: TaskStatusFilter.PENDING,
+        page: 1,
+        limit: SERVER_PAGE_SIZE
+      }),
+      getTransfersBlocked({
+        warehouseID,
+        status: TaskStatusFilter.IN_PROCESS,
+        page: 1,
+        limit: SERVER_PAGE_SIZE
+      })
+    ])
+    setPendingTransfers(toRows(p))
+    setInProcessTransfers(toRows(i))
+  }, [warehouseID, getTransfersBlocked])
 
-  const refreshAll = useCallback(
-    (opts?: { status?: TransferStatusUI; page0?: number }) => {
-      const s = opts?.status ?? recentStatus
-      const p0 = opts?.page0 ?? recentPage
-      loadRecent(s, p0)
-      loadBlocked()
-      setLowRefreshTick(x => x + 1) // 同步刷新左侧 LowStock 表
-    },
-    [loadRecent, loadBlocked, recentStatus, recentPage]
-  )
+  // ====== 刷新行为调整 ======
+  // 手动刷新：仅刷新「右侧 Recent」+「左侧低库存」，不再去打 blocked（避免三次请求）
+  const refreshRecentAndLow = useCallback(async () => {
+    await loadRecent(recentStatus, recentPage)
+    setLowRefreshTick(x => x + 1)
+  }, [loadRecent, recentStatus, recentPage])
 
+  // 初次 / 仓库变化：拉一次 Recent & Blocked，并开启 blocked 轮询
   useEffect(() => {
-    refreshAll({ status: recentStatus, page0: 0 })
-  }, [warehouseID, recentStatus])
+    if (!warehouseID) return
+
+    setRecentPage(0)
+    loadRecent(recentStatus, 0)
+    loadBlocked()
+    setLowRefreshTick(x => x + 1)
+
+    if (blockedTimer.current) window.clearInterval(blockedTimer.current)
+    blockedTimer.current = window.setInterval(() => {
+      // 静默轮询被占用货位（不影响手动刷新接口次数）
+      loadBlocked()
+    }, BLOCKED_POLL_MS)
+
+    return () => {
+      if (blockedTimer.current) window.clearInterval(blockedTimer.current)
+      blockedTimer.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warehouseID])
+
+  // 错误 Snackbar
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
   }, [error])
   useEffect(() => {
-    if (deleteError) setSnack({ open: true, msg: deleteError, sev: 'error' })
-  }, [deleteError])
+    if (mutateError) setSnack({ open: true, msg: mutateError, sev: 'error' })
+  }, [mutateError])
 
   // 被占用货位（PENDING+IN_PROCESS）
-  const blockedSourceBinCodes = useMemo(
-    () =>
-      new Set(
-        [...(pendingTransfers || []), ...(inProcessTransfers || [])]
-          .map((t: any) => t?.sourceBin?.binCode)
-          .filter(Boolean)
-      ),
-    [pendingTransfers, inProcessTransfers]
-  )
+  const blockedSourceBinCodes = useMemo(() => {
+    const pend = Array.isArray(pendingTransfers)
+      ? pendingTransfers
+      : toRows(pendingTransfers)
+    const proc = Array.isArray(inProcessTransfers)
+      ? inProcessTransfers
+      : toRows(inProcessTransfers)
+    return new Set(
+      [...pend, ...proc].map((t: any) => t?.sourceBin?.binCode).filter(Boolean)
+    )
+  }, [pendingTransfers, inProcessTransfers])
 
+  // 删除分组后：刷新 Recent & Blocked（此处需要同时刷新）
   const handleDeleteGroup = useCallback(
     async (transferIDs: string[]) => {
       const r = await removeByTransferIDs(transferIDs)
-      if (r?.success) {
+      if ((r as any)?.success || (r as any)?.data?.success) {
         setSnack({ open: true, msg: 'Deleted.', sev: 'success' })
-        refreshAll()
-      } else if (r?.message)
-        setSnack({ open: true, msg: r.message, sev: 'error' })
+        await Promise.all([loadRecent(recentStatus, recentPage), loadBlocked()])
+      } else {
+        const msg = (r as any)?.message ?? (r as any)?.data?.message
+        setSnack({ open: true, msg: msg || 'Delete failed.', sev: 'error' })
+      }
     },
-    [removeByTransferIDs, refreshAll]
+    [removeByTransferIDs, loadRecent, loadBlocked, recentStatus, recentPage]
   )
 
+  // 完成分组后：刷新 Recent & Blocked（此处需要同时刷新）
   const handleCompleteGroup = useCallback(
     async (groupItems: any[]) => {
       const items = groupItems
@@ -156,22 +200,40 @@ const TransferPage: React.FC = () => {
           quantity: t?.quantity ?? 0
         }))
         .filter(x => x.transferID && x.productCode)
-      if (items.length === 0) return
+      if (!items.length) return
       const r = await handleCompleteReceive(items)
-      const success = (r as any)?.success ?? (r as any)?.data?.success
-      const message = (r as any)?.message ?? (r as any)?.data?.message
-      if (success) {
+      const ok = (r as any)?.success ?? (r as any)?.data?.success
+      const msg = (r as any)?.message ?? (r as any)?.data?.message
+      if (ok) {
         setSnack({ open: true, msg: 'Marked as completed.', sev: 'success' })
-        refreshAll({ status: recentStatus, page0: recentPage })
-      } else
-        setSnack({
-          open: true,
-          msg: message || 'Complete failed.',
-          sev: 'error'
-        })
+        await Promise.all([loadRecent(recentStatus, recentPage), loadBlocked()])
+      } else {
+        setSnack({ open: true, msg: msg || 'Complete failed.', sev: 'error' })
+      }
     },
-    [handleCompleteReceive, refreshAll, recentStatus, recentPage]
+    [handleCompleteReceive, loadRecent, loadBlocked, recentStatus, recentPage]
   )
+
+  // Tab 切换：仅刷新“Recent”
+  const handleStatusChange = useCallback(
+    async (s: TransferStatusUI) => {
+      setRecentStatus(s)
+      setRecentPage(0)
+      await loadRecent(s, 0)
+    },
+    [loadRecent]
+  )
+
+  // 翻页：仅刷新“Recent”
+  const handleRecentPageChange = useCallback(
+    async (p: number) => {
+      setRecentPage(p)
+      await loadRecent(recentStatus, p)
+    },
+    [loadRecent, recentStatus]
+  )
+
+  const refreshing = transferLoading || mutating
 
   return (
     <Box
@@ -181,26 +243,24 @@ const TransferPage: React.FC = () => {
         flexDirection: 'column',
         overflow: 'hidden',
         minHeight: 0,
-        py: 0.25, // 上移整体，贴近 topbar
+        py: 0.25,
         pr: { xs: 1.75, md: 1.5 },
         px: 0,
         scrollbarGutter: 'stable both-edges'
       }}
     >
-      {/* 顶部工具条（仅此处样式升级，其余不变） */}
+      {/* 顶部工具条 */}
       <Paper
         elevation={0}
         sx={{
           px: 1.25,
-          // 与上方 topbar、下方 table 距离一致
           mt: 0.75,
           mb: 0.75,
-          // 让这条本身有明确高度（视觉更稳）
           minHeight: 48,
           borderRadius: 12,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center', // 控件组居中
+          justifyContent: 'center',
           border: '1px solid #e6eaf2',
           background:
             'linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.99) 100%)',
@@ -227,12 +287,11 @@ const TransferPage: React.FC = () => {
             sx={{
               width: { xs: 210, sm: 260 },
               '& .MuiOutlinedInput-root': {
-                height: 34, // 控件视觉高度
+                height: 34,
                 borderRadius: 999
               }
             }}
           />
-
           <TextField
             size='small'
             type='number'
@@ -251,7 +310,7 @@ const TransferPage: React.FC = () => {
             sx={{
               width: 120,
               '& .MuiOutlinedInput-root': {
-                height: 34, // 控件视觉高度
+                height: 34,
                 borderRadius: 999
               }
             }}
@@ -260,8 +319,8 @@ const TransferPage: React.FC = () => {
           <Tooltip title='Refresh'>
             <span>
               <IconButton
-                onClick={() => refreshAll()}
-                disabled={transferLoading || deleting}
+                onClick={() => refreshRecentAndLow()}
+                disabled={refreshing}
                 size='small'
                 sx={{
                   width: 34,
@@ -306,7 +365,12 @@ const TransferPage: React.FC = () => {
               warehouseID={warehouseID}
               onBinClick={onBinClick}
               blockedBinCodes={blockedSourceBinCodes}
-              onCreated={() => refreshAll()}
+              onCreated={() => {
+                // 新建任务后：右侧列表 + 左侧低库存 + 刷新被占用集合
+                loadRecent(recentStatus, recentPage)
+                setLowRefreshTick(x => x + 1)
+                loadBlocked()
+              }}
               keyword={keyword}
               maxQty={maxQty}
               reloadTick={lowRefreshTick}
@@ -318,20 +382,13 @@ const TransferPage: React.FC = () => {
             total={total}
             loading={transferLoading}
             page={recentPage}
-            onPageChange={p => {
-              setRecentPage(p)
-              refreshAll({ status: recentStatus, page0: p })
-            }}
+            onPageChange={handleRecentPageChange}
             status={recentStatus}
-            onStatusChange={s => {
-              setRecentStatus(s)
-              setRecentPage(0)
-              refreshAll({ status: s, page0: 0 })
-            }}
+            onStatusChange={handleStatusChange}
             onBinClick={onBinClick}
             panelWidth={RECENT_PANEL_WIDTH}
             onDelete={handleDeleteGroup}
-            updating={transferLoading || deleting}
+            updating={transferLoading || mutating}
             onComplete={handleCompleteGroup}
           />
         </Box>
