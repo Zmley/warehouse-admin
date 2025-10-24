@@ -1,5 +1,5 @@
 import React, { MouseEvent, useMemo } from 'react'
-import { Box, Typography, Chip } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CheckIcon from '@mui/icons-material/Check'
@@ -91,53 +91,6 @@ const RoundToggle = ({
     {!disabled && checked && <CheckIcon sx={{ fontSize: 12, color: C_OK }} />}
   </Box>
 )
-
-/** ✅ 去掉 COMPLETED（Admin confirmed received）显示 */
-const StatusChip = ({ status }: { status?: TaskRow['transferStatus'] }) => {
-  if (!status) return null
-  const s = String(status).toUpperCase() as NonNullable<
-    TaskRow['transferStatus']
-  >
-  const map: Partial<
-    Record<
-      NonNullable<TaskRow['transferStatus']>,
-      { text: string; color: string; border: string; title: string }
-    >
-  > = {
-    PENDING: {
-      text: 'Transiting task created',
-      color: '#334155',
-      border: '#94a3b8',
-      title: 'Transiting task created'
-    },
-    IN_PROCESS: {
-      text: 'Worker confirmed receiving',
-      color: '#166534',
-      border: '#166534',
-      title: 'Worker confirmed receiving'
-    }
-    // COMPLETED: 不显示（原先是 Admin confirmed received）
-  }
-  const info = map[s]
-  if (!info) return null
-  return (
-    <Chip
-      size='small'
-      variant='outlined'
-      title={info.title}
-      label={info.text}
-      sx={{
-        height: 22,
-        fontSize: 11.5,
-        fontWeight: 700,
-        color: info.color,
-        borderColor: info.border,
-        background: 'transparent',
-        '& .MuiChip-label': { px: 0.75 }
-      }}
-    />
-  )
-}
 
 const BinBadge = ({
   code,
@@ -345,7 +298,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto',
+              gridTemplateColumns: 'auto 1fr',
               alignItems: 'center',
               gap: 1,
               px: 1,
@@ -367,10 +320,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
             >
               {g.warehouseCode}
             </Typography>
-
-            <Box sx={{ justifySelf: 'end' }}>
-              <StatusChip status={task.transferStatus ?? null} />
-            </Box>
           </Box>
 
           {/* Bins */}
