@@ -1,4 +1,3 @@
-// lowStock/LowStockTransferTable.tsx
 import React, {
   MouseEvent,
   useCallback,
@@ -76,12 +75,6 @@ export type Selection = {
 
 const COLOR_HEADER_BG = '#f5f7fb'
 const COLOR_BORDER = '#e5e7eb'
-const COLOR_GREEN = '#166534'
-const COLOR_GREEN_BORDER = '#16a34a'
-const COLOR_GREEN_BG_SOFT = '#ecfdf5'
-const BIN_BG = '#f6f9ff'
-const BIN_BORDER = '#dfe7f3'
-const BIN_TEXT = '#3a517a'
 
 const cellBase = {
   border: `1px solid ${COLOR_BORDER}`,
@@ -99,26 +92,6 @@ const COLUMN_WIDTHS = {
   qtyAction: 150
 }
 const ROWS_PER_PAGE = 100
-
-const CreatedPill = ({ times }: { times?: number }) => (
-  <Box
-    sx={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      px: 0.8,
-      py: 0.2,
-      borderRadius: 1,
-      border: `1px dashed ${COLOR_GREEN}`,
-      background: 'transparent',
-      color: COLOR_GREEN,
-      fontSize: 12.5,
-      fontWeight: 700
-    }}
-    title='Transfer created'
-  >
-    Product{times && times > 1 ? ` ×${times}` : ''}
-  </Box>
-)
 
 type TaskRowWithQty = TaskRow & { currentQty?: number }
 
@@ -175,7 +148,6 @@ const LowStockTable: React.FC<Props> = ({
   }, [loadList, reloadTick])
 
   useEffect(() => {
-    // 当二次刷新时不再用全屏 Loading，以避免闪烁
     if (!isLoading) setHasLoadedOnce(true)
   }, [isLoading])
 

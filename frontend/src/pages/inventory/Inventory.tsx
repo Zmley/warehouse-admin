@@ -346,6 +346,7 @@ const Inventory: React.FC = () => {
 
               for (const c of creates) {
                 const res = await addInventory({
+                  binID: (c as any).binID,
                   binCode: c.binCode,
                   productCode: c.productCode,
                   quantity: c.quantity

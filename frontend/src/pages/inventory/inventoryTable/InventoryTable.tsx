@@ -35,6 +35,7 @@ interface InventoryTableProps {
       binCode: string
       productCode: string
       quantity: number
+      binID?: string
     }[]
   ) => Promise<void>
   productOptions: string[]
@@ -149,6 +150,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
   const handleSaveGroup = async (binCode: string) => {
     const items = grouped[binCode] || []
+    const targetBinID =
+      items.find(i => i?.bin?.binID)?.bin?.binID || items[0]?.bin?.binID || ''
     const empty = isEmptyBin(items)
     const emptyDraftObj = emptyDraft[binCode]
 
@@ -214,13 +217,15 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         binCode: string
         productCode: string
         quantity: number
+        binID?: string
       }[] =
         empty && emptyDraftObj
           ? [
               {
                 binCode,
                 productCode: emptyDraftObj.productCode.trim(),
-                quantity: Number(emptyDraftObj.quantity)
+                quantity: Number(emptyDraftObj.quantity),
+                binID: targetBinID
               }
             ]
           : []
@@ -229,10 +234,12 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         binCode: string
         productCode: string
         quantity: number
+        binID?: string
       }[] = (newRows[binCode] || []).map(r => ({
         binCode,
         productCode: r.productCode.trim(),
-        quantity: Number(r.quantity)
+        quantity: Number(r.quantity),
+        binID: targetBinID
       }))
 
       for (const row of newRows[binCode] || []) {
@@ -552,7 +559,14 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               const { binCode, productCode, quantity } = mergeDialog
               setSavingBin(binCode)
               try {
-                await onUpsert([{ binCode, productCode, quantity }])
+                const groupItems = grouped[binCode] || []
+                const targetBinID =
+                  groupItems.find(i => i?.bin?.binID)?.bin?.binID ||
+                  groupItems[0]?.bin?.binID ||
+                  ''
+                await onUpsert([
+                  { binCode, productCode, quantity, binID: targetBinID }
+                ])
                 setMergeDialog(prev => ({ ...prev, open: false }))
                 pendingClearAfterRefresh.current = 'save'
                 onRefresh()

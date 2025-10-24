@@ -22,6 +22,7 @@ export interface GetInventoriesParams {
 }
 
 export interface InventoryUploadType {
+  binID?: string
   binCode: string
   productCode: string
   quantity: number
