@@ -55,16 +55,16 @@ export type Selection = {
 
 const C_DANGER = '#D32F2F'
 const C_OK = '#15803D'
-const C_BORDER = '#E5E7EB'
+const C_BORDER = '#E6EBF2'
 const C_TEXT = '#0F172A'
-const C_MUTED = '#475569'
+const C_MUTED = '#64748B'
 
-const C_WARE_BG = '#FFFCF3'
-const C_WARE_HEAD = '#F6EAD1'
-const C_BIN_HEAD_BG = '#F2F6FF'
-const C_ITEM_BG = '#F9FAFB'
+const C_WARE_BG = '#FFFEFB'
+const C_WARE_HEAD = '#FBF7EE'
+const C_BIN_HEAD_BG = '#F7FAFF'
+const C_ITEM_BG = '#FCFDFE'
 
-const R_SM = 3
+const R_SM = 2
 
 const RoundToggle = ({
   checked,
@@ -75,20 +75,20 @@ const RoundToggle = ({
 }) => (
   <Box
     sx={{
-      width: 18,
-      height: 18,
-      borderRadius: '50%',
-      border: `1.6px solid ${
-        disabled ? '#E2E8F0' : checked ? C_OK : '#CBD5E1'
+      width: 16,
+      height: 16,
+      borderRadius: 2,
+      border: `1.4px solid ${
+        disabled ? '#E5EAF1' : checked ? C_OK : '#CDD6E1'
       }`,
-      background: disabled ? '#F3F4F6' : checked ? '#DCFCE7' : '#FFFFFF',
+      background: disabled ? '#F4F6F9' : checked ? '#EFFEEC' : '#FFFFFF',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transition: 'all .15s ease'
+      transition: 'all .12s ease'
     }}
   >
-    {!disabled && checked && <CheckIcon sx={{ fontSize: 12, color: C_OK }} />}
+    {!disabled && checked && <CheckIcon sx={{ fontSize: 10, color: C_OK }} />}
   </Box>
 )
 
@@ -107,18 +107,18 @@ const BinBadge = ({
     role='button'
     title={code || undefined}
     sx={{
-      px: 1,
-      py: 0.25,
+      px: 0.75,
+      py: 0.2,
       border: `1px solid ${C_BORDER}`,
       borderRadius: R_SM,
-      background: '#EEF2FF',
-      fontSize: 12,
-      fontWeight: 900,
+      background: '#F3F6FF',
+      fontSize: 11,
+      fontWeight: 800,
       letterSpacing: 0.2,
-      color: '#243B53',
+      color: '#2F3E5B',
       cursor: code ? 'pointer' : 'default',
-      boxShadow: '0 1px 0 rgba(0,0,0,.03)',
-      '&:hover': { filter: 'brightness(0.98)' },
+      boxShadow: '0 1px 0 rgba(0,0,0,.02)',
+      '&:hover': { filter: 'brightness(0.99)' },
       whiteSpace: 'nowrap'
     }}
   >
@@ -280,17 +280,17 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 0.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, p: 0.4 }}>
       {Object.values(groups).map(g => (
         <Box
           key={g.warehouseCode}
           sx={{
-            mx: 0.5,
-            my: 1,
+            mx: 0.4,
+            my: 0.6,
             border: `1px solid ${C_BORDER}`,
             background: C_WARE_BG,
             borderRadius: R_SM,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
             overflow: 'hidden'
           }}
         >
@@ -300,20 +300,20 @@ const SourceBins: React.FC<SourceBinsProps> = ({
               display: 'grid',
               gridTemplateColumns: 'auto 1fr',
               alignItems: 'center',
-              gap: 1,
-              px: 1,
-              py: 0.8,
+              gap: 0.6,
+              px: 0.8,
+              py: 0.5,
               background: C_WARE_HEAD,
               borderBottom: `1px solid ${C_BORDER}`
             }}
           >
-            <WarehouseOutlinedIcon sx={{ color: '#5f4d28', fontSize: 16 }} />
+            <WarehouseOutlinedIcon sx={{ color: '#5f4d28', fontSize: 14 }} />
             <Typography
               component='h3'
               sx={{
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 900,
-                color: '#4b5563',
+                color: '#475569',
                 letterSpacing: 0.2
               }}
               title={g.warehouseCode}
@@ -324,12 +324,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
 
           {/* Bins */}
           <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.75,
-              p: 0.75
-            }}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, p: 0.6 }}
           >
             {g.bins.map(bin => {
               const items = bin.items
@@ -348,11 +343,11 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                   key={bin.binID || bin.binCode}
                   aria-disabled={blocked}
                   sx={{
-                    border: `1px dashed ${blocked ? '#E5E7EB' : C_BORDER}`,
+                    border: `1px dashed ${blocked ? '#EAEFF5' : C_BORDER}`,
                     borderRadius: R_SM,
-                    background: blocked ? '#F8FAFC' : '#FFFFFF',
+                    background: blocked ? '#F7F9FC' : '#FFFFFF',
                     overflow: 'hidden',
-                    opacity: blocked ? 0.8 : 1
+                    opacity: blocked ? 0.85 : 1
                   }}
                 >
                   <Box
@@ -360,13 +355,33 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       display: 'grid',
                       gridTemplateColumns: '1fr auto 1fr',
                       alignItems: 'center',
-                      px: 0.75,
-                      py: 0.5,
-                      background: blocked ? '#F3F4F6' : C_BIN_HEAD_BG,
+                      px: 0.6,
+                      py: 0.4,
+                      background: blocked ? '#F4F6FA' : C_BIN_HEAD_BG,
                       borderBottom: `1px solid ${C_BORDER}`
                     }}
                   >
-                    <Box />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        pl: 0.8
+                      }}
+                    >
+                      {blocked && (
+                        <Typography
+                          sx={{
+                            fontSize: 9.5,
+                            color: C_DANGER,
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          In transfer
+                        </Typography>
+                      )}
+                    </Box>
                     <Box
                       sx={{
                         justifySelf: 'center',
@@ -377,20 +392,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       }}
                     >
                       <BinBadge code={bin.binCode} onClick={onBinClick} />
-                      {blocked && (
-                        <Typography
-                          sx={{
-                            fontSize: 10,
-                            color: C_DANGER,
-                            fontWeight: 700,
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          In transfer
-                        </Typography>
-                      )}
                     </Box>
-
                     <Box
                       onClick={e => {
                         e.stopPropagation()
@@ -424,8 +426,8 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                     >
                       <Typography
                         sx={{
-                          fontSize: 11,
-                          fontWeight: 700,
+                          fontSize: 10.5,
+                          fontWeight: 800,
                           color: blocked ? '#9CA3AF' : C_MUTED
                         }}
                       >
@@ -438,10 +440,10 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                   <Box
                     sx={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(2, minmax(0,1fr))',
-                      gap: 0.5,
-                      p: 0.6,
-                      background: blocked ? '#F3F4F6' : C_ITEM_BG
+                      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                      gap: 0.4,
+                      p: 0.45,
+                      background: blocked ? '#F4F6FA' : C_ITEM_BG
                     }}
                   >
                     {items.map(p => {
@@ -453,22 +455,22 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                           title={`${p.productCode} × ${p.quantity}`}
                           sx={{
                             border: `1px solid ${
-                              selected ? '#86EFAC' : '#E2E8F0'
+                              selected ? '#CDEAD7' : '#E7ECF3'
                             }`,
                             borderRadius: R_SM,
-                            px: 0.6,
-                            py: 0.45,
+                            px: 0.5,
+                            py: 0.35,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: selected ? '#ECFDF5' : '#FFFFFF',
+                            background: selected ? '#F6FFFB' : '#FFFFFF',
                             cursor: 'default',
                             pointerEvents: 'none'
                           }}
                         >
                           <Typography
                             sx={{
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: isCurrent ? 900 : 700,
                               color: C_TEXT,
                               fontFamily:
