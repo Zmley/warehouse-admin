@@ -8,7 +8,9 @@ import {
   Tab,
   Tabs,
   Tooltip,
-  Typography
+  Typography,
+  Select,
+  MenuItem
 } from '@mui/material'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
@@ -22,92 +24,50 @@ import PrintPreviewDialog, { buildPendingTransfersHtml } from './PrintPreview'
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
 const EMP = '#0f172a'
-const BRAND = '#2563eb'
 const GREEN = '#166534'
+const PANEL_BG = '#f7f9fc'
+
 const CARD_BG = '#fff'
-const CARD_DASH = '#b9d4b9'
-const HEAD_BG = '#f5f7ff'
-const PATH_BG = '#eef6ff'
-const INV_BG = '#f8fafc'
-const CHIP_BG = '#fff'
-const CHIP_BORDER = '#e6ebf2'
-const WH_BG = '#fff7e6'
-const WH_BORDER = '#e6cf9a'
-const WH_TEXT = '#5f4d28'
+const CARD_DASH = '#cfd8e3'
+const HEAD_BG = '#fffdf6'
+const GRID_HEAD_BG = '#f8fafc'
+const GRID_BORDER = '#e5e7eb'
+
 const BIN_BG = '#eef2ff'
 const BIN_BORDER = '#dfe3ee'
 const BIN_TEXT = '#2f477f'
-const ZONE_BG = '#eaf4ff'
-const ZONE_BORDER = '#d7e8ff'
-const PANEL_BG = '#f7f9fc'
+
 const R = 4
 const SERVER_PAGE_SIZE = 200
+const ALL_KEY = '__ALL__'
 
-const Badge = ({
-  text,
-  dashed = false,
-  onClick
-}: {
+const BinBadge: React.FC<{
   text: string
-  dashed?: boolean
   onClick?: (e: MouseEvent<HTMLElement>) => void
-}) => (
+}> = ({ text, onClick }) => (
   <Box
     component='span'
     onClick={onClick}
     sx={{
       display: 'inline-flex',
       alignItems: 'center',
-      height: 20,
       px: 0.5,
-      borderRadius: R,
+      py: 0.15,
+      borderRadius: 4,
+      border: `1px solid ${BIN_BORDER}`,
+      background: BIN_BG,
+      color: BIN_TEXT,
       fontSize: 11.5,
       fontWeight: 800,
-      border: `1px ${dashed ? 'dashed' : 'solid'} ${
-        dashed ? WH_BORDER : BIN_BORDER
-      }`,
-      background: dashed ? WH_BG : BIN_BG,
-      color: dashed ? WH_TEXT : BIN_TEXT,
-      cursor: onClick ? 'pointer' : 'default',
-      '&:hover': onClick ? { boxShadow: '0 0 0 2px #dbeafe inset' } : undefined,
       whiteSpace: 'nowrap',
-      maxWidth: 180,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      lineHeight: '18px'
+      cursor: onClick ? 'pointer' : 'default',
+      '&:hover': onClick ? { boxShadow: '0 0 0 2px #dbeafe inset' } : undefined
     }}
     title={text}
   >
     {text}
   </Box>
 )
-
-const ZoneBadge: React.FC<{ text?: string }> = ({ text }) =>
-  !text ? null : (
-    <Box
-      component='span'
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        height: 20,
-        px: 0.5,
-        borderRadius: R,
-        fontSize: 11.5,
-        fontWeight: 900,
-        border: `1px solid ${ZONE_BORDER}`,
-        background: ZONE_BG,
-        color: BRAND,
-        whiteSpace: 'nowrap',
-        maxWidth: 200,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        lineHeight: '18px'
-      }}
-      title={text}
-    >
-      {text}
-    </Box>
-  )
 
 type BatchGroup = {
   key: string
@@ -136,7 +96,6 @@ const useBatchGroups = (transfers: any[]) => {
 
       const legacyKey = `LEGACY:${sourceBinID}|X:${t?.taskID || t?.transferID}`
       const key = batchID ? `B:${batchID}|S:${sourceBinID}` : legacyKey
-
       if (!buckets[key]) buckets[key] = []
       buckets[key].push(t)
     }
@@ -206,7 +165,8 @@ const BatchCard: React.FC<{
   const [busy, setBusy] = useState(false)
   const isDeletable = status === 'PENDING'
   const canComplete = status === 'IN_PROCESS'
-  const timeLabel = new Date(g.createdAt || Date.now()).toLocaleString()
+
+  const fullTime = new Date(g.createdAt || Date.now()).toLocaleString()
 
   const handleDelete = async () => {
     if (!onDelete || busy) return
@@ -244,14 +204,12 @@ const BatchCard: React.FC<{
         border: `1px dashed ${CARD_DASH}`,
         borderRadius: R,
         background: CARD_BG,
-        p: 0.4,
+        p: 0.5,
         display: 'grid',
-        gap: 0.4,
-        boxShadow: '0 1px 2px rgba(16,24,40,.06)',
-        transition: 'box-shadow .2s ease',
-        '&:hover': { boxShadow: '0 2px 6px rgba(16,24,40,.12)' }
+        gap: 0.5
       }}
     >
+      {/* 抬头：完整时间 + 操作按钮 */}
       <Box
         sx={{
           display: 'grid',
@@ -259,19 +217,42 @@ const BatchCard: React.FC<{
           alignItems: 'center',
           background: HEAD_BG,
           borderRadius: R,
-          p: 0.4
+          p: 0.5
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-          <LocalShippingOutlinedIcon sx={{ fontSize: 18, color: GREEN }} />
-          <Typography sx={{ fontSize: 11, color: MUTED, fontWeight: 700 }}>
-            {timeLabel}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <LocalShippingOutlinedIcon
+            sx={{ fontSize: 17, color: GREEN, opacity: 0.85 }}
+          />
+          <Typography sx={{ fontSize: 11.5, color: MUTED, fontWeight: 700 }}>
+            {fullTime}
           </Typography>
+          {g.sourceWarehouse ? (
+            <Box
+              component='span'
+              sx={{
+                ml: 0.6,
+                px: 0.6,
+                py: 0.1,
+                borderRadius: 1,
+                border: '1px dashed #86efac',
+                color: '#166534',
+                fontSize: 10.5,
+                fontWeight: 800,
+                lineHeight: 1,
+                background: 'transparent',
+                whiteSpace: 'nowrap'
+              }}
+              title={g.sourceWarehouse}
+            >
+              {g.sourceWarehouse}
+            </Box>
+          ) : null}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
           {canComplete && (
-            <Tooltip title='确认收货（标记为 Completed）'>
+            <Tooltip title='(confirm receipt) Mark this transfer group as Completed'>
               <span>
                 <IconButton
                   size='small'
@@ -293,6 +274,7 @@ const BatchCard: React.FC<{
             </Tooltip>
           )}
 
+          {/* Delete（稍微变大一点点） */}
           {isDeletable && (
             <Tooltip title='Delete this transfer group'>
               <span>
@@ -301,17 +283,17 @@ const BatchCard: React.FC<{
                   onClick={handleDelete}
                   disabled={busy}
                   sx={{
+                    p: 0.25,
                     border: '1px solid #f5c2c7',
                     background: '#fff',
                     '&:hover': { background: '#fff5f5' }
                   }}
                 >
                   {busy ? (
-                    <CircularProgress size={16} />
+                    <CircularProgress size={14} />
                   ) : (
                     <DeleteOutlineIcon
-                      fontSize='small'
-                      sx={{ color: '#c62828' }}
+                      sx={{ color: '#c62828', fontSize: 18 }}
                     />
                   )}
                 </IconButton>
@@ -321,83 +303,133 @@ const BatchCard: React.FC<{
         </Box>
       </Box>
 
-      {/* Path */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 0.4,
-          p: 0.4,
-          background: PATH_BG,
-          borderRadius: R
+          border: `1px solid ${GRID_BORDER}`,
+          borderRadius: R,
+          overflow: 'hidden'
         }}
       >
-        <Badge text={g.sourceWarehouse} dashed />
-        <Badge text={g.sourceBin} onClick={e => onBinClick(e, g.sourceBin)} />
-        <Typography
-          component='span'
-          sx={{ color: '#3b82f6', fontSize: 14, fontWeight: 900, px: 0.2 }}
-        >
-          →
-        </Typography>
-        <Badge text={g.destinationWarehouse} dashed />
-        {g.destinationZone && <ZoneBadge text={g.destinationZone} />}
-      </Box>
-
-      {g.products.length > 0 && (
+        {/* 表头 */}
         <Box
           sx={{
-            border: `1px dashed ${CHIP_BORDER}`,
-            borderRadius: R,
-            background: INV_BG,
-            p: 0.4
+            display: 'grid',
+            gridTemplateColumns: '140px 1fr 80px',
+            background: GRID_HEAD_BG,
+            borderBottom: `1px solid ${GRID_BORDER}`
           }}
         >
+          {['Source Bin', 'Product Code', 'Qty'].map(h => (
+            <Box
+              key={h}
+              sx={{
+                px: 0.8,
+                py: 0.6,
+                borderRight: `1px solid ${GRID_BORDER}`,
+                fontSize: 12,
+                fontWeight: 800,
+                color: '#475569',
+                textAlign: 'center'
+              }}
+            >
+              {h}
+            </Box>
+          ))}
+        </Box>
+
+        {/* 行容器：用 grid 实现左侧单元格跨行 */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '140px 1fr 80px',
+            gridAutoRows: 'minmax(28px, auto)'
+          }}
+        >
+          {/* 左侧 Source Bin 只渲染一次并跨越所有产品行 */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: 0.4
+              gridColumn: '1 / 2',
+              gridRow: `1 / span ${g.products.length}`,
+              px: 0.8,
+              py: 0.5,
+              borderRight: `1px solid ${GRID_BORDER}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderTop: 'none'
             }}
           >
-            {g.products.map((p, idx) => (
+            <BinBadge
+              text={g.sourceBin}
+              onClick={e => onBinClick(e, g.sourceBin)}
+            />
+          </Box>
+
+          {/* 逐行渲染 Product / Qty 两列 */}
+          {g.products.map((p, idx) => (
+            <React.Fragment key={p.id || `${p.productCode}-${idx}`}>
+              {/* Product Code */}
               <Box
-                key={p.id || `${p.productCode}-${idx}`}
                 sx={{
-                  border: `1px solid ${CHIP_BORDER}`,
-                  background: CHIP_BG,
-                  borderRadius: R,
-                  px: 0.4,
-                  py: 0.2,
+                  gridColumn: '2 / 3',
+                  gridRow: `${idx + 1} / ${idx + 2}`,
+                  px: 0.8,
+                  py: 0.5,
+                  borderRight: `1px solid ${GRID_BORDER}`,
+                  borderTop: idx === 0 ? 'none' : `1px solid ${GRID_BORDER}`,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 24
+                  justifyContent: 'center'
                 }}
-                title={`${p.productCode} × ${p.quantity}`}
+                title={p.productCode}
               >
                 <Typography
                   sx={{
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: 900,
                     color: EMP,
                     fontFamily:
                       'ui-monospace, Menlo, Consolas, "Courier New", monospace',
-                    lineHeight: 1.2,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     maxWidth: '100%'
                   }}
                 >
-                  {p.productCode} × {p.quantity}
+                  {p.productCode}
                 </Typography>
               </Box>
-            ))}
-          </Box>
+
+              {/* Qty */}
+              <Box
+                sx={{
+                  gridColumn: '3 / 4',
+                  gridRow: `${idx + 1} / ${idx + 2}`,
+                  px: 0.8,
+                  py: 0.5,
+                  borderTop: idx === 0 ? 'none' : `1px solid ${GRID_BORDER}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title={`Qty × ${p.quantity}`}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 900,
+                    color: EMP,
+                    fontFamily:
+                      'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+                  }}
+                >
+                  {p.quantity}
+                </Typography>
+              </Box>
+            </React.Fragment>
+          ))}
         </Box>
-      )}
+      </Box>
     </Box>
   )
 }
@@ -431,6 +463,33 @@ const TransferTaskTable: React.FC<Props> = ({
   onComplete
 }) => {
   const groups = useBatchGroups(transfers)
+
+  // —— 来源仓 统计与下拉 —— //
+  const whCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const g of groups) {
+      m.set(g.sourceWarehouse, (m.get(g.sourceWarehouse) || 0) + 1)
+    }
+    return m
+  }, [groups])
+
+  const warehouses = useMemo(
+    () => [
+      ALL_KEY,
+      ...Array.from(whCounts.keys()).sort((a, b) => a.localeCompare(b))
+    ],
+    [whCounts]
+  )
+  const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
+
+  const shownGroups = useMemo(
+    () =>
+      whFilter === ALL_KEY
+        ? groups
+        : groups.filter(g => g.sourceWarehouse === whFilter),
+    [groups, whFilter]
+  )
+
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -456,11 +515,64 @@ const TransferTaskTable: React.FC<Props> = ({
       }}
     >
       <Box sx={{ flexShrink: 0, px: 1.25, pt: 1, pb: 0.5 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: 13 }}>
-          Recent Transfers
-        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
+            alignItems: 'center',
+            mb: 0.5
+          }}
+        >
+          <Box />
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: 13,
+              textAlign: 'center',
+              justifySelf: 'center'
+            }}
+          >
+            Recent Transfers
+          </Typography>
+          <Box
+            sx={{
+              justifySelf: 'end',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <Tooltip
+              title={
+                status === 'PENDING'
+                  ? 'Print pending transfers'
+                  : 'Switch to Pending to print'
+              }
+            >
+              <span>
+                <IconButton
+                  size='small'
+                  onClick={openPreview}
+                  disabled={
+                    status !== 'PENDING' || loading || !transfers?.length
+                  }
+                  sx={{ p: 0.5 }}
+                >
+                  <PrintIcon fontSize='small' />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* 工具条：状态 Tabs + 仓库下拉 */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
           <Tabs
             value={status}
             onChange={(_, s: TransferStatusUI) => onStatusChange(s)}
@@ -480,29 +592,26 @@ const TransferTaskTable: React.FC<Props> = ({
             <Tab label='In Process' value='IN_PROCESS' />
             <Tab label='Completed' value='COMPLETED' />
           </Tabs>
-
-          <Tooltip
-            title={
-              status === 'PENDING'
-                ? 'Print pending transfers'
-                : 'Switch to Pending to print'
-            }
+          <Select
+            size='small'
+            value={whFilter}
+            onChange={e => setWhFilter(e.target.value as string)}
+            sx={{ minWidth: 84, width: 100, height: 30, fontSize: 12, ml: 1 }}
           >
-            <span>
-              <IconButton
-                size='small'
-                onClick={openPreview}
-                disabled={status !== 'PENDING' || loading || !transfers?.length}
-              >
-                <PrintIcon fontSize='small' />
-              </IconButton>
-            </span>
-          </Tooltip>
+            {warehouses.map(w => (
+              <MenuItem key={w} value={w} sx={{ fontSize: 12, py: 0.5 }}>
+                {w === ALL_KEY
+                  ? `All (${groups.length})`
+                  : `${w} (${whCounts.get(w) || 0})`}
+              </MenuItem>
+            ))}
+          </Select>
         </Box>
 
         <Divider sx={{ my: 0.5 }} />
       </Box>
 
+      {/* 列表区域：支持 All 时按来源仓分组 + 虚线标题 */}
       <Box
         sx={{
           flex: 1,
@@ -518,17 +627,24 @@ const TransferTaskTable: React.FC<Props> = ({
       >
         {loading ? (
           <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, color: MUTED }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: MUTED,
+              px: 1,
+              py: 1
+            }}
           >
             <CircularProgress size={16} />
             <Typography variant='caption'>Loading…</Typography>
           </Box>
-        ) : groups.length === 0 ? (
+        ) : shownGroups.length === 0 ? (
           <Typography variant='caption' color='text.secondary'>
             No transfers for this status.
           </Typography>
         ) : (
-          groups.map(g => (
+          shownGroups.map(g => (
             <BatchCard
               key={g.key}
               g={g}
@@ -549,7 +665,8 @@ const TransferTaskTable: React.FC<Props> = ({
         sx={{ flexShrink: 0, px: 1.25, py: 0.9 }}
       >
         <Typography variant='caption' color='text.secondary'>
-          Total: <b>{total}</b> • Page {page + 1}/{totalPages}
+          Total: <b>{total}</b> • Page {page + 1}/
+          {Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))}
         </Typography>
         <Box>
           <IconButton
