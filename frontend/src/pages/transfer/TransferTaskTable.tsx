@@ -11,6 +11,7 @@ import {
   Typography,
   Select,
   MenuItem,
+  Menu,
   TextField,
   InputAdornment
 } from '@mui/material'
@@ -92,6 +93,11 @@ type BatchGroup = {
   batchID?: string | null
 }
 
+const boxTypeNum = (s?: string) => {
+  const m = String(s || '').match(/\d+(\.\d+)?/)
+  return m ? parseFloat(m[0]) : Number.POSITIVE_INFINITY
+}
+
 const useBatchGroups = (transfers: any[]) => {
   return useMemo<BatchGroup[]>(() => {
     if (!transfers || transfers.length === 0) return []
@@ -143,9 +149,17 @@ const useBatchGroups = (transfers: any[]) => {
             boxType: (typeof rawBox === 'string' ? rawBox.trim() : '') || '--'
           }
         })
-        .sort((a, b) =>
-          String(a.productCode).localeCompare(String(b.productCode))
-        )
+        // *** 这里改为按 boxType 升序排序（先数字，再文本，最后以 productCode 兜底） ***
+        .sort((a, b) => {
+          const na = boxTypeNum(a.boxType)
+          const nb = boxTypeNum(b.boxType)
+          if (na !== nb) return na - nb
+          const sa = String(a.boxType || '')
+          const sb2 = String(b.boxType || '')
+          const textCmp = sa.localeCompare(sb2)
+          if (textCmp !== 0) return textCmp
+          return String(a.productCode).localeCompare(String(b.productCode))
+        })
 
       const newest = list.reduce(
         (max: number, t: any) =>
@@ -228,7 +242,6 @@ const BatchCard: React.FC<{
         gap: 0.5
       }}
     >
-      {/* 抬头：完整时间 + 操作按钮 */}
       <Box
         sx={{
           display: 'grid',
@@ -359,7 +372,6 @@ const BatchCard: React.FC<{
           )}
         </Box>
 
-        {/* 行容器：用 grid 实现左侧单元格跨行 */}
         <Box
           sx={{
             display: 'grid',
@@ -367,7 +379,6 @@ const BatchCard: React.FC<{
             gridAutoRows: 'minmax(28px, auto)'
           }}
         >
-          {/* 左侧 Source Bin 只渲染一次并跨越所有产品行 */}
           <Box
             sx={{
               gridColumn: '1 / 2',
@@ -387,7 +398,7 @@ const BatchCard: React.FC<{
             />
           </Box>
 
-          {/* 逐行渲染 Product / Qty / Box Type 三列 */}
+          {/* 逐行渲染 Product / Qty / Box Type 三列（已按 boxType 升序） */}
           {g.products.map((p, idx) => (
             <React.Fragment key={p.id || `${p.productCode}-${idx}`}>
               {/* Product Code */}
@@ -422,7 +433,6 @@ const BatchCard: React.FC<{
                 </Typography>
               </Box>
 
-              {/* Qty */}
               <Box
                 sx={{
                   gridColumn: '3 / 4',
@@ -450,7 +460,6 @@ const BatchCard: React.FC<{
                 </Typography>
               </Box>
 
-              {/* Box Type */}
               <Box
                 sx={{
                   gridColumn: '4 / 5',
@@ -521,7 +530,6 @@ const TransferTaskTable: React.FC<Props> = ({
 }) => {
   const groups = useBatchGroups(transfers)
 
-  // —— 来源仓 统计与下拉 —— //
   const whCounts = useMemo(() => {
     const m = new Map<string, number>()
     for (const g of groups) {
@@ -539,7 +547,6 @@ const TransferTaskTable: React.FC<Props> = ({
   )
   const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
 
-  // --- ProductCode search filter ---
   const [productKeyword, setProductKeyword] = useState('')
 
   const shownGroups = useMemo(() => {
@@ -563,10 +570,65 @@ const TransferTaskTable: React.FC<Props> = ({
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
 
-  const openPreview = () => {
-    const html = buildPendingTransfersHtml(transfers)
+  const [printAnchorEl, setPrintAnchorEl] = useState<null | HTMLElement>(null)
+  const printMenuOpen = Boolean(printAnchorEl)
+
+  const onClickPrintIcon = (e: React.MouseEvent<HTMLElement>) => {
+    if (status !== 'PENDING' || loading || !shownGroups.length) return
+    setPrintAnchorEl(e.currentTarget)
+  }
+  const closePrintMenu = () => setPrintAnchorEl(null)
+
+  const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
+    const flat: any[] = []
+    for (const g of groupsForPrint) {
+      for (const p of g.products) {
+        const matches = (g.items || []).filter((t: any) => {
+          const tCode = t?.productCode || t?.Product?.productCode
+          const tBox =
+            t?.boxType ??
+            t?.box_type ??
+            t?.product?.boxType ??
+            t?.product?.box_type ??
+            t?.Product?.boxType ??
+            t?.Product?.box_type ??
+            ''
+          return (
+            String(tCode) === String(p.productCode) &&
+            String((tBox || '').trim()) === String((p.boxType || '').trim())
+          )
+        })
+        if (matches.length) {
+          for (const m of matches) flat.push(m)
+        } else {
+          flat.push({
+            productCode: p.productCode,
+            quantity: p.quantity,
+            boxType: p.boxType,
+            sourceBin: {
+              binCode: g.sourceBin,
+              warehouse: { warehouseCode: g.sourceWarehouse }
+            },
+            sourceBinCode: g.sourceBin,
+            sourceWarehouse: { warehouseCode: g.sourceWarehouse },
+            destinationWarehouse: { warehouseCode: g.destinationWarehouse }
+          })
+        }
+      }
+    }
+    return flat
+  }
+
+  const handlePrintWarehouse = (wCode: string) => {
+    const toPrintGroups =
+      wCode === ALL_KEY
+        ? shownGroups
+        : shownGroups.filter(g => g.sourceWarehouse === wCode)
+    const orderedTransfers = flattenForPrint(toPrintGroups)
+    const html = buildPendingTransfersHtml(orderedTransfers)
     setPreviewHtml(html)
     setPreviewOpen(true)
+    closePrintMenu()
   }
 
   return (
@@ -583,7 +645,6 @@ const TransferTaskTable: React.FC<Props> = ({
       }}
     >
       <Box sx={{ flexShrink: 0, px: 1.25, pt: 1, pb: 0.5 }}>
-        {/* 第一行：Tabs + 打印按钮 */}
         <Box
           sx={{
             display: 'flex',
@@ -623,17 +684,46 @@ const TransferTaskTable: React.FC<Props> = ({
             <span>
               <IconButton
                 size='small'
-                onClick={openPreview}
-                disabled={status !== 'PENDING' || loading || !transfers?.length}
+                onClick={onClickPrintIcon}
+                disabled={
+                  status !== 'PENDING' || loading || !shownGroups.length
+                }
                 sx={{ p: 0.5 }}
               >
                 <PrintIcon fontSize='small' />
               </IconButton>
             </span>
           </Tooltip>
+          <Menu
+            anchorEl={printAnchorEl}
+            open={printMenuOpen}
+            onClose={closePrintMenu}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem
+              onClick={() => handlePrintWarehouse(ALL_KEY)}
+              disabled={!shownGroups.length}
+              sx={{ fontSize: 12 }}
+            >
+              All ({shownGroups.length})
+            </MenuItem>
+            <Divider />
+            {Array.from(new Set(shownGroups.map(g => g.sourceWarehouse)))
+              .sort((a, b) => a.localeCompare(b))
+              .map(w => (
+                <MenuItem
+                  key={w}
+                  onClick={() => handlePrintWarehouse(w)}
+                  sx={{ fontSize: 12 }}
+                >
+                  {w} ({shownGroups.filter(g => g.sourceWarehouse === w).length}
+                  )
+                </MenuItem>
+              ))}
+          </Menu>
         </Box>
 
-        {/* 第二行：仓库下拉 + 搜索框 */}
         <Box
           sx={{
             display: 'flex',
@@ -687,7 +777,6 @@ const TransferTaskTable: React.FC<Props> = ({
         <Divider sx={{ my: 0.5 }} />
       </Box>
 
-      {/* 列表区域：支持 All 时按来源仓分组 + 虚线标题 */}
       <Box
         sx={{
           flex: 1,

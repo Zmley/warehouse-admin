@@ -63,7 +63,7 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
       byBin[key].push(r)
     }
 
-    const bins = Object.keys(byBin).sort()
+    const bins = Object.keys(byBin)
     let bodyHtml = ''
     bins.forEach((bin, i) => {
       const group = byBin[bin]
