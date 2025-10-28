@@ -10,8 +10,11 @@ import {
   Tooltip,
   Typography,
   Select,
-  MenuItem
+  MenuItem,
+  TextField,
+  InputAdornment
 } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
@@ -79,7 +82,12 @@ type BatchGroup = {
   destinationBin: string
   destinationZone?: string
   items: any[]
-  products: Array<{ id: string; productCode: string; quantity: number }>
+  products: Array<{
+    id: string
+    productCode: string
+    quantity: number
+    boxType?: string
+  }>
   createdAt: number
   batchID?: string | null
 }
@@ -115,15 +123,26 @@ const useBatchGroups = (transfers: any[]) => {
       const batchID: string | null = first?.batchID ?? null
 
       const products = list
-        .map((t: any, idx: number) => ({
-          id:
-            t?.transferID?.toString?.() ||
-            t?.id?.toString?.() ||
-            t?.inventoryID?.toString?.() ||
-            `${idx}`,
-          productCode: t?.productCode || 'UNKNOWN',
-          quantity: Number(t?.quantity || 0)
-        }))
+        .map((t: any, idx: number) => {
+          const rawBox =
+            t?.boxType ??
+            t?.box_type ??
+            t?.product?.boxType ??
+            t?.product?.box_type ??
+            t?.Product?.boxType ??
+            t?.Product?.box_type ??
+            ''
+          return {
+            id:
+              t?.transferID?.toString?.() ||
+              t?.id?.toString?.() ||
+              t?.inventoryID?.toString?.() ||
+              `${idx}`,
+            productCode: t?.productCode || 'UNKNOWN',
+            quantity: Number(t?.quantity || 0),
+            boxType: (typeof rawBox === 'string' ? rawBox.trim() : '') || '--'
+          }
+        })
         .sort((a, b) =>
           String(a.productCode).localeCompare(String(b.productCode))
         )
@@ -314,34 +333,37 @@ const BatchCard: React.FC<{
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: '140px 1fr 80px',
+            gridTemplateColumns: '140px 120px 72px 110px',
             background: GRID_HEAD_BG,
             borderBottom: `1px solid ${GRID_BORDER}`
           }}
         >
-          {['Source Bin', 'Product Code', 'Qty'].map(h => (
-            <Box
-              key={h}
-              sx={{
-                px: 0.8,
-                py: 0.6,
-                borderRight: `1px solid ${GRID_BORDER}`,
-                fontSize: 12,
-                fontWeight: 800,
-                color: '#475569',
-                textAlign: 'center'
-              }}
-            >
-              {h}
-            </Box>
-          ))}
+          {['Source Bin', 'Product Code', 'Qty', 'Box Type'].map(
+            (h, i, arr) => (
+              <Box
+                key={h}
+                sx={{
+                  px: 0.8,
+                  py: 0.6,
+                  borderRight:
+                    i < arr.length - 1 ? `1px solid ${GRID_BORDER}` : 'none',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: '#475569',
+                  textAlign: 'center'
+                }}
+              >
+                {h}
+              </Box>
+            )
+          )}
         </Box>
 
         {/* 行容器：用 grid 实现左侧单元格跨行 */}
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: '140px 1fr 80px',
+            gridTemplateColumns: '140px 120px 72px 110px',
             gridAutoRows: 'minmax(28px, auto)'
           }}
         >
@@ -365,7 +387,7 @@ const BatchCard: React.FC<{
             />
           </Box>
 
-          {/* 逐行渲染 Product / Qty 两列 */}
+          {/* 逐行渲染 Product / Qty / Box Type 三列 */}
           {g.products.map((p, idx) => (
             <React.Fragment key={p.id || `${p.productCode}-${idx}`}>
               {/* Product Code */}
@@ -408,6 +430,7 @@ const BatchCard: React.FC<{
                   px: 0.8,
                   py: 0.5,
                   borderTop: idx === 0 ? 'none' : `1px solid ${GRID_BORDER}`,
+                  borderRight: `1px solid ${GRID_BORDER}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -424,6 +447,40 @@ const BatchCard: React.FC<{
                   }}
                 >
                   {p.quantity}
+                </Typography>
+              </Box>
+
+              {/* Box Type */}
+              <Box
+                sx={{
+                  gridColumn: '4 / 5',
+                  gridRow: `${idx + 1} / ${idx + 2}`,
+                  px: 0.8,
+                  py: 0.5,
+                  borderTop: idx === 0 ? 'none' : `1px solid ${GRID_BORDER}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center'
+                }}
+                title={p.boxType || '--'}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 900,
+                    color: EMP,
+                    fontFamily:
+                      'ui-monospace, Menlo, Consolas, "Courier New", monospace',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%',
+                    width: '100%',
+                    textAlign: 'center'
+                  }}
+                >
+                  {p.boxType || '--'}
                 </Typography>
               </Box>
             </React.Fragment>
@@ -482,13 +539,24 @@ const TransferTaskTable: React.FC<Props> = ({
   )
   const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
 
-  const shownGroups = useMemo(
-    () =>
+  // --- ProductCode search filter ---
+  const [productKeyword, setProductKeyword] = useState('')
+
+  const shownGroups = useMemo(() => {
+    let filtered =
       whFilter === ALL_KEY
         ? groups
-        : groups.filter(g => g.sourceWarehouse === whFilter),
-    [groups, whFilter]
-  )
+        : groups.filter(g => g.sourceWarehouse === whFilter)
+    if (productKeyword.trim() !== '') {
+      const kw = productKeyword.trim().toLowerCase()
+      filtered = filtered.filter(g =>
+        g.products.some(product =>
+          (product.productCode || '').toLowerCase().includes(kw)
+        )
+      )
+    }
+    return filtered
+  }, [groups, whFilter, productKeyword])
 
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
@@ -504,7 +572,7 @@ const TransferTaskTable: React.FC<Props> = ({
   return (
     <Box
       sx={{
-        width: panelWidth,
+        width: '100%',
         borderLeft: `1px solid ${BORDER}`,
         display: 'flex',
         flexDirection: 'column',
@@ -515,62 +583,14 @@ const TransferTaskTable: React.FC<Props> = ({
       }}
     >
       <Box sx={{ flexShrink: 0, px: 1.25, pt: 1, pb: 0.5 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            mb: 0.5
-          }}
-        >
-          <Box />
-          <Typography
-            sx={{
-              fontWeight: 800,
-              fontSize: 13,
-              textAlign: 'center',
-              justifySelf: 'center'
-            }}
-          >
-            Recent Transfers
-          </Typography>
-          <Box
-            sx={{
-              justifySelf: 'end',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <Tooltip
-              title={
-                status === 'PENDING'
-                  ? 'Print pending transfers'
-                  : 'Switch to Pending to print'
-              }
-            >
-              <span>
-                <IconButton
-                  size='small'
-                  onClick={openPreview}
-                  disabled={
-                    status !== 'PENDING' || loading || !transfers?.length
-                  }
-                  sx={{ p: 0.5 }}
-                >
-                  <PrintIcon fontSize='small' />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        {/* 工具条：状态 Tabs + 仓库下拉 */}
+        {/* 第一行：Tabs + 打印按钮 */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            flexWrap: 'nowrap',
+            mb: 0.5
           }}
         >
           <Tabs
@@ -592,11 +612,46 @@ const TransferTaskTable: React.FC<Props> = ({
             <Tab label='In Process' value='IN_PROCESS' />
             <Tab label='Completed' value='COMPLETED' />
           </Tabs>
+
+          <Tooltip
+            title={
+              status === 'PENDING'
+                ? 'Print pending transfers'
+                : 'Switch to Pending to print'
+            }
+          >
+            <span>
+              <IconButton
+                size='small'
+                onClick={openPreview}
+                disabled={status !== 'PENDING' || loading || !transfers?.length}
+                sx={{ p: 0.5 }}
+              >
+                <PrintIcon fontSize='small' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+
+        {/* 第二行：仓库下拉 + 搜索框 */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            columnGap: 1,
+            flexWrap: 'nowrap'
+          }}
+        >
           <Select
             size='small'
             value={whFilter}
             onChange={e => setWhFilter(e.target.value as string)}
-            sx={{ minWidth: 84, width: 100, height: 30, fontSize: 12, ml: 1 }}
+            sx={{
+              minWidth: 110,
+              height: 30,
+              fontSize: 12
+            }}
           >
             {warehouses.map(w => (
               <MenuItem key={w} value={w} sx={{ fontSize: 12, py: 0.5 }}>
@@ -606,6 +661,27 @@ const TransferTaskTable: React.FC<Props> = ({
               </MenuItem>
             ))}
           </Select>
+
+          <TextField
+            placeholder='Search productCode'
+            size='small'
+            value={productKeyword}
+            onChange={e => setProductKeyword(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position='start'>
+                  <SearchIcon fontSize='small' sx={{ opacity: 0.7 }} />
+                </InputAdornment>
+              )
+            }}
+            sx={{
+              width: 200,
+              '& .MuiOutlinedInput-root': {
+                height: 30,
+                borderRadius: 999
+              }
+            }}
+          />
         </Box>
 
         <Divider sx={{ my: 0.5 }} />
@@ -617,6 +693,7 @@ const TransferTaskTable: React.FC<Props> = ({
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: 0.6,

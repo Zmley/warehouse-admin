@@ -25,10 +25,8 @@ import TransferTaskTable from './TransferTaskTable'
 import LowStockTable from './lowStock/LowStockTransferTable'
 
 const CONTENT_HEIGHT = 'calc(100vh - 170px)'
-const RECENT_PANEL_WIDTH = 420
 const SERVER_PAGE_SIZE = 200
 
-// 统一把各种返回结构转成 rows[]
 const toRows = (res: any): any[] => {
   if (Array.isArray(res)) return res
   if (Array.isArray(res?.rows)) return res.rows
@@ -344,7 +342,7 @@ const TransferPage: React.FC = () => {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: `1fr ${RECENT_PANEL_WIDTH}px`,
+            gridTemplateColumns: '1fr 0.55fr',
             height: '100%',
             minHeight: 0,
             width: '100%',
@@ -372,7 +370,6 @@ const TransferPage: React.FC = () => {
             status={recentStatus}
             onStatusChange={handleStatusChange}
             onBinClick={onBinClick}
-            panelWidth={RECENT_PANEL_WIDTH}
             onDelete={handleDeleteGroup}
             updating={refreshing}
             onComplete={handleCompleteGroup}
