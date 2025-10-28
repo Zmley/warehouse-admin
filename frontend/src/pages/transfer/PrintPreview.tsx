@@ -193,23 +193,6 @@ export const buildPendingTransfersHtml = (
   return html
 }
 
-const normalizeRows = (transfers: AnyT[] = []) =>
-  transfers.map(t => ({
-    bin: t?.sourceBin?.binCode || t?.sourceBinCode || '--',
-    productCode: t?.productCode || '--',
-    qty: Number(t?.quantity ?? 0),
-    boxType: t?.boxType || t?.product?.boxType || '--',
-    note: t?.note || t?.product?.note || '--', // ← 新增 note
-    srcWh:
-      t?.sourceWarehouse?.warehouseCode ||
-      t?.sourceBin?.warehouse?.warehouseCode ||
-      '--',
-    dstWh:
-      t?.destinationWarehouse?.warehouseCode ||
-      t?.destinationBin?.warehouse?.warehouseCode ||
-      '--'
-  }))
-
 export const PrintPreviewDialog: React.FC<{
   open: boolean
   html?: string
