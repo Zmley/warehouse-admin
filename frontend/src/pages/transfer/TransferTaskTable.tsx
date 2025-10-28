@@ -11,7 +11,6 @@ import {
   Typography,
   Select,
   MenuItem,
-  Menu,
   TextField,
   InputAdornment
 } from '@mui/material'
@@ -23,7 +22,8 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import PrintIcon from '@mui/icons-material/Print'
 import { TransferStatusUI } from 'constants/index'
-import PrintPreviewDialog, { buildPendingTransfersHtml } from './PrintPreview'
+import PrintPreviewDialog from './PrintPreview'
+import PrintWarehouseDropdown from './PrintWarehouseDropdown'
 
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
@@ -149,7 +149,6 @@ const useBatchGroups = (transfers: any[]) => {
             boxType: (typeof rawBox === 'string' ? rawBox.trim() : '') || '--'
           }
         })
-        // *** 这里改为按 boxType 升序排序（先数字，再文本，最后以 productCode 兜底） ***
         .sort((a, b) => {
           const na = boxTypeNum(a.boxType)
           const nb = boxTypeNum(b.boxType)
@@ -186,6 +185,46 @@ const useBatchGroups = (transfers: any[]) => {
     groups.sort((a, b) => b.createdAt - a.createdAt)
     return groups
   }, [transfers])
+}
+
+const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
+  const flat: any[] = []
+  for (const g of groupsForPrint) {
+    for (const p of g.products) {
+      const matches = (g.items || []).filter((t: any) => {
+        const tCode = t?.productCode || t?.Product?.productCode
+        const tBox =
+          t?.boxType ??
+          t?.box_type ??
+          t?.product?.boxType ??
+          t?.product?.box_type ??
+          t?.Product?.boxType ??
+          t?.Product?.box_type ??
+          ''
+        return (
+          String(tCode) === String(p.productCode) &&
+          String((tBox || '').trim()) === String((p.boxType || '').trim())
+        )
+      })
+      if (matches.length) {
+        for (const m of matches) flat.push(m)
+      } else {
+        flat.push({
+          productCode: p.productCode,
+          quantity: p.quantity,
+          boxType: p.boxType,
+          sourceBin: {
+            binCode: g.sourceBin,
+            warehouse: { warehouseCode: g.sourceWarehouse }
+          },
+          sourceBinCode: g.sourceBin,
+          sourceWarehouse: { warehouseCode: g.sourceWarehouse },
+          destinationWarehouse: { warehouseCode: g.destinationWarehouse }
+        })
+      }
+    }
+  }
+  return flat
 }
 
 const BatchCard: React.FC<{
@@ -306,7 +345,6 @@ const BatchCard: React.FC<{
             </Tooltip>
           )}
 
-          {/* Delete（稍微变大一点点） */}
           {isDeletable && (
             <Tooltip title='Delete this transfer group'>
               <span>
@@ -342,7 +380,6 @@ const BatchCard: React.FC<{
           overflow: 'hidden'
         }}
       >
-        {/* 表头 */}
         <Box
           sx={{
             display: 'grid',
@@ -398,10 +435,8 @@ const BatchCard: React.FC<{
             />
           </Box>
 
-          {/* 逐行渲染 Product / Qty / Box Type 三列（已按 boxType 升序） */}
           {g.products.map((p, idx) => (
             <React.Fragment key={p.id || `${p.productCode}-${idx}`}>
-              {/* Product Code */}
               <Box
                 sx={{
                   gridColumn: '2 / 3',
@@ -460,6 +495,7 @@ const BatchCard: React.FC<{
                 </Typography>
               </Box>
 
+              {/* Box Type */}
               <Box
                 sx={{
                   gridColumn: '4 / 5',
@@ -539,14 +575,11 @@ const TransferTaskTable: React.FC<Props> = ({
   }, [groups])
 
   const warehouses = useMemo(
-    () => [
-      ALL_KEY,
-      ...Array.from(whCounts.keys()).sort((a, b) => a.localeCompare(b))
-    ],
+    () => Array.from(whCounts.keys()).sort((a, b) => a.localeCompare(b)),
     [whCounts]
   )
-  const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
 
+  const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
   const [productKeyword, setProductKeyword] = useState('')
 
   const shownGroups = useMemo(() => {
@@ -568,65 +601,43 @@ const TransferTaskTable: React.FC<Props> = ({
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
   const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState('')
+  const [previewTransfers, setPreviewTransfers] = useState<any[] | undefined>(
+    undefined
+  )
+  const [previewDefaultSources, setPreviewDefaultSources] = useState<
+    string[] | undefined
+  >(undefined)
 
   const [printAnchorEl, setPrintAnchorEl] = useState<null | HTMLElement>(null)
   const printMenuOpen = Boolean(printAnchorEl)
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
 
-  const onClickPrintIcon = (e: React.MouseEvent<HTMLElement>) => {
+  const openPrintMenu = (e: React.MouseEvent<HTMLElement>) => {
     if (status !== 'PENDING' || loading || !shownGroups.length) return
     setPrintAnchorEl(e.currentTarget)
+    const visibleSources = Array.from(
+      new Set(shownGroups.map(g => g.sourceWarehouse))
+    ).sort((a, b) => a.localeCompare(b))
+    setSelectedSources(prev => (prev.length ? prev : visibleSources))
   }
   const closePrintMenu = () => setPrintAnchorEl(null)
 
-  const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
-    const flat: any[] = []
-    for (const g of groupsForPrint) {
-      for (const p of g.products) {
-        const matches = (g.items || []).filter((t: any) => {
-          const tCode = t?.productCode || t?.Product?.productCode
-          const tBox =
-            t?.boxType ??
-            t?.box_type ??
-            t?.product?.boxType ??
-            t?.product?.box_type ??
-            t?.Product?.boxType ??
-            t?.Product?.box_type ??
-            ''
-          return (
-            String(tCode) === String(p.productCode) &&
-            String((tBox || '').trim()) === String((p.boxType || '').trim())
-          )
-        })
-        if (matches.length) {
-          for (const m of matches) flat.push(m)
-        } else {
-          flat.push({
-            productCode: p.productCode,
-            quantity: p.quantity,
-            boxType: p.boxType,
-            sourceBin: {
-              binCode: g.sourceBin,
-              warehouse: { warehouseCode: g.sourceWarehouse }
-            },
-            sourceBinCode: g.sourceBin,
-            sourceWarehouse: { warehouseCode: g.sourceWarehouse },
-            destinationWarehouse: { warehouseCode: g.destinationWarehouse }
-          })
-        }
-      }
-    }
-    return flat
+  const toggleSource = (w: string) => {
+    setSelectedSources(prev =>
+      prev.includes(w) ? prev.filter(x => x !== w) : [...prev, w]
+    )
   }
 
-  const handlePrintWarehouse = (wCode: string) => {
+  const handlePrintSelected = () => {
+    if (!selectedSources.length) return
     const toPrintGroups =
-      wCode === ALL_KEY
-        ? shownGroups
-        : shownGroups.filter(g => g.sourceWarehouse === wCode)
+      selectedSources.length === 0
+        ? []
+        : shownGroups.filter(g => selectedSources.includes(g.sourceWarehouse))
     const orderedTransfers = flattenForPrint(toPrintGroups)
-    const html = buildPendingTransfersHtml(orderedTransfers)
-    setPreviewHtml(html)
+
+    setPreviewTransfers(orderedTransfers)
+    setPreviewDefaultSources(selectedSources)
     setPreviewOpen(true)
     closePrintMenu()
   }
@@ -677,14 +688,14 @@ const TransferTaskTable: React.FC<Props> = ({
           <Tooltip
             title={
               status === 'PENDING'
-                ? 'Print pending transfers'
+                ? 'Select warehouses to print'
                 : 'Switch to Pending to print'
             }
           >
             <span>
               <IconButton
                 size='small'
-                onClick={onClickPrintIcon}
+                onClick={openPrintMenu}
                 disabled={
                   status !== 'PENDING' || loading || !shownGroups.length
                 }
@@ -694,34 +705,27 @@ const TransferTaskTable: React.FC<Props> = ({
               </IconButton>
             </span>
           </Tooltip>
-          <Menu
-            anchorEl={printAnchorEl}
+
+          <PrintWarehouseDropdown
             open={printMenuOpen}
+            anchorEl={printAnchorEl}
             onClose={closePrintMenu}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem
-              onClick={() => handlePrintWarehouse(ALL_KEY)}
-              disabled={!shownGroups.length}
-              sx={{ fontSize: 12 }}
-            >
-              All ({shownGroups.length})
-            </MenuItem>
-            <Divider />
-            {Array.from(new Set(shownGroups.map(g => g.sourceWarehouse)))
-              .sort((a, b) => a.localeCompare(b))
-              .map(w => (
-                <MenuItem
-                  key={w}
-                  onClick={() => handlePrintWarehouse(w)}
-                  sx={{ fontSize: 12 }}
-                >
-                  {w} ({shownGroups.filter(g => g.sourceWarehouse === w).length}
-                  )
-                </MenuItem>
-              ))}
-          </Menu>
+            shownGroups={shownGroups}
+            selectedSources={selectedSources}
+            onToggleSource={toggleSource}
+            onSelectAllVisible={list => {
+              if (Array.isArray(list) && list.length) {
+                setSelectedSources(list)
+              } else {
+                const allVisible = Array.from(
+                  new Set(shownGroups.map(g => g.sourceWarehouse))
+                ).sort((a, b) => a.localeCompare(b))
+                setSelectedSources(allVisible)
+              }
+            }}
+            onClear={() => setSelectedSources([])}
+            onConfirm={handlePrintSelected}
+          />
         </Box>
 
         <Box
@@ -737,17 +741,14 @@ const TransferTaskTable: React.FC<Props> = ({
             size='small'
             value={whFilter}
             onChange={e => setWhFilter(e.target.value as string)}
-            sx={{
-              minWidth: 110,
-              height: 30,
-              fontSize: 12
-            }}
+            sx={{ minWidth: 140, height: 30, fontSize: 12 }}
           >
+            <MenuItem value={ALL_KEY} sx={{ fontSize: 12, py: 0.5 }}>
+              All ({groups.length})
+            </MenuItem>
             {warehouses.map(w => (
               <MenuItem key={w} value={w} sx={{ fontSize: 12, py: 0.5 }}>
-                {w === ALL_KEY
-                  ? `All (${groups.length})`
-                  : `${w} (${whCounts.get(w) || 0})`}
+                {`${w} (${whCounts.get(w) || 0})`}
               </MenuItem>
             ))}
           </Select>
@@ -854,7 +855,8 @@ const TransferTaskTable: React.FC<Props> = ({
 
       <PrintPreviewDialog
         open={previewOpen}
-        html={previewHtml}
+        rawTransfers={previewTransfers}
+        defaultSelectedSources={previewDefaultSources}
         onClose={() => setPreviewOpen(false)}
       />
     </Box>

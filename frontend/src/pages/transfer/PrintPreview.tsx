@@ -19,13 +19,17 @@ const escapeHtml = (s: any) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
+export const buildPendingTransfersHtml = (
+  transfers: AnyT[] = [],
+  opts: { mergeAllIntoOne?: boolean; titlePrefix?: string } = {}
+) => {
   const rows = Array.isArray(transfers)
     ? transfers.map(t => ({
         bin: t?.sourceBin?.binCode || t?.sourceBinCode || '--',
         productCode: t?.productCode || '--',
         qty: Number(t?.quantity ?? 0),
         boxType: t?.boxType || t?.product?.boxType || '--',
+        note: t?.note || t?.product?.note || '',
         srcWh:
           t?.sourceWarehouse?.warehouseCode ||
           t?.sourceBin?.warehouse?.warehouseCode ||
@@ -51,11 +55,7 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
     bySrc[key].push(r)
   }
 
-  const sections = Object.entries(bySrc).map(([src, list]) => {
-    const dsts = Array.from(new Set(list.map(r => r.dstWh))).filter(Boolean)
-    const dstLabel = dsts.length === 1 ? dsts[0] : 'Multiple Destinations'
-    const title = `${src} → ${dstLabel}   ${timeLabel}`
-
+  const makeTableBody = (list: AnyT[]) => {
     const byBin: Record<string, AnyT[]> = {}
     for (const r of list) {
       const key = r.bin || '--'
@@ -64,46 +64,60 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
     }
 
     const bins = Object.keys(byBin)
+    if (!bins.length) {
+      return `<tr><td class="empty" colspan="6">No pending transfers.</td></tr>`
+    }
+
     let bodyHtml = ''
     bins.forEach((bin, i) => {
       const group = byBin[bin]
       const first = group[0]
       bodyHtml += `
-        <tr>
-          <td class="c" rowspan="${group.length}">${i + 1}</td>
-          <td class="mono" rowspan="${group.length}">${escapeHtml(bin)}</td>
-          <td class="mono">${escapeHtml(first.productCode)}</td>
-          <td class="c">${first.qty}</td>
-          <td class="mono">${escapeHtml(first.boxType)}</td>
-        </tr>`
+      <tr>
+        <td class="c" rowspan="${group.length}">${i + 1}</td>
+        <td class="mono" rowspan="${group.length}">${escapeHtml(bin)}</td>
+        <td class="mono">${escapeHtml(first.productCode)}</td>
+        <td class="c">${first.qty}</td>
+        <td class="mono">${escapeHtml(first.boxType)}</td>
+        <td class="note"></td>   <!-- 空白 note -->
+      </tr>`
       for (let j = 1; j < group.length; j++) {
         const r = group[j]
         bodyHtml += `
-        <tr>
-          <td class="mono">${escapeHtml(r.productCode)}</td>
-          <td class="c">${r.qty}</td>
-          <td class="mono">${escapeHtml(r.boxType)}</td>
-        </tr>`
+      <tr>
+        <td class="mono">${escapeHtml(r.productCode)}</td>
+        <td class="c">${r.qty}</td>
+        <td class="mono">${escapeHtml(r.boxType)}</td>
+        <td class="note"></td>   <!-- 空白 note -->
+      </tr>`
       }
     })
+    return bodyHtml
+  }
 
-    if (!bins.length) {
-      bodyHtml = `<tr><td class="empty" colspan="5">No pending transfers.</td></tr>`
-    }
+  let sections: string[] = []
 
+  sections = Object.entries(bySrc).map(([src, list]) => {
+    const dsts = Array.from(new Set(list.map(r => r.dstWh))).filter(Boolean)
+    const dstLabel = dsts.length === 1 ? dsts[0] : 'Multiple Destinations'
+    const title =
+      (opts.titlePrefix ? `${opts.titlePrefix} ` : '') +
+      `${src} → ${dstLabel}   ${timeLabel}`
+    const bodyHtml = makeTableBody(list)
     return `
       <section class="section">
         <div class="sub">${escapeHtml(title)}</div>
         <table class="compact">
-          <thead>
-            <tr>
-              <th style="width:8%">#</th>
-              <th style="width:28%">Bin</th>
-              <th style="width:32%">Product</th>
-              <th style="width:12%">Qty</th>
-              <th style="width:20%">Box Type</th>
-            </tr>
-          </thead>
+       <thead>
+  <tr>
+    <th style="width:8%">#</th>
+    <th style="width:24%">Bin</th>
+    <th style="width:28%">Product</th>
+    <th style="width:10%">Qty</th>
+    <th style="width:18%">Box Type</th>
+    <th style="width:12%">Note</th>
+  </tr>
+</thead>
           <tbody>${bodyHtml}</tbody>
         </table>
       </section>`
@@ -151,7 +165,18 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
   .mono { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 800; }
   .c { text-align:center; }
   .empty { text-align:center; color:#64748b; }
-  .section { page-break-inside: avoid; }
+  /* 关键：每个仓库段之间用虚线分隔；第一段不显示虚线 */
+  .section { 
+    page-break-inside: avoid;
+    margin: 10px 0 12px;
+    padding-top: 10px;
+    border-top: 2px dashed #cfd8e3;
+  }
+  .section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  .note { height: 22px; background:#fff; }
 
   @media print {
     body { margin: 6mm; }
@@ -168,12 +193,40 @@ export const buildPendingTransfersHtml = (transfers: AnyT[] = []) => {
   return html
 }
 
+const normalizeRows = (transfers: AnyT[] = []) =>
+  transfers.map(t => ({
+    bin: t?.sourceBin?.binCode || t?.sourceBinCode || '--',
+    productCode: t?.productCode || '--',
+    qty: Number(t?.quantity ?? 0),
+    boxType: t?.boxType || t?.product?.boxType || '--',
+    note: t?.note || t?.product?.note || '--', // ← 新增 note
+    srcWh:
+      t?.sourceWarehouse?.warehouseCode ||
+      t?.sourceBin?.warehouse?.warehouseCode ||
+      '--',
+    dstWh:
+      t?.destinationWarehouse?.warehouseCode ||
+      t?.destinationBin?.warehouse?.warehouseCode ||
+      '--'
+  }))
+
 export const PrintPreviewDialog: React.FC<{
   open: boolean
-  html: string
+  html?: string
+  rawTransfers?: AnyT[]
+  defaultSelectedSources?: string[]
   onClose: () => void
-}> = ({ open, html, onClose }) => {
+}> = ({ open, html, rawTransfers, defaultSelectedSources, onClose }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+
+  const htmlToShow = React.useMemo(() => {
+    if (rawTransfers && rawTransfers.length) {
+      return buildPendingTransfersHtml(rawTransfers, {
+        mergeAllIntoOne: false
+      })
+    }
+    return html || ''
+  }, [rawTransfers, html])
 
   const handlePrint = () => {
     const win = iframeRef.current?.contentWindow
@@ -194,13 +247,15 @@ export const PrintPreviewDialog: React.FC<{
         position='relative'
         sx={{ bgcolor: '#0b1220', boxShadow: 'none' }}
       >
-        <Toolbar sx={{ gap: 1 }}>
+        <Toolbar sx={{ gap: 1, flexWrap: 'wrap' }}>
           <IconButton edge='start' onClick={onClose} color='inherit'>
             <CloseIcon />
           </IconButton>
-          <Typography sx={{ flex: 1, fontWeight: 800 }}>
+          <Typography sx={{ fontWeight: 800, mr: 2 }}>
             FCS Warehouse Transfer — Print Preview
           </Typography>
+
+          <Box sx={{ flex: 1 }} />
           <Button
             variant='contained'
             onClick={handlePrint}
@@ -234,7 +289,7 @@ export const PrintPreviewDialog: React.FC<{
               border: 0,
               background: '#fff'
             }}
-            srcDoc={html}
+            srcDoc={htmlToShow}
           />
         </Box>
       </Box>
