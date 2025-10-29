@@ -94,6 +94,7 @@ const COLUMN_WIDTHS = {
 const ROWS_PER_PAGE = 100
 
 type TaskRowWithQty = TaskRow & { currentQty?: number }
+export type FilterMode = 'AVAILABLE' | 'IN_TRANSFER'
 
 type Props = {
   warehouseID: string
@@ -103,6 +104,7 @@ type Props = {
   keyword: string
   maxQty: number
   reloadTick?: number
+  filterMode: FilterMode
 }
 
 const LowStockTable: React.FC<Props> = ({
@@ -112,7 +114,8 @@ const LowStockTable: React.FC<Props> = ({
   onCreated,
   keyword,
   maxQty,
-  reloadTick = 0
+  reloadTick = 0,
+  filterMode
 }) => {
   const { products, isLoading, error, fetchLowStockWithOthers } = useProduct()
   const { createTransferTasks, isLoading: creating } = useTransfer()
@@ -170,12 +173,44 @@ const LowStockTable: React.FC<Props> = ({
     [products]
   )
 
-  const totalProductsCount = allRows.length
+  const productHasBlockedMap = useMemo(() => {
+    const m = new Map<string, boolean>()
+    for (const r of allRows) {
+      const pc = r.productCode
+      const others = r.otherInventories || []
+      let blocked = false
+      for (const oi of others) {
+        const code = oi?.bin?.binCode
+        if (code && blockedBinCodes.has(code)) {
+          blocked = true
+          break
+        }
+      }
+      m.set(pc, blocked)
+    }
+    return m
+  }, [allRows, blockedBinCodes])
+
+  const filteredRows = useMemo(() => {
+    if (filterMode === 'AVAILABLE') {
+      return allRows.filter(r => !productHasBlockedMap.get(r.productCode))
+    }
+    return allRows.filter(r => productHasBlockedMap.get(r.productCode))
+  }, [allRows, productHasBlockedMap, filterMode])
+
+  const totalProductsCount = filteredRows.length
   const pagedRows = useMemo(
     () =>
-      allRows.slice(page * ROWS_PER_PAGE, page * ROWS_PER_PAGE + ROWS_PER_PAGE),
-    [allRows, page]
+      filteredRows.slice(
+        page * ROWS_PER_PAGE,
+        page * ROWS_PER_PAGE + ROWS_PER_PAGE
+      ),
+    [filteredRows, page]
   )
+
+  useEffect(() => {
+    setPage(0)
+  }, [filterMode])
 
   const onToggleInventoryRow =
     (rowKey: string) => (_taskKeyFromChild: string, inv: OtherInv) => {
@@ -244,7 +279,6 @@ const LowStockTable: React.FC<Props> = ({
       }
     }
 
-    // ✅ 关键逻辑修改：仅当当前仓数量为 0 时带 taskID，否则一律 null
     const payloads = selectedIDs
       .map(id => invMap.get(id))
       .filter(Boolean)
@@ -314,34 +348,17 @@ const LowStockTable: React.FC<Props> = ({
     }
   }
 
-  // 动态 Pick Up 徽标：qty===0 → 红色 Out of stock；>0 → 绿色 Pending
   const PickUpBadge = ({ qty }: { qty: number }) => {
     const isOut = Number(qty) === 0
-
-    // 红色（缺货）样式
-    const RED = '#B91C1C' // 深红（文字）
-    const RED_BORDER = '#FCA5A5' // 浅红（虚线边框）
-    const RED_BG = '#FEF2F2' // 很浅的红色背景
-    // 绿色（有量，待取货）样式
-    const GREEN = '#166534' // 深绿（文字）
-    const GREEN_BORDER = '#86EFAC' // 浅绿（虚线边框）
-    const GREEN_BG = '#ECFDF5' // 很浅的绿色背景
-
+    const RED = '#B91C1C'
+    const RED_BORDER = '#FCA5A5'
+    const RED_BG = '#FEF2F2'
+    const GREEN = '#166534'
+    const GREEN_BORDER = '#86EFAC'
+    const GREEN_BG = '#ECFDF5'
     const styles = isOut
-      ? {
-          bg: RED_BG,
-          color: RED,
-          border: RED_BORDER,
-          title: 'Pick Up · Out of stock',
-          sub: 'Out of stock'
-        }
-      : {
-          bg: GREEN_BG,
-          color: GREEN,
-          border: GREEN_BORDER,
-          title: 'Pick Up · Pending',
-          sub: 'Pending'
-        }
+      ? { bg: RED_BG, color: RED, border: RED_BORDER, sub: 'Out of stock' }
+      : { bg: GREEN_BG, color: GREEN, border: GREEN_BORDER, sub: 'Pending' }
 
     return (
       <Box
@@ -361,7 +378,7 @@ const LowStockTable: React.FC<Props> = ({
           fontWeight: 800,
           userSelect: 'none'
         }}
-        title={styles.title}
+        title={`Pick Up · ${styles.sub}`}
       >
         <Typography sx={{ fontSize: 12.5, fontWeight: 900 }}>
           Pick Up
@@ -414,7 +431,7 @@ const LowStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Qty Column */}
+        {/* Qty */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.target }}
@@ -437,7 +454,7 @@ const LowStockTable: React.FC<Props> = ({
           </Typography>
         </TableCell>
 
-        {/* Sources Column */}
+        {/* Sources */}
         <TableCell
           align='center'
           sx={{
@@ -459,7 +476,7 @@ const LowStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Action Column */}
+        {/* Action */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}
@@ -576,7 +593,7 @@ const LowStockTable: React.FC<Props> = ({
         sx={{ color: 'text.secondary', flexShrink: 0 }}
       >
         <Typography variant='caption'>
-          Total: <b>{totalProductsCount}</b> item(s)
+          Total (current filter): <b>{totalProductsCount}</b> item(s)
         </Typography>
 
         <TablePagination

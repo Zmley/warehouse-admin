@@ -3,7 +3,8 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useState
+  useState,
+  useTransition
 } from 'react'
 import {
   Box,
@@ -13,7 +14,8 @@ import {
   Paper,
   TextField,
   InputAdornment,
-  IconButton
+  IconButton,
+  Button
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SearchIcon from '@mui/icons-material/Search'
@@ -22,10 +24,13 @@ import { useTransfer } from 'hooks/useTransfer'
 import BinInventoryPopover from 'components/BinInventoryPopover'
 import { TaskStatusFilter, TransferStatusUI } from 'constants/index'
 import TransferTaskTable from './TransferTaskTable'
-import LowStockTable from './lowStock/LowStockTransferTable'
+import LowStockTable, {
+  type FilterMode
+} from './lowStock/LowStockTransferTable'
 
 const CONTENT_HEIGHT = 'calc(100vh - 170px)'
 const SERVER_PAGE_SIZE = 200
+const FILTER_BTN_COLOR = '#323E4D'
 
 const toRows = (res: any): any[] => {
   if (Array.isArray(res)) return res
@@ -39,7 +44,6 @@ const toRows = (res: any): any[] => {
 const TransferPage: React.FC = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
 
-  // —— 主列表（Recent Transfers） —— //
   const {
     isLoading: transferLoading,
     error,
@@ -52,21 +56,22 @@ const TransferPage: React.FC = () => {
     error: mutateError
   } = useTransfer()
 
-  // —— “被占用货位”只用来算 blocked 集合，不影响主列表 —— //
   const { getTransfers: getTransfersBlocked } = useTransfer()
   const [pendingTransfers, setPendingTransfers] = useState<any[]>([])
   const [inProcessTransfers, setInProcessTransfers] = useState<any[]>([])
 
-  // 顶部筛选（传给 LowStockTable）
   const [keyword, setKeyword] = useState('')
-  // ✅ 从 localStorage 初始化 maxQty
+
   const [maxQty, setMaxQty] = useState<number>(() => {
     const saved = localStorage.getItem('lowStockMaxQty')
     return saved ? Number(saved) : 10
   })
   const [lowRefreshTick, setLowRefreshTick] = useState(0)
 
-  // ✅ 当 maxQty 改变时保存到 localStorage
+  const [filterMode, setFilterMode] = useState<FilterMode>('AVAILABLE')
+  const [filterModeUI, setFilterModeUI] = useState<FilterMode>('AVAILABLE')
+  const [isPending, startTransition] = useTransition()
+
   useEffect(() => {
     localStorage.setItem('lowStockMaxQty', String(maxQty))
   }, [maxQty])
@@ -80,7 +85,6 @@ const TransferPage: React.FC = () => {
     sev: 'success' | 'error' | 'info' | 'warning'
   }>({ open: false, msg: '', sev: 'success' })
 
-  // 货位详情 Popover
   const [binPopoverAnchor, setBinPopoverAnchor] = useState<HTMLElement | null>(
     null
   )
@@ -95,7 +99,6 @@ const TransferPage: React.FC = () => {
     setBinPopoverCode(null)
   }
 
-  // 拉 Recent Transfers（单次调用）
   const loadRecent = useCallback(
     async (status: TransferStatusUI, page0 = 0) => {
       if (!warehouseID) return
@@ -109,7 +112,6 @@ const TransferPage: React.FC = () => {
     [warehouseID, getTransfers]
   )
 
-  // 拉被占用货位（PENDING + IN_PROCESS）
   const loadBlocked = useCallback(async () => {
     if (!warehouseID) return
     const [p, i] = await Promise.all([
@@ -130,13 +132,11 @@ const TransferPage: React.FC = () => {
     setInProcessTransfers(toRows(i))
   }, [warehouseID, getTransfersBlocked])
 
-  // 刷新入口（Recent + Blocked + LowStock）
   const refreshAll = useCallback(async () => {
     await Promise.all([loadRecent(recentStatus, recentPage), loadBlocked()])
     setLowRefreshTick(x => x + 1)
   }, [loadRecent, loadBlocked, recentStatus, recentPage])
 
-  // 初次 / 仓库变化
   useEffect(() => {
     if (!warehouseID) return
     setRecentPage(0)
@@ -145,7 +145,6 @@ const TransferPage: React.FC = () => {
     setLowRefreshTick(x => x + 1)
   }, [warehouseID]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 错误提示
   useEffect(() => {
     if (error) setSnack({ open: true, msg: error, sev: 'error' })
   }, [error])
@@ -153,7 +152,6 @@ const TransferPage: React.FC = () => {
     if (mutateError) setSnack({ open: true, msg: mutateError, sev: 'error' })
   }, [mutateError])
 
-  // 被占用源货位集合
   const blockedSourceBinCodes = useMemo(
     () =>
       new Set(
@@ -164,7 +162,6 @@ const TransferPage: React.FC = () => {
     [pendingTransfers, inProcessTransfers]
   )
 
-  // 删除组
   const handleDeleteGroup = useCallback(
     async (transferIDs: string[]) => {
       const r = await removeByTransferIDs(transferIDs)
@@ -179,7 +176,6 @@ const TransferPage: React.FC = () => {
     [removeByTransferIDs, refreshAll]
   )
 
-  // 批量完成收货
   const handleCompleteGroup = useCallback(
     async (groupItems: any[]) => {
       const items = groupItems
@@ -203,7 +199,6 @@ const TransferPage: React.FC = () => {
     [handleCompleteReceive, refreshAll]
   )
 
-  // 切换 Tab
   const handleStatusChange = useCallback(
     async (s: TransferStatusUI) => {
       setRecentStatus(s)
@@ -213,7 +208,6 @@ const TransferPage: React.FC = () => {
     [loadRecent]
   )
 
-  // 翻页
   const handleRecentPageChange = useCallback(
     async (p: number) => {
       setRecentPage(p)
@@ -238,7 +232,6 @@ const TransferPage: React.FC = () => {
         scrollbarGutter: 'stable both-edges'
       }}
     >
-      {/* 顶部工具条 */}
       <Paper
         elevation={0}
         sx={{
@@ -305,6 +298,88 @@ const TransferPage: React.FC = () => {
             }}
           />
 
+          <Box
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              border: `1px solid ${FILTER_BTN_COLOR}`,
+              borderRadius: 999,
+              overflow: 'hidden',
+              height: 34,
+              minWidth: 260,
+              boxShadow: '0 1px 0 rgba(16,24,40,.02)',
+              opacity: isPending ? 0.9 : 1
+            }}
+          >
+            {/* Sliding pill */}
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                top: 2,
+                bottom: 2,
+                left: 2,
+                width: 'calc(50% - 4px)',
+                borderRadius: 999,
+                backgroundColor: FILTER_BTN_COLOR,
+                transition: 'transform 200ms ease-out',
+                willChange: 'transform',
+                transform:
+                  filterModeUI === 'AVAILABLE'
+                    ? 'translateX(0)'
+                    : 'translateX(100%)'
+              }}
+            />
+
+            {/* Left tab */}
+            <Button
+              disableRipple
+              onClick={() => {
+                setFilterModeUI('AVAILABLE')
+                startTransition(() => setFilterMode('AVAILABLE'))
+              }}
+              sx={{
+                flex: 1,
+                zIndex: 1,
+                height: '100%',
+                borderRadius: 0,
+                textTransform: 'none',
+                fontWeight: 800,
+                fontSize: 14,
+                background: 'transparent',
+                color: filterModeUI === 'AVAILABLE' ? '#fff' : FILTER_BTN_COLOR,
+                '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+              }}
+            >
+              Available
+            </Button>
+
+            {/* Right tab */}
+            <Button
+              disableRipple
+              onClick={() => {
+                setFilterModeUI('IN_TRANSFER')
+                startTransition(() => setFilterMode('IN_TRANSFER'))
+              }}
+              sx={{
+                flex: 1,
+                zIndex: 1,
+                height: '100%',
+                borderRadius: 0,
+                textTransform: 'none',
+                fontWeight: 800,
+                fontSize: 14,
+                background: 'transparent',
+                color:
+                  filterModeUI === 'IN_TRANSFER' ? '#fff' : FILTER_BTN_COLOR,
+                '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+              }}
+            >
+              In Transfer
+            </Button>
+          </Box>
+
           <Tooltip title='Refresh'>
             <span>
               <IconButton
@@ -327,7 +402,6 @@ const TransferPage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* 内容区 */}
       <Paper
         elevation={0}
         sx={{
@@ -358,6 +432,7 @@ const TransferPage: React.FC = () => {
               keyword={keyword}
               maxQty={maxQty}
               reloadTick={lowRefreshTick}
+              filterMode={filterMode}
             />
           )}
 
