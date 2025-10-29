@@ -115,7 +115,7 @@ export const buildPendingTransfersHtml = (
               <th style="width:22%">Product</th>
               <th style="width:10%">Qty</th>
               <th style="width:18%">Box Type</th>
-              <th style="width:24%">Note</th>
+              <th style="width:12%">Note</th>
             </tr>
           </thead>
           <tbody>${bodyHtml}</tbody>
