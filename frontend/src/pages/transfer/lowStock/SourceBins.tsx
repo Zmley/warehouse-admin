@@ -1,5 +1,13 @@
 import React, { MouseEvent, useMemo } from 'react'
-import { Box, Typography } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody
+} from '@mui/material'
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CheckIcon from '@mui/icons-material/Check'
@@ -58,11 +66,8 @@ const C_OK = '#15803D'
 const C_BORDER = '#E6EBF2'
 const C_TEXT = '#0F172A'
 const C_MUTED = '#64748B'
-
-const C_WARE_BG = '#FFFEFB'
 const C_WARE_HEAD = '#FBF7EE'
-const C_BIN_HEAD_BG = '#F7FAFF'
-const C_ITEM_BG = '#FCFDFE'
+const C_BIN_BG = '#F7FAFF'
 
 const R_SM = 2
 
@@ -75,10 +80,10 @@ const RoundToggle = ({
 }) => (
   <Box
     sx={{
-      width: 16,
-      height: 16,
+      width: 14,
+      height: 14,
       borderRadius: 2,
-      border: `1.4px solid ${
+      border: `1.2px solid ${
         disabled ? '#E5EAF1' : checked ? C_OK : '#CDD6E1'
       }`,
       background: disabled ? '#F4F6F9' : checked ? '#EFFEEC' : '#FFFFFF',
@@ -88,7 +93,7 @@ const RoundToggle = ({
       transition: 'all .12s ease'
     }}
   >
-    {!disabled && checked && <CheckIcon sx={{ fontSize: 10, color: C_OK }} />}
+    {!disabled && checked && <CheckIcon sx={{ fontSize: 9, color: C_OK }} />}
   </Box>
 )
 
@@ -107,8 +112,8 @@ const BinBadge = ({
     role='button'
     title={code || undefined}
     sx={{
-      px: 0.75,
-      py: 0.2,
+      px: 0.6,
+      py: 0.1,
       border: `1px solid ${C_BORDER}`,
       borderRadius: R_SM,
       background: '#F3F6FF',
@@ -117,8 +122,6 @@ const BinBadge = ({
       letterSpacing: 0.2,
       color: '#2F3E5B',
       cursor: code ? 'pointer' : 'default',
-      boxShadow: '0 1px 0 rgba(0,0,0,.02)',
-      '&:hover': { filter: 'brightness(0.99)' },
       whiteSpace: 'nowrap'
     }}
   >
@@ -142,9 +145,8 @@ const groupByWarehouseBin = (list: OtherInv[]) => {
     const wID = it.bin?.warehouseID || it.bin?.warehouse?.warehouseID
     const binID = it.bin?.binID
     const binCode = it.bin?.binCode
-
     if (!map[wCode]) map[wCode] = { warehouseCode: wCode, bins: [] }
-    let bin = map[wCode].bins.find(b => b.binID === binID)
+    let bin = map[wCode].bins.find(b => b.binID === (binID || ''))
     if (!bin) {
       bin = {
         warehouseCode: wCode,
@@ -155,7 +157,6 @@ const groupByWarehouseBin = (list: OtherInv[]) => {
       }
       map[wCode].bins.push(bin)
     }
-
     const items = (it.bin?.inventories || [])
       .filter(x => x && x.inventoryID && x.quantity > 0)
       .map(x => ({
@@ -163,7 +164,6 @@ const groupByWarehouseBin = (list: OtherInv[]) => {
         productCode: x.productCode,
         quantity: x.quantity
       }))
-
     const seen = new Set(bin.items.map(x => x.inventoryID))
     items.forEach(x => {
       if (!seen.has(x.inventoryID)) bin!.items.push(x)
@@ -178,7 +178,6 @@ export type SourceBinsProps = {
   onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
   blockedBinCodes: Set<string>
-  /** 允许父组件传入自定义的 key（low stock 用行 key） */
   taskKeyOverride?: string
 }
 
@@ -191,7 +190,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   taskKeyOverride
 }) => {
   const tKey = taskKeyOverride ?? keyOf(task)
-
   const list = task.otherInventories || []
   const selectedIDs = useMemo(
     () => new Set(selection[tKey]?.selectedInvIDs || []),
@@ -285,106 +283,91 @@ const SourceBins: React.FC<SourceBinsProps> = ({
         <Box
           key={g.warehouseCode}
           sx={{
-            mx: 0.4,
-            my: 0.6,
             border: `1px solid ${C_BORDER}`,
-            background: C_WARE_BG,
             borderRadius: R_SM,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            background: '#fff'
           }}
         >
-          {/* 头部：仓名 +（右侧）转运状态徽标（已去掉 COMPLETED 文案） */}
+          {/* 仓库头（只显示一次） */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr',
+              display: 'flex',
               alignItems: 'center',
               gap: 0.6,
               px: 0.8,
-              py: 0.5,
+              py: 0.42,
               background: C_WARE_HEAD,
               borderBottom: `1px solid ${C_BORDER}`
             }}
           >
             <WarehouseOutlinedIcon sx={{ color: '#5f4d28', fontSize: 14 }} />
             <Typography
-              component='h3'
               sx={{
-                fontSize: 13,
+                fontSize: 12.2,
                 fontWeight: 900,
                 color: '#475569',
                 letterSpacing: 0.2
               }}
-              title={g.warehouseCode}
             >
               {g.warehouseCode}
             </Typography>
           </Box>
 
-          {/* Bins */}
-          <Box
-            sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, p: 0.6 }}
-          >
-            {g.bins.map(bin => {
-              const items = bin.items
-              const total = items.length
-              const selectedCount = items.reduce(
-                (n, it) => n + (selectedIDs.has(it.inventoryID) ? 1 : 0),
-                0
-              )
-              const allSelected = total > 0 && selectedCount === total
-              const blocked = !!(
-                bin.binCode && blockedBinCodes.has(bin.binCode)
-              )
+          {/* 表格（更扁平：Source Bin 单元格内横向并排：货位名 + 选择块） */}
+          <Table size='small' stickyHeader={false}>
+            <TableHead>
+              <TableRow
+                sx={{
+                  '& th': {
+                    background: '#f8fafc',
+                    borderBottom: `1px solid ${C_BORDER}`,
+                    color: '#475569',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    textAlign: 'center',
+                    py: 0.45
+                  }
+                }}
+              >
+                <TableCell sx={{ width: '40%' }}>Source Bin</TableCell>
+                <TableCell sx={{ width: '40%' }}>Product Code</TableCell>
+                <TableCell sx={{ width: '20%' }}>Qty</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {g.bins.map((bin, bi) => {
+                const items = bin.items
+                if (!items.length) return null
+                const total = items.length
+                const selectedCount = items.reduce(
+                  (n, it) => n + (selectedIDs.has(it.inventoryID) ? 1 : 0),
+                  0
+                )
+                const allSelected = total > 0 && selectedCount === total
+                const blocked = !!(
+                  bin.binCode && blockedBinCodes.has(bin.binCode)
+                )
 
-              return (
-                <Box
-                  key={bin.binID || bin.binCode}
-                  aria-disabled={blocked}
-                  sx={{
-                    border: `1px dashed ${blocked ? '#EAEFF5' : C_BORDER}`,
-                    borderRadius: R_SM,
-                    background: blocked ? '#F7F9FC' : '#FFFFFF',
-                    overflow: 'hidden',
-                    opacity: blocked ? 0.85 : 1
-                  }}
-                >
+                const BinCell = (
                   <Box
                     sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto 1fr',
+                      display: 'flex',
                       alignItems: 'center',
-                      px: 0.6,
-                      py: 0.4,
-                      background: blocked ? '#F4F6FA' : C_BIN_HEAD_BG,
-                      borderBottom: `1px solid ${C_BORDER}`
+                      justifyContent: 'space-between',
+                      gap: 0.6,
+                      px: 0.55,
+                      py: 0.22,
+                      background: blocked ? '#F4F6FA' : C_BIN_BG,
+                      border: `1px dashed ${
+                        blocked ? '#EAEFF5' : 'transparent'
+                      }`,
+                      borderRadius: 1
                     }}
                   >
+                    {/* 左侧：货位名（可点击）+ 占用小标记 */}
                     <Box
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        pl: 0.8
-                      }}
-                    >
-                      {blocked && (
-                        <Typography
-                          sx={{
-                            fontSize: 9.5,
-                            color: C_DANGER,
-                            fontWeight: 700,
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          In transfer
-                        </Typography>
-                      )}
-                    </Box>
-                    <Box
-                      sx={{
-                        justifySelf: 'center',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
@@ -392,86 +375,115 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       }}
                     >
                       <BinBadge code={bin.binCode} onClick={onBinClick} />
-                    </Box>
-                    <Box
-                      onClick={e => {
-                        e.stopPropagation()
-                        toggleAllInBin(
-                          {
-                            binID: bin.binID,
-                            binCode: bin.binCode,
-                            warehouseID: bin.warehouseID,
-                            warehouseCode: g.warehouseCode
-                          },
-                          items,
-                          blocked
-                        )
-                      }}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        justifySelf: 'end',
-                        cursor: blocked ? 'not-allowed' : 'pointer',
-                        color: blocked ? '#9CA3AF' : undefined
-                      }}
-                      aria-disabled={blocked}
-                      title={
-                        blocked
-                          ? 'This bin is in transfer'
-                          : allSelected
-                          ? 'Unselect all'
-                          : 'Select all'
-                      }
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: 10.5,
-                          fontWeight: 800,
-                          color: blocked ? '#9CA3AF' : C_MUTED
-                        }}
-                      >
-                        {selectedCount}/{total}
-                      </Typography>
-                      <RoundToggle checked={allSelected} disabled={blocked} />
-                    </Box>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                      gap: 0.4,
-                      p: 0.45,
-                      background: blocked ? '#F4F6FA' : C_ITEM_BG
-                    }}
-                  >
-                    {items.map(p => {
-                      const selected = selectedIDs.has(p.inventoryID)
-                      const isCurrent = p.productCode === task.productCode
-                      return (
-                        <Box
-                          key={p.inventoryID}
-                          title={`${p.productCode} × ${p.quantity}`}
+                      {blocked && (
+                        <Typography
                           sx={{
-                            border: `1px solid ${
-                              selected ? '#CDEAD7' : '#E7ECF3'
-                            }`,
-                            borderRadius: R_SM,
-                            px: 0.5,
-                            py: 0.35,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: selected ? '#F6FFFB' : '#FFFFFF',
-                            cursor: 'default',
-                            pointerEvents: 'none'
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: C_DANGER,
+                            whiteSpace: 'nowrap'
                           }}
                         >
+                          In transfer
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* 右侧：选择计数 + 小开关（被占用时不显示） */}
+                    {!blocked && (
+                      <Box
+                        onClick={e => {
+                          e.stopPropagation()
+                          toggleAllInBin(
+                            {
+                              binID: bin.binID,
+                              binCode: bin.binCode,
+                              warehouseID: bin.warehouseID,
+                              warehouseCode: g.warehouseCode
+                            },
+                            items,
+                            false
+                          )
+                        }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.45,
+                          cursor: 'pointer'
+                        }}
+                        title={allSelected ? 'Unselect all' : 'Select all'}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: 10.5,
+                            fontWeight: 800,
+                            color: C_MUTED
+                          }}
+                        >
+                          {selectedCount}/{total}
+                        </Typography>
+                        <RoundToggle checked={allSelected} />
+                      </Box>
+                    )}
+                  </Box>
+                )
+
+                return (
+                  <React.Fragment key={bin.binID || bin.binCode || bi}>
+                    {/* 第一行：Source Bin（rowSpan） + 第一条 item */}
+                    <TableRow sx={{ '& td': { fontSize: 11, py: 0.3 } }}>
+                      <TableCell
+                        rowSpan={items.length}
+                        sx={{ verticalAlign: 'middle' }}
+                      >
+                        {BinCell}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Typography
+                          sx={{
+                            fontSize: 11,
+                            fontWeight: 900,
+                            color: C_TEXT,
+                            fontFamily:
+                              'ui-monospace, Menlo, Consolas, "Courier New", monospace',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%'
+                          }}
+                          title={items[0].productCode}
+                        >
+                          {items[0].productCode}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Typography
+                          sx={{
+                            fontSize: 11,
+                            fontWeight: 900,
+                            color: C_TEXT,
+                            fontFamily:
+                              'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+                          }}
+                          title={`Qty × ${items[0].quantity}`}
+                        >
+                          {items[0].quantity}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* 其余 item 行（紧凑） */}
+                    {items.slice(1).map(it => (
+                      <TableRow
+                        key={it.inventoryID}
+                        sx={{ '& td': { fontSize: 11, py: 0.3 } }}
+                      >
+                        <TableCell sx={{ textAlign: 'center' }}>
                           <Typography
                             sx={{
                               fontSize: 11,
-                              fontWeight: isCurrent ? 900 : 700,
+                              fontWeight:
+                                it.productCode === task.productCode ? 900 : 700,
                               color: C_TEXT,
                               fontFamily:
                                 'ui-monospace, Menlo, Consolas, "Courier New", monospace',
@@ -480,17 +492,32 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                               textOverflow: 'ellipsis',
                               maxWidth: '100%'
                             }}
+                            title={it.productCode}
                           >
-                            {p.productCode} × {p.quantity}
+                            {it.productCode}
                           </Typography>
-                        </Box>
-                      )
-                    })}
-                  </Box>
-                </Box>
-              )
-            })}
-          </Box>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Typography
+                            sx={{
+                              fontSize: 11,
+                              fontWeight: 900,
+                              color: C_TEXT,
+                              fontFamily:
+                                'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+                            }}
+                            title={`Qty × ${it.quantity}`}
+                          >
+                            {it.quantity}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
+                )
+              })}
+            </TableBody>
+          </Table>
         </Box>
       ))}
     </Box>
