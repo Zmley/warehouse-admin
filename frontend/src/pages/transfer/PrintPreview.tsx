@@ -239,11 +239,10 @@ export const buildPendingTransfersHtml = (
     vertical-align:middle;
   }
   th { background:#f3f4f6; font-weight:800; }
-  .mono { font-family: ui-monospace, Menlo, Consolas, \"Courier New\", monospace; font-weight: 800; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 800; }
   .c { text-align:center; }
   .empty { text-align:center; color:#64748b; }
 
-  /* 每个仓库段之间用虚线分隔；第一段不显示虚线 */
   .section { 
     page-break-inside: avoid;
     margin: 10px 0 12px;
@@ -266,7 +265,7 @@ export const buildPendingTransfersHtml = (
     line-height: 20px;
     padding: 0 4px;
     background: transparent;
-    font-family: -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"PingFang SC\",\"Microsoft Yahei\",Arial,sans-serif;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft Yahei",Arial,sans-serif;
   }
   .note-input::placeholder { color: #9ca3af; }
 
@@ -284,7 +283,7 @@ export const buildPendingTransfersHtml = (
   }
 </style></head>
 <body>
-  <div class=\"paper\">
+  <div class="paper">
     <h1>Warehouse Transfer</h1>
     ${sections.join('')}
   </div>
