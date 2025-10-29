@@ -6,12 +6,19 @@ import {
   Dialog,
   IconButton,
   Toolbar,
-  Typography
+  Typography,
+  Select,
+  MenuItem
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import PrintIcon from '@mui/icons-material/Print'
 
 type AnyT = Record<string, any>
+
+const boxTypeNum = (s?: string) => {
+  const m = String(s || '').match(/\d+(\.\d+)?/)
+  return m ? parseFloat(m[0]) : Number.POSITIVE_INFINITY
+}
 
 const escapeHtml = (s: any) =>
   String(s ?? '')
@@ -19,9 +26,49 @@ const escapeHtml = (s: any) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
+const parseBinKey = (code: string) => {
+  const s = String(code || '').trim()
+
+  const m1 = s.match(/^(\d+)?\s*([A-Za-z]+)(?:[\s-]?(\d+))?$/)
+  if (m1) {
+    const [, lvl, base, seq] = m1
+    return {
+      s,
+      base: (base || '').toUpperCase(),
+      level: lvl ? parseInt(lvl, 10) : 0,
+      seq: seq ? parseInt(seq, 10) : 0
+    }
+  }
+
+  const suffix = (s.match(/[A-Za-z]+$/)?.[0] || '').toUpperCase()
+  const numMatch = s.match(/^\d+/)?.[0]
+  const num = typeof numMatch === 'string' ? parseInt(numMatch, 10) : 0
+  return { s, base: suffix || s.toUpperCase(), level: num, seq: 0 }
+}
+
+const compareBinsAlphaFirst = (a: string, b: string) => {
+  const pa = parseBinKey(a)
+  const pb = parseBinKey(b)
+
+  if (pa.base.length !== pb.base.length) return pa.base.length - pb.base.length
+
+  if (pa.base !== pb.base) return pa.base.localeCompare(pb.base)
+
+  if (pa.level !== pb.level) return pa.level - pb.level
+
+  if (pa.seq !== pb.seq) return pa.seq - pb.seq
+
+  return pa.s.localeCompare(pb.s)
+}
+
 export const buildPendingTransfersHtml = (
   transfers: AnyT[] = [],
-  opts: { mergeAllIntoOne?: boolean; titlePrefix?: string } = {}
+  opts: {
+    mergeAllIntoOne?: boolean
+    titlePrefix?: string
+    sortBy?: 'BIN' | 'BOX'
+    sortMap?: Record<string, 'BIN' | 'BOX'>
+  } = {}
 ) => {
   const rows = Array.isArray(transfers)
     ? transfers.map(t => ({
@@ -55,7 +102,7 @@ export const buildPendingTransfersHtml = (
     bySrc[key].push(r)
   }
 
-  const makeTableBody = (list: AnyT[]) => {
+  const makeTableBody = (list: AnyT[], sortBy: 'BIN' | 'BOX' = 'BIN') => {
     const byBin: Record<string, AnyT[]> = {}
     for (const r of list) {
       const key = r.bin || '--'
@@ -63,9 +110,36 @@ export const buildPendingTransfersHtml = (
       byBin[key].push(r)
     }
 
-    const bins = Object.keys(byBin)
+    let bins = Object.keys(byBin)
     if (!bins.length) {
       return `<tr><td class="empty" colspan="6">No pending transfers.</td></tr>`
+    }
+
+    if (sortBy === 'BIN') {
+      bins.sort((a, b) => compareBinsAlphaFirst(String(a), String(b)))
+    } else {
+      bins.sort((a, b) => {
+        const ga = byBin[a]
+        const gb = byBin[b]
+        const aMin = Math.min(
+          ...ga.map(x => boxTypeNum(x.boxType)),
+          Number.POSITIVE_INFINITY
+        )
+        const bMin = Math.min(
+          ...gb.map(x => boxTypeNum(x.boxType)),
+          Number.POSITIVE_INFINITY
+        )
+        if (aMin !== bMin) return aMin - bMin
+        const aText = (ga[0]?.boxType ?? '').toString()
+        const bText = (gb[0]?.boxType ?? '').toString()
+        const tCmp = aText.localeCompare(bText)
+        if (tCmp !== 0) return tCmp
+        const ap = (ga[0]?.productCode ?? '').toString()
+        const bp = (gb[0]?.productCode ?? '').toString()
+        const pCmp = ap.localeCompare(bp)
+        if (pCmp !== 0) return pCmp
+        return String(a).localeCompare(String(b))
+      })
     }
 
     let bodyHtml = ''
@@ -100,10 +174,13 @@ export const buildPendingTransfersHtml = (
   sections = Object.entries(bySrc).map(([src, list]) => {
     const dsts = Array.from(new Set(list.map(r => r.dstWh))).filter(Boolean)
     const dstLabel = dsts.length === 1 ? dsts[0] : 'Multiple Destinations'
+    const sortForSrc =
+      (opts.sortMap && opts.sortMap[src]) || opts.sortBy || 'BIN'
+    const sortLabel = sortForSrc === 'BIN' ? 'sort by Bin' : 'sort by Box Type'
     const title =
       (opts.titlePrefix ? `${opts.titlePrefix} ` : '') +
-      `${src} → ${dstLabel}   ${timeLabel}`
-    const bodyHtml = makeTableBody(list)
+      `${src} → ${dstLabel}   ${timeLabel} (${sortLabel})`
+    const bodyHtml = makeTableBody(list, sortForSrc)
     return `
       <section class="section">
         <div class="sub">${escapeHtml(title)}</div>
@@ -162,7 +239,7 @@ export const buildPendingTransfersHtml = (
     vertical-align:middle;
   }
   th { background:#f3f4f6; font-weight:800; }
-  .mono { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 800; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, \"Courier New\", monospace; font-weight: 800; }
   .c { text-align:center; }
   .empty { text-align:center; color:#64748b; }
 
@@ -189,7 +266,7 @@ export const buildPendingTransfersHtml = (
     line-height: 20px;
     padding: 0 4px;
     background: transparent;
-    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft Yahei",Arial,sans-serif;
+    font-family: -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"PingFang SC\",\"Microsoft Yahei\",Arial,sans-serif;
   }
   .note-input::placeholder { color: #9ca3af; }
 
@@ -207,7 +284,7 @@ export const buildPendingTransfersHtml = (
   }
 </style></head>
 <body>
-  <div class="paper">
+  <div class=\"paper\">
     <h1>Warehouse Transfer</h1>
     ${sections.join('')}
   </div>
@@ -224,14 +301,46 @@ export const PrintPreviewDialog: React.FC<{
 }> = ({ open, html, rawTransfers, defaultSelectedSources, onClose }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
 
+  const allSources = React.useMemo(() => {
+    if (!rawTransfers || !rawTransfers.length) return []
+    const set = new Set<string>()
+    for (const t of rawTransfers) {
+      const src =
+        t?.sourceWarehouse?.warehouseCode ||
+        t?.sourceBin?.warehouse?.warehouseCode ||
+        '--'
+      if (src) set.add(String(src))
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [rawTransfers])
+
+  const defaultSortFor = (src: string): 'BIN' | 'BOX' =>
+    String(src).includes('1500') ? 'BIN' : 'BOX'
+
+  const [sortMap, setSortMap] = React.useState<Record<string, 'BIN' | 'BOX'>>(
+    {}
+  )
+
+  React.useEffect(() => {
+    setSortMap(prev => {
+      const next: Record<string, 'BIN' | 'BOX'> = {}
+      for (const s of allSources) {
+        next[s] = prev[s] || defaultSortFor(s)
+      }
+      return next
+    })
+  }, [allSources.join(',')])
+
   const htmlToShow = React.useMemo(() => {
     if (rawTransfers && rawTransfers.length) {
       return buildPendingTransfersHtml(rawTransfers, {
-        mergeAllIntoOne: false
+        mergeAllIntoOne: false,
+        sortMap,
+        sortBy: 'BOX'
       })
     }
     return html || ''
-  }, [rawTransfers, html])
+  }, [rawTransfers, html, sortMap])
 
   const handlePrint = () => {
     const win = iframeRef.current?.contentWindow
@@ -259,6 +368,60 @@ export const PrintPreviewDialog: React.FC<{
           <Typography sx={{ fontWeight: 800, mr: 2 }}>
             FCS Warehouse Transfer — Print Preview
           </Typography>
+
+          {allSources.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                ml: 1,
+                flexWrap: 'wrap'
+              }}
+            >
+              {allSources.map(src => (
+                <Box
+                  key={src}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}
+                >
+                  <Typography
+                    sx={{
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: 12,
+                      fontWeight: 800
+                    }}
+                  >
+                    {src}
+                  </Typography>
+                  <Select
+                    size='small'
+                    value={sortMap[src] ?? defaultSortFor(src)}
+                    onChange={e =>
+                      setSortMap(m => ({
+                        ...m,
+                        [src]: e.target.value as 'BIN' | 'BOX'
+                      }))
+                    }
+                    sx={{
+                      height: 32,
+                      color: '#fff',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255,255,255,0.35)'
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255,255,255,0.55)'
+                      },
+                      '& .MuiSvgIcon-root': { color: '#fff' },
+                      minWidth: 180
+                    }}
+                  >
+                    <MenuItem value='BIN'>Sort by: Bin (ASC)</MenuItem>
+                    <MenuItem value='BOX'>Sort by: Box type (ASC)</MenuItem>
+                  </Select>
+                </Box>
+              ))}
+            </Box>
+          )}
 
           <Box sx={{ flex: 1 }} />
           <Button
