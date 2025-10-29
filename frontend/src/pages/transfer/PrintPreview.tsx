@@ -79,7 +79,7 @@ export const buildPendingTransfersHtml = (
         <td class="mono">${escapeHtml(first.productCode)}</td>
         <td class="c">${first.qty}</td>
         <td class="mono">${escapeHtml(first.boxType)}</td>
-        <td class="note"></td>   <!-- 空白 note -->
+        <td class="note"><input class="note-input" type="text" placeholder="" autocomplete="off" spellcheck="false" /></td>
       </tr>`
       for (let j = 1; j < group.length; j++) {
         const r = group[j]
@@ -88,7 +88,7 @@ export const buildPendingTransfersHtml = (
         <td class="mono">${escapeHtml(r.productCode)}</td>
         <td class="c">${r.qty}</td>
         <td class="mono">${escapeHtml(r.boxType)}</td>
-        <td class="note"></td>   <!-- 空白 note -->
+        <td class="note"><input class="note-input" type="text" placeholder="" autocomplete="off" spellcheck="false" /></td>
       </tr>`
       }
     })
@@ -108,16 +108,16 @@ export const buildPendingTransfersHtml = (
       <section class="section">
         <div class="sub">${escapeHtml(title)}</div>
         <table class="compact">
-       <thead>
-  <tr>
-    <th style="width:8%">#</th>
-    <th style="width:24%">Bin</th>
-    <th style="width:28%">Product</th>
-    <th style="width:10%">Qty</th>
-    <th style="width:18%">Box Type</th>
-    <th style="width:12%">Note</th>
-  </tr>
-</thead>
+          <thead>
+            <tr>
+              <th style="width:8%">#</th>
+              <th style="width:18%">Bin</th>
+              <th style="width:22%">Product</th>
+              <th style="width:10%">Qty</th>
+              <th style="width:18%">Box Type</th>
+              <th style="width:24%">Note</th>
+            </tr>
+          </thead>
           <tbody>${bodyHtml}</tbody>
         </table>
       </section>`
@@ -165,7 +165,8 @@ export const buildPendingTransfersHtml = (
   .mono { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 800; }
   .c { text-align:center; }
   .empty { text-align:center; color:#64748b; }
-  /* 关键：每个仓库段之间用虚线分隔；第一段不显示虚线 */
+
+  /* 每个仓库段之间用虚线分隔；第一段不显示虚线 */
   .section { 
     page-break-inside: avoid;
     margin: 10px 0 12px;
@@ -176,12 +177,33 @@ export const buildPendingTransfersHtml = (
     border-top: none;
     padding-top: 0;
   }
-  .note { height: 22px; background:#fff; }
+
+  .note { background:#fff; }
+  .note-input {
+    width: 100%;
+    height: 22px;
+    border: none;
+    border-bottom: 1px solid #111827;
+    outline: none;
+    font-size: 14px;
+    line-height: 20px;
+    padding: 0 4px;
+    background: transparent;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft Yahei",Arial,sans-serif;
+  }
+  .note-input::placeholder { color: #9ca3af; }
 
   @media print {
     body { margin: 6mm; }
     thead { display: table-header-group; }
     tr,td,th { page-break-inside: avoid; }
+    /* 确保输入框在打印时保留下划线与内容 */
+    .note-input {
+      border: none;
+      border-bottom: 1px solid #111827;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 </style></head>
 <body>

@@ -754,7 +754,7 @@ const TransferTaskTable: React.FC<Props> = ({
           </Select>
 
           <TextField
-            placeholder='Search productCode'
+            placeholder=''
             size='small'
             value={productKeyword}
             onChange={e => setProductKeyword(e.target.value)}
