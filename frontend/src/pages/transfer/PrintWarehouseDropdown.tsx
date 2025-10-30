@@ -70,7 +70,6 @@ const PrintWarehouseDropdown: React.FC<PrintWarehouseDropdownProps> = ({
         }
       }}
     >
-      {/* Header */}
       <Box sx={{ px: 1.25, pt: 1, pb: 0.75 }}>
         <Typography sx={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
           Select Warehouses to Print
@@ -82,7 +81,6 @@ const PrintWarehouseDropdown: React.FC<PrintWarehouseDropdownProps> = ({
 
       <Divider />
 
-      {/* List Section */}
       <Box sx={{ px: 1, py: 0.75, maxHeight: 220, overflowY: 'auto' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
           <Checkbox

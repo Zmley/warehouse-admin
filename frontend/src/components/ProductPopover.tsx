@@ -174,7 +174,15 @@ export default function ProductPopover({
               label='Created'
               value={
                 product.createdAt
-                  ? new Date(product.createdAt).toLocaleDateString()
+                  ? new Date(product.createdAt).toLocaleString([], {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                    })
                   : '--'
               }
             />
@@ -182,7 +190,15 @@ export default function ProductPopover({
               label='Updated'
               value={
                 product.updatedAt
-                  ? new Date(product.updatedAt).toLocaleDateString()
+                  ? new Date(product.updatedAt).toLocaleString([], {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                    })
                   : '--'
               }
             />

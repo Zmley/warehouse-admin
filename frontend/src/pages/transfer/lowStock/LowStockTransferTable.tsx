@@ -48,6 +48,7 @@ export type TaskRow = {
   productCode: string
   quantity: number
   createdAt?: string
+  updatedAt?: string | null
   destinationBinCode?: string
   destinationBin?: {
     binID?: string
@@ -107,6 +108,16 @@ type Props = {
   filterMode: FilterMode
 }
 
+// 工具：判断是否“今天”
+const isToday = (d: Date) => {
+  const now = new Date()
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  )
+}
+
 const LowStockTable: React.FC<Props> = ({
   warehouseID,
   onBinClick,
@@ -156,20 +167,32 @@ const LowStockTable: React.FC<Props> = ({
 
   const allRows: TaskRowWithQty[] = useMemo(
     () =>
-      (products || []).map((p: any) => ({
-        taskID: null,
-        productCode: p.productCode,
-        quantity: 0,
-        createdAt: p.createdAt || null,
-        destinationBinCode: p?.destinationBinCode || undefined,
-        destinationBin: p?.destinationBin || undefined,
-        otherInventories: p?.otherInventories || [],
-        transferStatus: p?.transferStatus ?? null,
-        hasPendingTransfer: !!p?.hasPendingTransfer,
-        transfersCount: Number(p?.transfersCount ?? 0),
-        currentQty: Number(p?.totalQuantity ?? 0),
-        hasPendingOutofstockTask: p?.hasPendingOutofstockTask ?? null
-      })),
+      (products || [])
+        .map((p: any) => ({
+          taskID: null,
+          productCode: p.productCode,
+          quantity: 0,
+          createdAt: p.createdAt || null,
+          updatedAt: p.updatedAt || p.updateAt || null, // 兼容后端 updateAt
+          destinationBinCode: p?.destinationBinCode || undefined,
+          destinationBin: p?.destinationBin || undefined,
+          otherInventories: p?.otherInventories || [],
+          transferStatus: p?.transferStatus ?? null,
+          hasPendingTransfer: !!p?.hasPendingTransfer,
+          transfersCount: Number(p?.transfersCount ?? 0),
+          currentQty: Number(p?.totalQuantity ?? 0),
+          hasPendingOutofstockTask: p?.hasPendingOutofstockTask ?? null
+        }))
+
+        .sort((a, b) => {
+          const aHasTask = !!a.hasPendingOutofstockTask ? 0 : 1
+          const bHasTask = !!b.hasPendingOutofstockTask ? 0 : 1
+          if (aHasTask !== bHasTask) return aHasTask - bHasTask
+
+          const ad = new Date(a.updatedAt || a.createdAt || 0).getTime()
+          const bd = new Date(b.updatedAt || b.createdAt || 0).getTime()
+          return bd - ad
+        }),
     [products]
   )
 
@@ -397,6 +420,12 @@ const LowStockTable: React.FC<Props> = ({
     const curQty = Number(task.currentQty ?? 0)
     const oosTaskID = task.hasPendingOutofstockTask ?? null
 
+    const upd = task.updatedAt ? new Date(task.updatedAt) : null
+    const isUpdToday = upd ? isToday(upd) : false
+    const TIME_BORDER = isUpdToday ? '#86EFAC' : '#D1D5DB'
+    const TIME_BG = isUpdToday ? '#ECFDF5' : '#FAFAFA'
+    const TIME_COLOR = isUpdToday ? '#166534' : '#6B7280'
+
     return (
       <TableRow key={rowKey} sx={getRowSx(task.transferStatus)}>
         <TableCell
@@ -431,30 +460,68 @@ const LowStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Qty */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.target }}
         >
-          <Typography
-            title='Qty in current warehouse'
+          <Box
             sx={{
-              fontSize: 12,
-              fontWeight: 900,
-              lineHeight: 1.15,
-              color: curQty === 0 ? '#6B7280' : '#0F172A',
-              fontFamily:
-                'ui-monospace, Menlo, Consolas, "Courier New", monospace',
-              display: 'inline-flex',
+              display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              lineHeight: 1.2
             }}
           >
-            {`Qty × ${curQty}`}
-          </Typography>
+            <Typography
+              title='Qty in current warehouse'
+              sx={{
+                fontSize: 12,
+                fontWeight: 900,
+                color: curQty === 0 ? '#6B7280' : '#0F172A',
+                fontFamily:
+                  'ui-monospace, Menlo, Consolas, "Courier New", monospace'
+              }}
+            >
+              {`Qty × ${curQty}`}
+            </Typography>
+
+            {upd && (
+              <Box
+                sx={{
+                  mt: 0.4,
+                  px: 0.8,
+                  py: 0.4,
+                  border: `1px dashed ${TIME_BORDER}`,
+                  borderRadius: 1,
+                  display: 'inline-block',
+                  backgroundColor: TIME_BG
+                }}
+                title={`Updated: ${upd.toLocaleString()}`}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: TIME_COLOR,
+                    textAlign: 'center',
+                    fontFamily:
+                      'ui-monospace, Menlo, Consolas, "Courier New", monospace',
+                    lineHeight: 1.3
+                  }}
+                >
+                  {upd.toLocaleDateString()}
+                  <br />
+                  {upd.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Typography>
+              </Box>
+            )}
+          </Box>
         </TableCell>
 
-        {/* Sources */}
         <TableCell
           align='center'
           sx={{
@@ -476,7 +543,6 @@ const LowStockTable: React.FC<Props> = ({
           </Box>
         </TableCell>
 
-        {/* Action */}
         <TableCell
           align='center'
           sx={{ ...cellBase, width: COLUMN_WIDTHS.qtyAction }}
