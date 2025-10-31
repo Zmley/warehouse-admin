@@ -109,7 +109,6 @@ type Props = {
   externalRefreshing?: boolean
 }
 
-// 工具：判断是否“今天”
 const isToday = (d: Date) => {
   const now = new Date()
   return (
@@ -130,7 +129,7 @@ const LowStockTable: React.FC<Props> = ({
   filterMode,
   externalRefreshing = false
 }) => {
-  const { products, isLoading, error, fetchLowStockWithOthers } = useProduct()
+  const { products, error, fetchLowStockWithOthers } = useProduct()
   const { createTransferTasks, isLoading: creating } = useTransfer()
 
   const [page, setPage] = useState(0)
