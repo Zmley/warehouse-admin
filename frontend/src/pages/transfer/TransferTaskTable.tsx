@@ -24,6 +24,7 @@ import PrintIcon from '@mui/icons-material/Print'
 import { TransferStatusUI } from 'constants/index'
 import PrintPreviewDialog from './PrintPreview'
 import PrintWarehouseDropdown from './PrintWarehouseDropdown'
+import CompleteInProcessDialog from './CompleteInProcessDialog'
 
 const BORDER = '#e5e7eb'
 const MUTED = '#94a3b8'
@@ -598,6 +599,29 @@ const TransferTaskTable: React.FC<Props> = ({
     return filtered
   }, [groups, whFilter, productKeyword])
 
+  // Dialog state for selective complete
+  const [completeOpen, setCompleteOpen] = useState(false)
+
+  // Map shown groups to dialog groups shape
+  const dialogGroups = useMemo(
+    () =>
+      (shownGroups || []).map(g => ({
+        key: g.key,
+        items: g.items || [],
+        sourceWarehouse: g.sourceWarehouse,
+        sourceBin: g.sourceBin,
+        destinationWarehouse: g.destinationWarehouse,
+        destinationBin: g.destinationBin,
+        products: (g.products || []).map(p => ({
+          id: p.id,
+          productCode: p.productCode,
+          quantity: p.quantity,
+          boxType: p.boxType
+        }))
+      })),
+    [shownGroups]
+  )
+
   const totalPages = Math.max(1, Math.ceil(total / SERVER_PAGE_SIZE))
 
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -685,6 +709,7 @@ const TransferTaskTable: React.FC<Props> = ({
             <Tab label='Completed' value='COMPLETED' />
           </Tabs>
 
+          {/* Print button */}
           <Tooltip
             title={
               status === 'PENDING'
@@ -705,6 +730,39 @@ const TransferTaskTable: React.FC<Props> = ({
               </IconButton>
             </span>
           </Tooltip>
+
+          {/* Batch Complete button */}
+          {(() => {
+            const canBatchComplete =
+              status === 'IN_PROCESS' && shownGroups.length > 0
+            const tooltipText = canBatchComplete
+              ? 'Batch Complete (select groups)'
+              : 'Switch to In Process to batch complete'
+            return (
+              <Tooltip title={tooltipText}>
+                <span>
+                  <IconButton
+                    size='small'
+                    aria-label='batch-complete'
+                    onClick={() => setCompleteOpen(true)}
+                    disabled={!canBatchComplete}
+                    sx={{
+                      p: 0.5,
+                      cursor: canBatchComplete ? 'pointer' : 'default'
+                    }}
+                  >
+                    <DoneAllIcon
+                      fontSize='small'
+                      sx={{
+                        color: canBatchComplete ? '#166534' : '#9aa4b2',
+                        opacity: canBatchComplete ? 1 : 0.9
+                      }}
+                    />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )
+          })()}
 
           <PrintWarehouseDropdown
             open={printMenuOpen}
@@ -858,6 +916,18 @@ const TransferTaskTable: React.FC<Props> = ({
         rawTransfers={previewTransfers}
         defaultSelectedSources={previewDefaultSources}
         onClose={() => setPreviewOpen(false)}
+      />
+
+      <CompleteInProcessDialog
+        open={completeOpen}
+        onClose={() => setCompleteOpen(false)}
+        groups={dialogGroups}
+        onCompleteGroup={async items => {
+          if (onComplete) {
+            return onComplete(items)
+          }
+          return Promise.resolve()
+        }}
       />
     </Box>
   )

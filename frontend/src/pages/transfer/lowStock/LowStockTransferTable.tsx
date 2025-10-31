@@ -106,6 +106,7 @@ type Props = {
   maxQty: number
   reloadTick?: number
   filterMode: FilterMode
+  externalRefreshing?: boolean
 }
 
 // 工具：判断是否“今天”
@@ -126,7 +127,8 @@ const LowStockTable: React.FC<Props> = ({
   keyword,
   maxQty,
   reloadTick = 0,
-  filterMode
+  filterMode,
+  externalRefreshing = false
 }) => {
   const { products, isLoading, error, fetchLowStockWithOthers } = useProduct()
   const { createTransferTasks, isLoading: creating } = useTransfer()
@@ -146,24 +148,27 @@ const LowStockTable: React.FC<Props> = ({
     return `ls:${pc}|${destWh}|${destBin}`
   }
 
-  const loadList = useCallback(() => {
+  const loadList = useCallback(async () => {
     if (!warehouseID) return
     setErrMsg('')
-    fetchLowStockWithOthers({
-      keyword: keyword || undefined,
-      maxQty,
-      boxType: undefined
-    }).catch(e => setErrMsg(e?.message || 'Load low stock failed'))
+    setHasLoadedOnce(false)
+    try {
+      await fetchLowStockWithOthers({
+        keyword: keyword || undefined,
+        maxQty,
+        boxType: undefined
+      })
+    } catch (e: any) {
+      setErrMsg(e?.message || 'Load low stock failed')
+    } finally {
+      setHasLoadedOnce(true)
+    }
   }, [warehouseID, keyword, maxQty, fetchLowStockWithOthers])
 
   useEffect(() => {
     setPage(0)
     loadList()
   }, [loadList, reloadTick])
-
-  useEffect(() => {
-    if (!isLoading) setHasLoadedOnce(true)
-  }, [isLoading])
 
   const allRows: TaskRowWithQty[] = useMemo(
     () =>
@@ -586,7 +591,7 @@ const LowStockTable: React.FC<Props> = ({
       }}
     >
       <Box sx={{ flex: 1, overflow: 'auto', pr: 0, minHeight: 0 }}>
-        {isLoading && !hasLoadedOnce ? (
+        {!hasLoadedOnce || externalRefreshing ? (
           <Box
             display='flex'
             justifyContent='center'

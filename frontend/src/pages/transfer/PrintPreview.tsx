@@ -233,7 +233,7 @@ export const buildPendingTransfersHtml = (
   th, td {
     border:1px solid #111827;
     padding: 3px 5px;
-    font-size: 15px;
+    font-size: 18px;
     line-height: 1.25;
     text-align:center;
     vertical-align:middle;
@@ -261,7 +261,7 @@ export const buildPendingTransfersHtml = (
     border: none;
     border-bottom: 1px solid #111827;
     outline: none;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 20px;
     padding: 0 4px;
     background: transparent;
