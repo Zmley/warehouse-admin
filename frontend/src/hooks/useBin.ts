@@ -8,7 +8,7 @@ import {
   updateBinDefaultProductCodes,
   deleteBinByBinID
 } from 'api/bin'
-import { useLocation, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Bin, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
 import { BinUploadType } from 'types/Bin'
 
@@ -36,11 +36,6 @@ export const useBin = (autoLoad: boolean = false) => {
   const { warehouseID } = useParams()
 
   const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
-
-  const location = useLocation()
-
-  const searchParams = new URLSearchParams(location.search)
-  // const type = searchParams.get('type')
 
   const fetchBinCodes = useCallback(async () => {
     try {
