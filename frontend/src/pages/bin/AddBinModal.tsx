@@ -17,7 +17,11 @@ import {
   Chip,
   Stack,
   Tooltip,
-  Autocomplete
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
@@ -45,6 +49,12 @@ const EMPTY_ROW: BinRow = {
   _autoText: ''
 }
 
+const isBinType = (v?: string | null): v is BinType =>
+  v === BinType.INVENTORY ||
+  v === BinType.PICK_UP ||
+  v === BinType.CART ||
+  v === BinType.AISLE
+
 const AddBinModal: React.FC<AddBinModalProps> = ({
   open,
   onClose,
@@ -54,21 +64,33 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
   const { uploadBinList } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
   const [searchParams] = useSearchParams()
-  const binType = (searchParams.get('type') as BinType) || BinType.PICK_UP
+
+  const getTypeFromUrl = (): BinType => {
+    const raw = (searchParams.get('type') || '').toUpperCase()
+    return isBinType(raw) ? (raw as BinType) : BinType.INVENTORY
+  }
+
+  const [selectedType, setSelectedType] = useState<BinType>(getTypeFromUrl())
+
+  useEffect(() => {
+    if (open) {
+      setSelectedType(getTypeFromUrl())
+    }
+  }, [open, searchParams])
 
   const [rows, setRows] = useState<BinRow[]>([{ ...EMPTY_ROW }])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const productSet = useMemo(() => new Set(productCodes), [productCodes])
+  const showProductCol = selectedType === BinType.PICK_UP
 
   useEffect(() => {
-    if (binType === BinType.PICK_UP) {
-      fetchProductCodes()
-    }
-  }, [binType, fetchProductCodes])
+    if (selectedType === BinType.PICK_UP) fetchProductCodes()
+  }, [selectedType, fetchProductCodes])
 
   const handleAddRow = () => setRows(prev => [...prev, { ...EMPTY_ROW }])
+
   const handleDeleteRow = (index: number) =>
     setRows(prev =>
       prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)
@@ -83,12 +105,13 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
   }
 
   const addProductCode = (idx: number, code: string) => {
-    if (!productSet.has(code)) return
+    const c = (code || '').trim()
+    if (!c || !productSet.has(c)) return
     setRows(prev => {
       const next = [...prev]
       const row = next[idx]
-      if (!row.defaultProductCodes.includes(code)) {
-        row.defaultProductCodes = [...row.defaultProductCodes, code]
+      if (!row.defaultProductCodes.includes(c)) {
+        row.defaultProductCodes = [...row.defaultProductCodes, c]
       }
       return next
     })
@@ -108,36 +131,52 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
     const text = e.clipboardData.getData('text') || ''
     if (!text.trim()) return
     e.preventDefault()
-    const items = text
+    text
       .split(/[,\n]/g)
       .map(s => s.trim())
       .filter(Boolean)
-    items.forEach(item => addProductCode(idx, item))
+      .forEach(item => addProductCode(idx, item))
   }
 
   const handleSubmit = async () => {
     setError('')
+
     for (const r of rows) {
       if (!r.binCode.trim()) {
         setError('❌ Bin Code is required.')
         return
       }
-      if (binType === BinType.PICK_UP && !r.defaultProductCodes.length) {
-        setError('❌ Default Product Codes are required for PICK UP bins.')
+      if (selectedType === BinType.PICK_UP && !r.defaultProductCodes.length) {
+        setError('❌ Default Product Codes are required for PICK_UP bins.')
         return
       }
     }
 
-    const payload = rows.map(r => ({
-      binCode: r.binCode.trim(),
-      type: binType,
+    const seen = new Set<string>()
+    const cleaned = rows
+      .map(r => ({ ...r, binCode: r.binCode.trim() }))
+      .filter(r => {
+        if (!r.binCode) return false
+        if (seen.has(r.binCode)) return false
+        seen.add(r.binCode)
+        return true
+      })
+
+    if (cleaned.length === 0) {
+      setError('❌ Please enter at least one Bin Code.')
+      return
+    }
+
+    const payload = cleaned.map(r => ({
+      binCode: r.binCode,
+      type: selectedType,
       defaultProductCodes:
-        binType === BinType.PICK_UP ? r.defaultProductCodes : [],
+        selectedType === BinType.PICK_UP ? r.defaultProductCodes : [],
       warehouseID
     }))
 
     setLoading(true)
-    const res = await uploadBinList(payload)
+    const res = await uploadBinList(payload, selectedType) // 显式把 type 传给 hook
     setLoading(false)
 
     if (res?.success) {
@@ -149,26 +188,48 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
     }
   }
 
-  const showProductCol = binType === BinType.PICK_UP
-
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth='md'>
       <DialogTitle>Add New Bins</DialogTitle>
 
       <DialogContent>
-        <Stack direction='row' alignItems='center' spacing={1} sx={{ mb: 2 }}>
-          <InfoOutlinedIcon fontSize='small' />
-          {showProductCol ? (
-            <Typography variant='body2'>
-              You must choose from the suggestion list. The dropdown appears
-              after typing at least 1 character. After selecting a product code,
-              the input clears automatically.
-            </Typography>
-          ) : (
-            <Typography variant='body2'>
-              Bin type <b>{binType}</b> does not require default product codes.
-            </Typography>
-          )}
+        <Stack direction='row' spacing={2} alignItems='center' sx={{ mb: 2 }}>
+          <FormControl size='small' sx={{ minWidth: 220 }}>
+            <InputLabel id='bin-type-label'>Bin Type</InputLabel>
+            <Select
+              labelId='bin-type-label'
+              label='Bin Type'
+              value={selectedType}
+              onChange={e => setSelectedType(e.target.value as BinType)}
+            >
+              <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
+              <MenuItem value={BinType.PICK_UP}>PICK_UP</MenuItem>
+              <MenuItem value={BinType.CART}>CART</MenuItem>
+              <MenuItem value={BinType.AISLE}>AISLE</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Chip
+            label={`Type: ${selectedType}`}
+            size='small'
+            color='primary'
+            variant='outlined'
+          />
+
+          <Stack direction='row' alignItems='center' spacing={1}>
+            <InfoOutlinedIcon fontSize='small' />
+            {showProductCol ? (
+              <Typography variant='body2'>
+                PICK_UP bins require default product codes. Type ≥1 character to
+                get suggestions.
+              </Typography>
+            ) : (
+              <Typography variant='body2'>
+                Bin type <b>{selectedType}</b> does not require default product
+                codes.
+              </Typography>
+            )}
+          </Stack>
         </Stack>
 
         <Table size='small' sx={{ tableLayout: 'fixed' }}>
@@ -203,7 +264,7 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
                     <TextField
                       fullWidth
                       size='small'
-                      placeholder='e.g. PICK-001'
+                      placeholder='e.g. INV-001'
                       value={row.binCode}
                       onChange={e => handleBinCodeChange(idx, e.target.value)}
                       inputProps={{ maxLength: 64 }}
@@ -266,12 +327,15 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
                             })
                           }}
                           open={query.length >= 1 && matchCount > 0}
-                          filterOptions={opts => {
-                            if (!query) return []
-                            return opts
-                              .filter(o => o.toLowerCase().startsWith(query))
-                              .slice(0, 100)
-                          }}
+                          filterOptions={opts =>
+                            query
+                              ? opts
+                                  .filter(o =>
+                                    o.toLowerCase().startsWith(query)
+                                  )
+                                  .slice(0, 100)
+                              : []
+                          }
                           noOptionsText={query ? 'No matches' : ''}
                           renderInput={params => (
                             <TextField
@@ -301,7 +365,7 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
                           sx={{ minWidth: 150, flex: 1 }}
                         />
 
-                        <Tooltip title='Paste multiple codes separated by comma or newline. Only valid product codes are accepted.'>
+                        <Tooltip title='Paste multiple codes by comma or newline. Only valid codes are accepted.'>
                           <InfoOutlinedIcon
                             fontSize='small'
                             sx={{ ml: 0.5, color: 'action.disabled' }}
@@ -348,7 +412,11 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
         <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} variant='contained' disabled={loading}>
+        <Button
+          onClick={handleSubmit}
+          variant='contained'
+          disabled={loading || rows.every(r => !r.binCode.trim())}
+        >
           {loading ? 'Submitting...' : 'Submit Bins'}
         </Button>
       </DialogActions>

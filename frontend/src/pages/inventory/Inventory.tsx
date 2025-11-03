@@ -15,6 +15,7 @@ import { useSearchParams, useParams } from 'react-router-dom'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import InventoryTable from 'pages/inventory/inventoryTable/InventoryTable'
+import UploadInventoryDialog from 'pages/inventory/UploadInventoryDialog'
 import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
@@ -25,8 +26,13 @@ type SortField = 'updatedAt' | 'binCode'
 
 const ROWS_PER_PAGE = 50
 
+const ALLOWED_WAREHOUSE_CODE_KEYS = ['680', '1630', '1824']
+
 const Inventory: React.FC = () => {
-  const { warehouseID } = useParams<{ warehouseID: string }>()
+  const { warehouseID, warehouseCode } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
@@ -51,6 +57,7 @@ const Inventory: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder)
   const [sortField, setSortField] = useState<SortField>(initialSortField)
   const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
+  const [isUnloadAndUploadOpen, setIsUnloadAndUploadOpen] = useState(false)
 
   const { binCodes, fetchBinCodes } = useBin()
   const { productCodes, fetchProductCodes } = useProduct()
@@ -69,6 +76,11 @@ const Inventory: React.FC = () => {
   const MIN_CHARS = 2
   const [openSuggest, setOpenSuggest] = useState(false)
   const canSuggest = inputKeyword.trim().length >= MIN_CHARS && openSuggest
+
+  const canAddNewInventory = React.useMemo(() => {
+    const code = (warehouseCode || '').toLowerCase()
+    return ALLOWED_WAREHOUSE_CODE_KEYS.some(k => code.includes(k))
+  }, [warehouseCode])
 
   const filterOptions = (opts: string[], kw: string) => {
     const q = kw.trim().toLowerCase()
@@ -190,20 +202,53 @@ const Inventory: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Inventory Management
         </Typography>
-        <Button
-          variant='outlined'
-          onClick={() => setUploadInventoryOpen(true)}
-          startIcon={<AddIcon />}
-          sx={{
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            borderColor: '#3F72AF',
-            color: '#3F72AF',
-            '&:hover': { borderColor: '#2d5e8c', backgroundColor: '#e3f2fd' }
-          }}
-        >
-          UPLOAD EXCEL
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Tooltip
+            title={
+              canAddNewInventory
+                ? ''
+                : '（Only 680 / 1630 / 1824大和小 can use this funtion）'
+            }
+          >
+            <span>
+              <Button
+                variant='contained'
+                disabled={!canAddNewInventory}
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams)
+                  next.set('type', 'INVENTORY')
+                  setSearchParams(next, { replace: true })
+                  setIsUnloadAndUploadOpen(true)
+                }}
+                startIcon={<AddIcon />}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#3F72AF',
+                  '&:hover': { backgroundColor: '#2d5e8c' },
+                  textTransform: 'none'
+                }}
+              >
+                ADD NEW INVENTORY
+              </Button>
+            </span>
+          </Tooltip>
+
+          <Button
+            variant='outlined'
+            onClick={() => setUploadInventoryOpen(true)}
+            startIcon={<AddIcon />}
+            sx={{
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              borderColor: '#3F72AF',
+              color: '#3F72AF',
+              '&:hover': { borderColor: '#2d5e8c', backgroundColor: '#e3f2fd' }
+            }}
+          >
+            UPLOAD EXCEL
+          </Button>
+        </Box>
       </Box>
 
       <Box
@@ -368,6 +413,14 @@ const Inventory: React.FC = () => {
       <UploadInventoryModal
         open={isUploadInventoryOpen}
         onClose={() => setUploadInventoryOpen(false)}
+      />
+      <UploadInventoryDialog
+        open={isUnloadAndUploadOpen}
+        onClose={() => setIsUnloadAndUploadOpen(false)}
+        onSuccess={async () => {
+          setIsUnloadAndUploadOpen(false)
+          await loadCurrent()
+        }}
       />
 
       {error && (

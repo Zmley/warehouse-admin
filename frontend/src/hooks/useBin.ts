@@ -40,7 +40,7 @@ export const useBin = (autoLoad: boolean = false) => {
   const location = useLocation()
 
   const searchParams = new URLSearchParams(location.search)
-  const type = searchParams.get('type')
+  // const type = searchParams.get('type')
 
   const fetchBinCodes = useCallback(async () => {
     try {
@@ -93,18 +93,20 @@ export const useBin = (autoLoad: boolean = false) => {
     },
     [warehouseID]
   )
+
   const uploadBinList = useCallback(
-    async (list: BinUploadType[]) => {
-      if (!warehouseID || !type) {
-        const errorMsg = '❌ Missing warehouseID or type'
+    async (list: BinUploadType[], type: string) => {
+      if (!warehouseID) {
+        const errorMsg = '❌ Missing warehouseID'
         console.error(errorMsg)
-        return { error: errorMsg }
+        return { success: false, error: errorMsg }
       }
 
       const payload = list.map(bin => ({
         ...bin,
         warehouseID,
-        type
+        type,
+        defaultProductCodes: bin.defaultProductCodes ?? []
       }))
 
       try {
@@ -116,13 +118,12 @@ export const useBin = (autoLoad: boolean = false) => {
 
         return res
       } catch (err: any) {
-        setError(err?.message || '❌ Upload exception occurred')
-        return {
-          error: err?.message || '❌ Upload exception occurred'
-        }
+        const msg = err?.message || '❌ Upload exception occurred'
+        setError(msg)
+        return { success: false, error: msg }
       }
     },
-    [warehouseID, type]
+    [warehouseID]
   )
 
   const fetchAvailableBinCodes = useCallback(
