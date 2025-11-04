@@ -16,16 +16,28 @@ import {
   TableHead,
   TableRow,
   Typography,
-  Alert
+  Alert,
+  TextField,
+  IconButton,
+  Tooltip
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import * as XLSX from 'xlsx'
 import { useParams } from 'react-router-dom'
 import { useInventory } from 'hooks/useInventory'
 import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
+import Autocomplete from '@mui/material/Autocomplete'
 
-type Row = { binCode: string; productCode: string; quantity: number }
+type Row = {
+  binCode: string
+  productCode: string
+  quantity: number
+  _manual?: boolean
+}
 
 export interface UploadInventoryDialogProps {
   open: boolean
@@ -53,6 +65,20 @@ function pickHeaderKey(headers: string[], candidates: string[]) {
   return ''
 }
 
+function mergeRows(rows: Row[]) {
+  const map = new Map<string, Row>()
+  for (const r of rows) {
+    const key = `${r.binCode}__${r.productCode}`
+    const prev = map.get(key)
+    if (prev) {
+      prev.quantity += Number(r.quantity) || 0
+    } else {
+      map.set(key, { ...r, quantity: Number(r.quantity) || 0 })
+    }
+  }
+  return Array.from(map.values())
+}
+
 const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   open,
   onClose,
@@ -63,7 +89,6 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     warehouseCode?: string
   }>()
 
-  // 只解析一次，不改 URL
   const resolvedWarehouseID = React.useMemo(() => {
     if (warehouseID) return warehouseID
     if (typeof window === 'undefined') return ''
@@ -78,8 +103,8 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   }, [warehouseCode])
 
   const { uploadInventoryList } = useInventory() as any
-
   const { uploadBinList } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
 
   const [fileName, setFileName] = useState('')
   const [rows, setRows] = useState<Row[]>([])
@@ -90,7 +115,18 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   )
   const [error, setError] = useState<string>('')
 
+  const [mBin, setMBin] = useState('')
+  const [mProduct, setMProduct] = useState('')
+  const [mQty, setMQty] = useState<string>('')
+  const [mError, setMError] = useState<string>('')
+  const [kwOpen, setKwOpen] = useState(false)
+
   const busyRef = useRef(false)
+
+  React.useEffect(() => {
+    fetchProductCodes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedWarehouseID])
 
   const uniqueBins = useMemo(
     () =>
@@ -99,7 +135,7 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
       ),
     [rows]
   )
-
+  const manualCount = useMemo(() => rows.filter(r => r._manual).length, [rows])
   const hasData = rows.length > 0
 
   const resetAll = () => {
@@ -110,27 +146,17 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     setStep('idle')
     setError('')
     busyRef.current = false
+    setMBin('')
+    setMProduct('')
+    setMQty('')
+    setMError('')
+    setKwOpen(false)
   }
 
   const closeDialog = () => {
     if (busy) return
     resetAll()
     onClose()
-  }
-
-  /** 合并重复 (binCode, productCode) 行，数量相加 */
-  const mergeRows = (dataRows: Row[]) => {
-    const map = new Map<string, Row>()
-    for (const r of dataRows) {
-      const key = `${r.binCode}__${r.productCode}`
-      const prev = map.get(key)
-      if (prev) {
-        prev.quantity += Number(r.quantity) || 0
-      } else {
-        map.set(key, { ...r, quantity: Number(r.quantity) || 0 })
-      }
-    }
-    return Array.from(map.values())
   }
 
   const callUploadBins = async (binCodes: string[]) => {
@@ -153,7 +179,18 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     }
   }
 
-  /** 批量导入库存：一次调用 uploadInventoryList(list) */
+  const buildPayload = (all: Row[]) => {
+    const manual = all.filter(r => r._manual)
+    const excel = all.filter(r => !r._manual)
+    const mergedExcel = mergeRows(excel)
+    const final = [...manual, ...mergedExcel]
+    return final.map(r => ({
+      binCode: r.binCode,
+      productCode: r.productCode,
+      quantity: Number(r.quantity)
+    }))
+  }
+
   const callUploadInventories = async (dataRows: Row[]) => {
     try {
       if (!resolvedWarehouseID)
@@ -162,14 +199,7 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
         return { success: false, error: 'uploadInventoryList is not available' }
       }
 
-      const merged = mergeRows(dataRows)
-      // InventoryUploadType: { binCode, productCode, quantity }
-      const payload = merged.map(r => ({
-        binCode: r.binCode,
-        productCode: r.productCode,
-        quantity: Number(r.quantity)
-      }))
-
+      const payload = buildPayload(dataRows)
       const res = await uploadInventoryList(payload)
       if (res?.success !== false) return { success: true }
       return {
@@ -184,10 +214,13 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     }
   }
 
+  const mergeOnlyIncomingExcel = (existing: Row[], incoming: Row[]) => {
+    const mergedIncoming = mergeRows(incoming)
+    return [...existing, ...mergedIncoming]
+  }
+
   const parseExcel = async (file: File) => {
     setError('')
-    setRows([])
-    setInvalid([])
     try {
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(buf, { type: 'array' })
@@ -233,8 +266,8 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
         }
       })
 
-      setRows(parsed)
-      setInvalid(bad)
+      setRows(prev => mergeOnlyIncomingExcel(prev, parsed))
+      setInvalid(prev => [...prev, ...bad])
     } catch (e: any) {
       setError('Parse failed: ' + (e?.message || 'Unknown error'))
     }
@@ -245,6 +278,38 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     if (!f) return
     setFileName(f.name)
     parseExcel(f)
+  }
+
+  const handleManualAdd = () => {
+    const bin = mBin.trim()
+    const prod = mProduct.trim()
+    const qNum = Number(mQty)
+    if (!bin || !prod || !Number.isFinite(qNum) || qNum <= 0) {
+      setMError('Bin / Product can not be empty,Quantity must > 0')
+      return
+    }
+    setMError('')
+    setRows(prev => [
+      ...prev,
+      { binCode: bin, productCode: prod, quantity: qNum, _manual: true }
+    ])
+    setMBin('')
+    setMProduct('')
+    setMQty('')
+    setKwOpen(false)
+  }
+
+  const handleManualKeyDown: React.KeyboardEventHandler<
+    HTMLInputElement
+  > = e => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleManualAdd()
+    }
+  }
+
+  const deleteRowAt = (index: number) => {
+    setRows(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleStart = async () => {
@@ -283,200 +348,342 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   return (
     <Dialog open={open} onClose={closeDialog} fullWidth maxWidth='md'>
       <DialogTitle sx={{ fontWeight: 800 }}>
-        Bulk Import Inventory (Excel)
+        Bulk Import Inventory (Excel & Manual)
       </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2}>
-          {/* Warehouse bar */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-              p: 1.5,
-              borderRadius: 1.5,
-              backgroundColor: '#f9fafb',
-              border: `1px solid ${BORDER}`
-            }}
-          >
-            <Typography sx={{ fontWeight: 700 }}>
-              Warehouse:&nbsp;{resolvedWarehouseCode || '—'}&nbsp;
-              <Typography
-                component='span'
-                sx={{ color: '#64748b', fontWeight: 500 }}
-              >
-                (ID: {resolvedWarehouseID || '—'})
-              </Typography>
-            </Typography>
-            <Chip
-              label='Type: INVENTORY'
-              size='small'
-              color='primary'
-              variant='outlined'
-            />
-            {!resolvedWarehouseID && (
-              <Alert severity='error' sx={{ m: 0, py: 0.5 }}>
-                Missing warehouseID. Please select a warehouse before uploading.
-              </Alert>
-            )}
-          </Box>
 
-          {/* Upload */}
-          <Box
-            sx={{
-              border: `1px dashed ${BORDER}`,
-              borderRadius: 2,
-              p: 2,
-              background: '#f8fafc'
-            }}
-          >
+      <DialogContent dividers sx={{ position: 'relative', p: 0 }}>
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1,
+                p: 1.5,
+                borderRadius: 1.5,
+                backgroundColor: '#f9fafb',
+                border: `1px solid ${BORDER}`
+              }}
+            >
+              <Typography sx={{ fontWeight: 700 }}>
+                Warehouse:&nbsp;{resolvedWarehouseCode || '—'}&nbsp;
+                <Typography
+                  component='span'
+                  sx={{ color: '#64748b', fontWeight: 500 }}
+                >
+                  (ID: {resolvedWarehouseID || '—'})
+                </Typography>
+              </Typography>
+              <Chip
+                label='Type: INVENTORY'
+                size='small'
+                color='primary'
+                variant='outlined'
+              />
+              {!resolvedWarehouseID && (
+                <Alert severity='error' sx={{ m: 0, py: 0.5 }}>
+                  Missing warehouseID. Please select a warehouse before
+                  uploading.
+                </Alert>
+              )}
+            </Box>
+
+            <Box
+              sx={{
+                border: `1px dashed ${BORDER}`,
+                borderRadius: 2,
+                p: 2,
+                background: '#f8fafc'
+              }}
+            >
+              <Stack
+                direction='row'
+                alignItems='center'
+                spacing={2}
+                flexWrap='wrap'
+              >
+                <Button
+                  component='label'
+                  variant='contained'
+                  startIcon={<UploadFileIcon />}
+                  sx={{ fontWeight: 700 }}
+                  disabled={busy}
+                >
+                  Choose File
+                  <input
+                    hidden
+                    type='file'
+                    accept='.xlsx,.xls,.csv'
+                    onChange={handleFileChange}
+                  />
+                </Button>
+                <Typography sx={{ color: '#475569' }}>
+                  Supported: .xlsx (columns: binCode / productCode / quantity)
+                </Typography>
+                {fileName && (
+                  <Chip label={fileName} color='primary' variant='outlined' />
+                )}
+              </Stack>
+              {!!invalid.length && (
+                <Alert severity='warning' sx={{ mt: 2 }}>
+                  {invalid.length} invalid rows will be ignored:{' '}
+                  {invalid.slice(0, 5).join(', ')}
+                  {invalid.length > 5 ? ' ...' : ''}
+                </Alert>
+              )}
+            </Box>
+
+            <Box
+              sx={{
+                border: `1px solid ${BORDER}`,
+                borderRadius: 2,
+                p: 1.5,
+                background: '#fff'
+              }}
+            >
+              <Stack
+                direction='row'
+                spacing={1}
+                alignItems='center'
+                flexWrap='wrap'
+              >
+                <TextField
+                  label='Bin Code'
+                  size='small'
+                  value={mBin}
+                  onChange={e => setMBin(e.target.value)}
+                  onKeyDown={handleManualKeyDown}
+                  sx={{ minWidth: 180 }}
+                  disabled={busy}
+                />
+
+                <Autocomplete
+                  options={productCodes}
+                  freeSolo
+                  value={null}
+                  inputValue={mProduct}
+                  open={kwOpen}
+                  onOpen={() => {
+                    if (mProduct.trim().length >= 1) setKwOpen(true)
+                  }}
+                  onClose={() => setKwOpen(false)}
+                  onInputChange={(_, v) => {
+                    const next = v ?? ''
+                    setMProduct(next)
+                    setKwOpen(next.trim().length >= 1)
+                  }}
+                  filterOptions={(options, { inputValue }) => {
+                    const q = (inputValue || '').trim().toLowerCase()
+                    if (!q) return []
+                    return options.filter(opt =>
+                      opt.toLowerCase().startsWith(q)
+                    )
+                  }}
+                  renderInput={params => (
+                    <TextField
+                      {...params}
+                      label='Product Code'
+                      size='small'
+                      onKeyDown={handleManualKeyDown}
+                      sx={{ minWidth: 240 }}
+                      disabled={busy}
+                    />
+                  )}
+                  sx={{ minWidth: 240 }}
+                />
+
+                <TextField
+                  label='Quantity'
+                  size='small'
+                  type='number'
+                  inputProps={{ step: 1, min: 1 }}
+                  value={mQty}
+                  onChange={e => setMQty(e.target.value)}
+                  onKeyDown={handleManualKeyDown}
+                  sx={{ width: 140 }}
+                  disabled={busy}
+                />
+
+                <Tooltip title='Add row'>
+                  <span>
+                    <IconButton
+                      color='primary'
+                      onClick={handleManualAdd}
+                      disabled={busy}
+                      sx={{ ml: 0.5 }}
+                    >
+                      <AddCircleOutlineIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+
+                <Chip
+                  size='small'
+                  label={`Manual rows: ${manualCount}`}
+                  variant='outlined'
+                />
+              </Stack>
+              {!!mError && (
+                <Typography
+                  variant='caption'
+                  color='error'
+                  sx={{ display: 'block', mt: 1 }}
+                >
+                  {mError}
+                </Typography>
+              )}
+            </Box>
+
             <Stack
               direction='row'
               alignItems='center'
-              spacing={2}
-              flexWrap='wrap'
+              justifyContent='space-between'
+              sx={{ bgcolor: '#f9fafb', borderRadius: 2, p: 1.5 }}
             >
-              <Button
-                component='label'
-                variant='contained'
-                startIcon={<UploadFileIcon />}
-                sx={{ fontWeight: 700 }}
-                disabled={busy}
-              >
-                Choose File
-                <input
-                  hidden
-                  type='file'
-                  accept='.xlsx,.xls,.csv'
-                  onChange={handleFileChange}
-                />
-              </Button>
-              <Typography sx={{ color: '#475569' }}>
-                Supported: .xlsx / .xls / .csv (columns: binCode / productCode /
-                quantity
+              <Typography sx={{ fontWeight: 600 }}>
+                Steps: Create/Update Bins first, then upload inventory
               </Typography>
-              {fileName && (
-                <Chip label={fileName} color='primary' variant='outlined' />
-              )}
+              <Stack direction='row' spacing={2} alignItems='center'>
+                <Chip label={`Bins: ${uniqueBins.length}`} />
+                <Chip label={`Rows: ${rows.length}`} />
+              </Stack>
             </Stack>
-            {!!invalid.length && (
-              <Alert severity='warning' sx={{ mt: 2 }}>
-                {invalid.length} invalid rows will be ignored:{' '}
-                {invalid.slice(0, 5).join(', ')}
-                {invalid.length > 5 ? ' ...' : ''}
-              </Alert>
+
+            <Box
+              sx={{
+                border: `1px solid ${BORDER}`,
+                borderRadius: 2,
+                overflow: 'hidden'
+              }}
+            >
+              <Box sx={{ p: 1, bgcolor: '#f1f5f9' }}>
+                <Typography sx={{ fontWeight: 700 }}>
+                  Data Preview (All Rows)
+                </Typography>
+              </Box>
+              <Divider />
+              <Box sx={{ maxHeight: 420, overflow: 'auto' }}>
+                <Table size='small' stickyHeader sx={{ tableLayout: 'fixed' }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800, width: 140 }}>
+                        Bin
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 800, width: 240 }}>
+                        Product Code
+                      </TableCell>
+                      <TableCell
+                        align='right'
+                        sx={{ fontWeight: 800, width: 120 }}
+                      >
+                        Qty
+                      </TableCell>
+                      <TableCell
+                        sx={{ fontWeight: 800, width: 72 }}
+                      ></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((r, i) => (
+                      <TableRow
+                        key={`${r.binCode}-${r.productCode}-${i}`}
+                        sx={
+                          r._manual
+                            ? {
+                                backgroundColor: '#ecfdf5',
+                                '& td': { color: '#065f46', fontWeight: 800 },
+                                '&:hover': { backgroundColor: '#d1fae5' }
+                              }
+                            : undefined
+                        }
+                      >
+                        <TableCell
+                          sx={{
+                            fontFamily: 'ui-monospace, Menlo, Consolas',
+                            fontWeight: 800
+                          }}
+                        >
+                          {r.binCode}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontFamily: 'ui-monospace, Menlo, Consolas',
+                            fontWeight: 800
+                          }}
+                        >
+                          {r.productCode}
+                        </TableCell>
+                        <TableCell align='right' sx={{ fontWeight: 800 }}>
+                          {r.quantity}
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
+                            size='small'
+                            aria-label='delete row'
+                            onClick={() => deleteRowAt(i)}
+                          >
+                            <DeleteOutlineIcon fontSize='small' />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!rows.length && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          align='center'
+                          sx={{ color: '#94a3b8' }}
+                        >
+                          Select a file or add rows manually
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Box>
+
+            {busy && (
+              <Stack spacing={1.2}>
+                <Stack direction='row' spacing={1} alignItems='center'>
+                  <Chip
+                    icon={<TaskAltIcon />}
+                    label='Upload Bins (INVENTORY)'
+                    color={step === 'bins' ? 'primary' : 'default'}
+                    variant={step === 'bins' ? 'filled' : 'outlined'}
+                  />
+                  <Chip
+                    icon={<TaskAltIcon />}
+                    label='Upload Inventory'
+                    color={step === 'inventories' ? 'primary' : 'default'}
+                    variant={step === 'inventories' ? 'filled' : 'outlined'}
+                  />
+                </Stack>
+              </Stack>
             )}
-          </Box>
 
-          <Stack
-            direction='row'
-            alignItems='center'
-            justifyContent='space-between'
-            sx={{ bgcolor: '#f9fafb', borderRadius: 2, p: 1.5 }}
-          >
-            <Typography sx={{ fontWeight: 600 }}>
-              Steps: Create/Update Bins first, then upload inventory
-            </Typography>
-            <Stack direction='row' spacing={2} alignItems='center'>
-              <Chip label={`Bins: ${uniqueBins.length}`} />
-              <Chip label={`Rows: ${rows.length}`} />
-              {/* <Chip label={`Total Qty: ${totalQty}`} /> */}
-            </Stack>
+            {!!error && <Alert severity='error'>{error}</Alert>}
           </Stack>
+        </Box>
 
-          {/* Preview */}
+        {busy && (
           <Box
             sx={{
-              border: `1px solid ${BORDER}`,
-              borderRadius: 2,
-              overflow: 'hidden'
+              position: 'sticky',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 10,
+              background:
+                'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.9) 40%, #fff 100%)',
+              p: 0,
+              m: 0
             }}
           >
-            <Box sx={{ p: 1, bgcolor: '#f1f5f9' }}>
-              <Typography sx={{ fontWeight: 700 }}>
-                Data Preview (first 200 rows max)
-              </Typography>
-            </Box>
-            <Divider />
-            <Box sx={{ maxHeight: 360, overflow: 'auto' }}>
-              <Table size='small' stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 800, width: 140 }}>
-                      Bin
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, width: 240 }}>
-                      Product Code
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, width: 120 }}>
-                      Qty
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.slice(0, 200).map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell
-                        sx={{
-                          fontFamily: 'ui-monospace, Menlo, Consolas',
-                          fontWeight: 800
-                        }}
-                      >
-                        {r.binCode}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontFamily: 'ui-monospace, Menlo, Consolas',
-                          fontWeight: 800
-                        }}
-                      >
-                        {r.productCode}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>
-                        {r.quantity}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!rows.length && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        align='center'
-                        sx={{ color: '#94a3b8' }}
-                      >
-                        Select a file to preview data
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Box>
+            <LinearProgress sx={{ height: 3, borderRadius: 0 }} />
           </Box>
-
-          {/* Progress */}
-          {busy && (
-            <Stack spacing={1.2}>
-              <Stack direction='row' spacing={1} alignItems='center'>
-                <Chip
-                  icon={<TaskAltIcon />}
-                  label='Upload Bins (INVENTORY)'
-                  color={step === 'bins' ? 'primary' : 'default'}
-                  variant={step === 'bins' ? 'filled' : 'outlined'}
-                />
-                <Chip
-                  icon={<TaskAltIcon />}
-                  label='Upload Inventory'
-                  color={step === 'inventories' ? 'primary' : 'default'}
-                  variant={step === 'inventories' ? 'filled' : 'outlined'}
-                />
-              </Stack>
-              <LinearProgress />
-            </Stack>
-          )}
-
-          {!!error && <Alert severity='error'>{error}</Alert>}
-        </Stack>
+        )}
       </DialogContent>
 
       <DialogActions>
