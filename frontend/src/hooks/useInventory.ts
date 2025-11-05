@@ -3,13 +3,15 @@ import {
   getInventories,
   deleteInventory,
   addInventories,
-  bulkUpdateInventory
+  bulkUpdateInventory,
+  getAllInventoriesByWarehouse
 } from 'api/inventory'
 import {
   InventoryItem,
   InventoryUploadType,
   InventoryUpdate,
-  GetInventoriesParams
+  GetInventoriesParams,
+  FlatInventoryRow
 } from 'types/Inventory'
 import { useParams } from 'react-router-dom'
 import { getInventoriesByBinCode } from 'api/bin'
@@ -162,6 +164,34 @@ export const useInventory = () => {
     }
   }, [])
 
+  const fetchAllInventoriesForWarehouse = useCallback(
+    async (selectedWarehouseID: string) => {
+      if (!selectedWarehouseID) {
+        const message = '❌ Missing warehouseID.'
+        setError(message)
+        return { success: false, message, rows: [] as FlatInventoryRow[] }
+      }
+      setIsLoading(true)
+      setError(null)
+      try {
+        const { data } = await getAllInventoriesByWarehouse(selectedWarehouseID)
+        const rows: FlatInventoryRow[] = Array.isArray(data?.inventories)
+          ? data.inventories
+          : []
+        return { success: true, rows }
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message ||
+          '❌ Failed to fetch all inventories for warehouse.'
+        setError(message)
+        return { success: false, message, rows: [] as FlatInventoryRow[] }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
   return {
     uploadInventoryList,
     inventories,
@@ -172,6 +202,7 @@ export const useInventory = () => {
     removeInventory,
     editInventoriesBulk,
     addInventory,
-    fetchInventoriesByBinCode
+    fetchInventoriesByBinCode,
+    fetchAllInventoriesForWarehouse
   }
 }

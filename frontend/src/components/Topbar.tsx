@@ -13,6 +13,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from 'contexts/auth'
 import useWarehouses from 'hooks/useWarehouse'
 import Profile from './Profile'
+import ExportInventoriesButton from 'components/ExportInventoriesButton'
+import { useInventory } from 'hooks/useInventory'
 
 const Topbar: React.FC = () => {
   const { userProfile } = useContext(AuthContext)!
@@ -21,18 +23,17 @@ const Topbar: React.FC = () => {
   const { warehouseCode } = useParams()
 
   const { warehouses, fetchWarehouses } = useWarehouses()
+  const { fetchAllInventoriesForWarehouse } = useInventory()
 
   useEffect(() => {
     fetchWarehouses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
-
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
+  const handleCloseMenu = () => setAnchorEl(null)
 
   const handleWarehouseSelect = (id: string, code: string) => {
     navigate(`/${id}/${code}/task`)
@@ -53,7 +54,7 @@ const Topbar: React.FC = () => {
         activeEl.offsetLeft - (parentRect.width / 2 - chipRect.width / 2)
       parent.scrollTo({ left: offset, behavior: 'smooth' })
     }
-  }, [warehouseCode, warehouses.length])
+  }, [warehouseCode, warehouses?.length])
 
   const hasWarehouses = useMemo(
     () => Array.isArray(warehouses) && warehouses.length > 0,
@@ -74,6 +75,7 @@ const Topbar: React.FC = () => {
         boxShadow: '0 6px 18px rgba(15,23,42,0.06)'
       }}
     >
+      {/* 左侧：问候 */}
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}
       >
@@ -90,15 +92,9 @@ const Topbar: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* 中间：横向滑动仓库选择（更精致胶囊 + 渐隐遮罩） */}
-      <Box
-        sx={{
-          position: 'relative',
-          flex: 1,
-          minWidth: 0
-        }}
-      >
-        {/* 渐隐遮罩边缘 */}
+      {/* 中间：横向滑动仓库选择（胶囊风格 + 渐隐遮罩） */}
+      <Box sx={{ position: 'relative', flex: 1, minWidth: 0 }}>
+        {/* 渐隐遮罩 */}
         <Box
           aria-hidden
           sx={{
@@ -112,14 +108,8 @@ const Topbar: React.FC = () => {
               bottom: 0,
               width: 32
             },
-            '&::before': {
-              left: 0,
-              background: 'transparent'
-            },
-            '&::after': {
-              right: 0,
-              background: 'transparent'
-            }
+            '&::before': { left: 0, background: 'transparent' },
+            '&::after': { right: 0, background: 'transparent' }
           }}
         />
         <Box
@@ -149,12 +139,12 @@ const Topbar: React.FC = () => {
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8 / 8,
+              gap: 1,
               py: 0.5
             }}
           >
             {hasWarehouses &&
-              warehouses.map(w => {
+              warehouses!.map(w => {
                 const active = w.warehouseCode === warehouseCode
                 return (
                   <Tooltip
@@ -233,9 +223,17 @@ const Topbar: React.FC = () => {
         </Box>
       </Box>
 
+      {/* 右侧：导出按钮 + 账号 */}
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}
       >
+        {/* 独立导出组件（队列下载 + 进度条 + 多仓选择） */}
+        <ExportInventoriesButton
+          warehouses={warehouses || []}
+          fetcher={fetchAllInventoriesForWarehouse}
+        />
+
+        {/* 账号 */}
         <Tooltip title='Account'>
           <IconButton onClick={handleMenuClick}>
             <Avatar
@@ -254,10 +252,11 @@ const Topbar: React.FC = () => {
         </Tooltip>
       </Box>
 
+      {/* 账号弹层 */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
-        onClose={handleClose}
+        onClose={handleCloseMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{

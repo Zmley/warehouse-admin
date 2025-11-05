@@ -34,3 +34,9 @@ export interface InventoryUpdate {
   productCode?: string
   binID?: string
 }
+
+export type FlatInventoryRow = {
+  binCode: string
+  productCode: string
+  quantity: number
+}
