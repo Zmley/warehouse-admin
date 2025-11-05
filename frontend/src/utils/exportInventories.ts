@@ -44,6 +44,7 @@ export async function exportInventoriesSequential(opts: {
       } else {
         const warehouseName = codeMap.get(wid) || wid.slice(0, 8)
         const safeName = (warehouseName || 'Sheet').replace(
+          // eslint-disable-next-line no-useless-escape
           /[\\/?*\[\]:]/g,
           '_'
         )
