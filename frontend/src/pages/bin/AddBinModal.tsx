@@ -195,13 +195,19 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
       <DialogContent>
         <Stack direction='row' spacing={2} alignItems='center' sx={{ mb: 2 }}>
           <FormControl size='small' sx={{ minWidth: 220 }}>
-            <InputLabel id='bin-type-label'>Bin Type</InputLabel>
             <Select
-              labelId='bin-type-label'
-              label='Bin Type'
               value={selectedType}
               onChange={e => setSelectedType(e.target.value as BinType)}
+              displayEmpty
+              renderValue={val => {
+                const v = val as BinType
+                return v || 'Bin Type'
+              }}
+              sx={{ height: 40 }}
             >
+              <MenuItem disabled value=''>
+                Bin Type
+              </MenuItem>
               <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
               <MenuItem value={BinType.PICK_UP}>PICK_UP</MenuItem>
               <MenuItem value={BinType.CART}>CART</MenuItem>

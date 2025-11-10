@@ -365,7 +365,7 @@ export const PrintPreviewDialog: React.FC<{
             <CloseIcon />
           </IconButton>
           <Typography sx={{ fontWeight: 800, mr: 2 }}>
-            FCS Warehouse Transfer — Print Preview
+            Warehouse Transfer — Print Preview
           </Typography>
 
           {allSources.length > 0 && (
