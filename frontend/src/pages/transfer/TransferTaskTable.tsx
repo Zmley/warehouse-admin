@@ -231,7 +231,11 @@ const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
 const BatchCard: React.FC<{
   g: BatchGroup
   status: TransferStatusUI
-  onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+  onBinClick: (
+    e: MouseEvent<HTMLElement>,
+    code?: string | null,
+    id?: string | null
+  ) => void
   onDelete?: (transferIDs: string[]) => Promise<any>
   onComplete?: (items: any[]) => Promise<any>
 }> = ({ g, status, onBinClick, onDelete, onComplete }) => {
@@ -432,7 +436,7 @@ const BatchCard: React.FC<{
           >
             <BinBadge
               text={g.sourceBin}
-              onClick={e => onBinClick(e, g.sourceBin)}
+              onClick={e => onBinClick(e, g.sourceBin, g.sourceBinID)}
             />
           </Box>
 
@@ -545,7 +549,11 @@ type Props = {
   onPageChange: (page: number) => void
   status: TransferStatusUI
   onStatusChange: (s: TransferStatusUI) => void
-  onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+  onBinClick: (
+    e: MouseEvent<HTMLElement>,
+    code?: string | null,
+    id?: string | null
+  ) => void
   panelWidth?: number
   onDelete?: (transferIDs: string[]) => Promise<any>
   onComplete?: (items: any[]) => Promise<any>

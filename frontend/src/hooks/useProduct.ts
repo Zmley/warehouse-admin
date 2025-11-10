@@ -109,7 +109,6 @@ export const useProduct = () => {
     [warehouseID]
   )
 
-  // ✅ 新增：获取低库存 + 其他仓有库存的产品
   const fetchLowStockWithOthers = useCallback(
     async (params: { keyword?: string; maxQty: number; boxType?: string }) => {
       if (!warehouseID) return
@@ -153,7 +152,7 @@ export const useProduct = () => {
     isLoading,
     error,
     fetchLowStockProducts,
-    fetchLowStockWithOthers, // 👈 新增
+    fetchLowStockWithOthers,
     boxTypes,
     fetchBoxTypes
   }

@@ -175,7 +175,14 @@ const groupByWarehouseBin = (list: OtherInv[]) => {
 export type SourceBinsProps = {
   task: TaskRow
   selection: Record<string, Selection>
-  onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+  // onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+
+  onBinClick: (
+    e: MouseEvent<HTMLElement>,
+    code?: string | null,
+    id?: string | null
+  ) => void
+
   onToggleInventory: (taskKey: string, inv: OtherInv) => void
   blockedBinCodes: Set<string>
   taskKeyOverride?: string
@@ -365,7 +372,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       borderRadius: 1
                     }}
                   >
-                    {/* 左侧：货位名（可点击）+ 占用小标记 */}
                     <Box
                       sx={{
                         display: 'flex',
@@ -374,7 +380,13 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                         minWidth: 0
                       }}
                     >
-                      <BinBadge code={bin.binCode} onClick={onBinClick} />
+                      {/* <BinBadge code={bin.binCode} onClick={onBinClick} /> */}
+
+                      <BinBadge
+                        code={bin.binCode}
+                        onClick={e => onBinClick(e, bin.binCode, bin.binID)}
+                      />
+
                       {blocked && (
                         <Typography
                           sx={{
@@ -389,7 +401,6 @@ const SourceBins: React.FC<SourceBinsProps> = ({
                       )}
                     </Box>
 
-                    {/* 右侧：选择计数 + 小开关（被占用时不显示） */}
                     {!blocked && (
                       <Box
                         onClick={e => {

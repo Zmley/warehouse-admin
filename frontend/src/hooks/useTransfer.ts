@@ -88,25 +88,6 @@ export const useTransfer = () => {
     }
   }, [])
 
-  //   const removeByTaskID = useCallback(
-  //     async (taskID: string, sourceBinID?: string) => {
-  //       try {
-  //         setLoading(true)
-  //         setError(null)
-  //         await deleteTransfersByTaskID(taskID, sourceBinID)
-  //         return { success: true }
-  //       } catch (err: any) {
-  //         const msg =
-  //           err?.response?.data?.message || err?.message || 'Delete failed'
-  //         setError(msg)
-  //         return { success: false, message: msg }
-  //       } finally {
-  //         setLoading(false)
-  //       }
-  //     },
-  //     []
-  //   )
-
   const removeByTransferIDs = useCallback(async (transferIDs: string[]) => {
     try {
       setLoading(true)

@@ -98,8 +98,16 @@ type TaskRowWithQty = TaskRow & { currentQty?: number }
 export type FilterMode = 'AVAILABLE' | 'IN_TRANSFER'
 
 type Props = {
+  // warehouseID: string
+  // onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+
   warehouseID: string
-  onBinClick: (e: MouseEvent<HTMLElement>, code?: string | null) => void
+  onBinClick: (
+    e: MouseEvent<HTMLElement>,
+    code?: string | null,
+    id?: string | null
+  ) => void
+
   blockedBinCodes: Set<string>
   onCreated?: () => void
   keyword: string
@@ -177,7 +185,7 @@ const LowStockTable: React.FC<Props> = ({
           productCode: p.productCode,
           quantity: 0,
           createdAt: p.createdAt || null,
-          updatedAt: p.updatedAt || p.updateAt || null, // 兼容后端 updateAt
+          updatedAt: p.updatedAt || p.updateAt || null,
           destinationBinCode: p?.destinationBinCode || undefined,
           destinationBin: p?.destinationBin || undefined,
           otherInventories: p?.otherInventories || [],

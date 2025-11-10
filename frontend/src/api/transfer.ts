@@ -14,11 +14,6 @@ export const fetchTransfers = (params: FetchTransfersParams) =>
 export const cancelTransfer = (transferID: string) =>
   apiClient.post(`/transfers/${transferID}/cancel`)
 
-// export const deleteTransfersByTaskID = (taskID: string, sourceBinID?: string) =>
-//   apiClient.delete(`/transfers/${taskID}`, {
-//     params: sourceBinID ? { sourceBinID } : {}
-//   })
-
 export const deleteTransfersByIDsAPI = (transferIDs: string[]) =>
   apiClient.delete('/transfers', { data: { transferIDs } })
 

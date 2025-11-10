@@ -16,7 +16,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
 import CachedIcon from '@mui/icons-material/Cached'
-import { useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useLog } from 'hooks/useLogs'
 import BinInventoryPopover from '../../components/BinInventoryPopover'
 import LogsTable, { SessionLog } from './LogsTable'
@@ -25,6 +25,7 @@ type TypeFilter = 'INVENTORY' | 'PICK_UP'
 const rowsPerPage = 20
 
 const LogsPage: React.FC = () => {
+  const { warehouseID } = useParams<{ warehouseID: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [page, setPage] = useState(0)
@@ -67,18 +68,35 @@ const LogsPage: React.FC = () => {
 
   const [invAnchor, setInvAnchor] = useState<HTMLElement | null>(null)
   const [invBin, setInvBin] = useState<string | null>(null)
+  const [invBinID, setInvBinID] = useState<string | null>(null)
+
   const openBinPopover = (
     e: React.MouseEvent<HTMLElement>,
-    binCode: string | null
+    binCode: string | null,
+    binID?: string | null
   ) => {
+    console.debug('[LogsPage] onBinClick ->', { binCode, binID })
     if (!binCode) return
     setInvAnchor(e.currentTarget)
     setInvBin(binCode)
+    setInvBinID(binID ?? null)
   }
+
   const closeBinPopover = () => {
     setInvAnchor(null)
     setInvBin(null)
+    setInvBinID(null)
   }
+
+  useEffect(() => {
+    if (invAnchor) {
+      console.debug('[LogsPage] Popover opening with:', {
+        invBin,
+        invBinID,
+        hasAnchor: !!invAnchor
+      })
+    }
+  }, [invAnchor, invBin, invBinID])
 
   useEffect(() => {
     fetchWorkerNames()
@@ -106,7 +124,8 @@ const LogsPage: React.FC = () => {
 
   useEffect(() => {
     const p = page + 1
-    const q: any = {
+    const q: Record<string, any> = {
+      ...(warehouseID ? { warehouseID } : {}),
       type: typeFilter,
       ...(committedKw.trim() ? { keyword: committedKw.trim() } : {}),
       ...(workerName.trim() ? { workerName: workerName.trim() } : {}),
@@ -116,9 +135,34 @@ const LogsPage: React.FC = () => {
       limit: rowsPerPage,
       offset: page * rowsPerPage
     }
+
+    console.debug('[LogsPage] fetchSessions params:', q)
     fetchSessions(q)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, typeFilter, committedKw, workerName, refreshTick, fetchSessions])
+  }, [
+    warehouseID,
+    page,
+    typeFilter,
+    committedKw,
+    workerName,
+    refreshTick,
+    fetchSessions
+  ])
+
+  useEffect(() => {
+    if (Array.isArray(sessions) && sessions.length) {
+      const s0 = sessions[0]
+      const d0 = s0?.destinations?.[0]
+      const it0 = d0?.items?.[0]
+      console.debug('[LogsPage] sessions sample:', {
+        destinationBinID_fromGroup: d0?.destinationBinID,
+        destinationBinCode_fromGroup: d0?.destinationBinCode,
+        item_sourceBinID: it0?.sourceBinID,
+        item_sourceBinCode: it0?.sourceBinCode,
+        item_destinationBinID: it0?.destinationBinID,
+        item_destinationBinCode: it0?.destinationBinCode
+      })
+    }
+  }, [sessions])
 
   useEffect(() => {
     setPage(0)
@@ -134,11 +178,12 @@ const LogsPage: React.FC = () => {
         else merged.delete('keyword')
         if (workerName.trim()) merged.set('worker', workerName.trim())
         else merged.delete('worker')
+        if (warehouseID) merged.set('warehouseID', warehouseID)
         return merged
       },
       { replace: true }
     )
-  }, [page, typeFilter, committedKw, workerName, setSearchParams])
+  }, [page, typeFilter, committedKw, workerName, warehouseID, setSearchParams])
 
   const commitSearch = () => {
     setCommittedKw(keyword)
@@ -185,7 +230,6 @@ const LogsPage: React.FC = () => {
           )}
         />
 
-        {/* 搜索框 */}
         <TextField
           size='small'
           value={keyword}
@@ -211,7 +255,7 @@ const LogsPage: React.FC = () => {
           }}
         />
 
-        {/* 刷新按钮紧跟在搜索框后面 */}
+        {/* 刷新 */}
         <Tooltip title='Refresh'>
           <span>
             <IconButton
@@ -227,6 +271,7 @@ const LogsPage: React.FC = () => {
 
         <Box sx={{ flex: 1 }} />
 
+        {/* 类型筛选 */}
         <ToggleButtonGroup
           exclusive
           size='small'
@@ -292,6 +337,7 @@ const LogsPage: React.FC = () => {
         open={Boolean(invAnchor)}
         anchorEl={invAnchor}
         binCode={invBin}
+        binID={invBinID}
         onClose={closeBinPopover}
       />
     </Paper>

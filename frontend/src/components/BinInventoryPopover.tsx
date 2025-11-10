@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Box, CircularProgress, Popover, Typography } from '@mui/material'
 import { useInventory } from 'hooks/useInventory'
 
@@ -6,6 +6,7 @@ type Props = {
   open: boolean
   anchorEl: HTMLElement | null
   binCode: string | null
+  binID?: string | null
   onClose: () => void
 }
 
@@ -19,12 +20,16 @@ export default function BinInventoryPopover({
   open,
   anchorEl,
   binCode,
+  binID,
   onClose
 }: Props) {
-  const { fetchInventoriesByBinCode } = useInventory()
+  const { fetchInventoriesByBinCode } = useInventory() as any
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [items, setItems] = useState<InventoryRow[]>([])
+
+  const shortID = useMemo(() => (binID ? binID.slice(0, 8) : ''), [binID])
 
   useEffect(() => {
     let cancelled = false
@@ -33,17 +38,19 @@ export default function BinInventoryPopover({
       setLoading(true)
       setError(null)
       setItems([])
-      const res = await fetchInventoriesByBinCode(binCode)
+
+      const res = await fetchInventoriesByBinCode(binCode, binID)
+
       if (cancelled) return
-      if ((res as any)?.success && Array.isArray((res as any).inventories)) {
-        const rows: InventoryRow[] = (res as any).inventories.map((i: any) => ({
+      if (res?.success && Array.isArray(res?.inventories)) {
+        const rows: InventoryRow[] = res.inventories.map((i: any) => ({
           productCode: i.productCode ?? i.product?.productCode ?? '',
           quantity: Number(i.quantity ?? 0),
           updatedAt: i.updatedAt
         }))
         setItems(rows)
       } else {
-        setError((res as any)?.message || 'Failed to load inventories.')
+        setError(res?.message || 'Failed to load inventories.')
       }
       setLoading(false)
     }
@@ -51,7 +58,7 @@ export default function BinInventoryPopover({
     return () => {
       cancelled = true
     }
-  }, [open, binCode, fetchInventoriesByBinCode])
+  }, [open, binCode, binID, fetchInventoriesByBinCode])
 
   return (
     <Popover
@@ -71,7 +78,6 @@ export default function BinInventoryPopover({
         }
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           px: 2,
@@ -97,17 +103,12 @@ export default function BinInventoryPopover({
           }}
         >
           Bin: {binCode || '--'}
+          {shortID ? `  (ID: ${shortID}…)` : ''}
         </Typography>
       </Box>
 
       {/* Content */}
-      <Box
-        sx={{
-          px: 1,
-          py: 1,
-          minWidth: 420
-        }}
-      >
+      <Box sx={{ px: 1, py: 1, minWidth: 420 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
             <CircularProgress size={18} />
@@ -131,7 +132,6 @@ export default function BinInventoryPopover({
               overflow: 'hidden'
             }}
           >
-            {/* 表头 */}
             <Box
               sx={{
                 display: 'grid',

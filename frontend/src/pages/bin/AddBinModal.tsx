@@ -176,7 +176,7 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
     }))
 
     setLoading(true)
-    const res = await uploadBinList(payload, selectedType) // 显式把 type 传给 hook
+    const res = await uploadBinList(payload, selectedType)
     setLoading(false)
 
     if (res?.success) {

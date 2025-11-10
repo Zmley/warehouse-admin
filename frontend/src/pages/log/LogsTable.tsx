@@ -54,8 +54,9 @@ type OneRow = {
   timestamp: string
   movements: Array<{
     destCode: string | null
+    destID: string | null
     qty: number
-    sources: Array<{ code: string; qty: number }>
+    sources: Array<{ code: string; id: string | null; qty: number }>
   }>
 }
 
@@ -107,7 +108,11 @@ export default function LogsTable({
   sessions: SessionLog[]
   loading: boolean
   error?: string | null
-  onBinClick: (e: React.MouseEvent<HTMLElement>, binCode: string | null) => void
+  onBinClick: (
+    e: React.MouseEvent<HTMLElement>,
+    binCode: string | null,
+    binID?: string | null
+  ) => void
 }) {
   const [prodOpen, setProdOpen] = useState(false)
   const [prodAnchor, setProdAnchor] = useState<HTMLElement | null>(null)
@@ -172,10 +177,12 @@ export default function LogsTable({
           movements: [
             {
               destCode: item.destinationBinCode ?? null,
+              destID: item.destinationBinID ?? null,
               qty,
               sources: [
                 {
                   code: item.sourceBinCode ?? 'staging-area',
+                  id: item.sourceBinID ?? null,
                   qty
                 }
               ]
@@ -267,9 +274,25 @@ export default function LogsTable({
                     const isFirst = rendered === 0
                     rendered += 1
 
-                    const uniqueSources = Array.from(
-                      new Set(m.sources.map(s => s.code ?? 'staging-area'))
-                    )
+                    const agg = new Map<
+                      string,
+                      { code: string; id: string | null; qty: number }
+                    >()
+                    for (const s of m.sources) {
+                      const key = s.code ?? 'staging-area'
+                      if (!agg.has(key)) {
+                        agg.set(key, {
+                          code: key,
+                          id: s.id ?? null,
+                          qty: Number(s.qty || 0)
+                        })
+                      } else {
+                        const prev = agg.get(key)!
+                        prev.qty += Number(s.qty || 0)
+                        if (!prev.id && s.id) prev.id = s.id
+                      }
+                    }
+                    const uniqueSources = Array.from(agg.values())
 
                     return (
                       <TableRow
@@ -343,13 +366,13 @@ export default function LogsTable({
                               gap: 0.5
                             }}
                           >
-                            {uniqueSources.map((code, i) => (
+                            {uniqueSources.map((s, i) => (
                               <Chip
-                                key={`${code}-${i}`}
-                                label={code}
+                                key={`${s.code}-${i}`}
+                                label={s.code}
                                 size='small'
                                 variant='outlined'
-                                onClick={e => onBinClick(e, code)}
+                                onClick={e => onBinClick(e, s.code, s.id)}
                                 sx={{
                                   borderColor: '#dfe7f3',
                                   background: '#f6f9ff',
@@ -358,6 +381,7 @@ export default function LogsTable({
                                   height: 22,
                                   cursor: 'pointer'
                                 }}
+                                title={s.id || undefined}
                               />
                             ))}
                           </Box>
@@ -396,6 +420,7 @@ export default function LogsTable({
                           </Box>
                         </TableCell>
 
+                        {/* Destination（点击时把 code + id 传出去） */}
                         <TableCell sx={td}>
                           <Chip
                             label={`${m.destCode ?? 'PENDING'}`}
@@ -403,7 +428,7 @@ export default function LogsTable({
                             color={m.destCode ? 'primary' : 'warning'}
                             variant='outlined'
                             onClick={e =>
-                              m.destCode && onBinClick(e, m.destCode)
+                              m.destCode && onBinClick(e, m.destCode, m.destID)
                             }
                             sx={{
                               fontWeight: 700,
@@ -411,6 +436,7 @@ export default function LogsTable({
                               height: 22,
                               cursor: m.destCode ? 'pointer' : 'default'
                             }}
+                            title={m.destID || undefined}
                           />
                         </TableCell>
 

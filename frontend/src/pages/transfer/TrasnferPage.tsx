@@ -49,7 +49,7 @@ const TransferPage: React.FC = () => {
     error,
     transfers,
     total,
-    getTransfers, // 拉取 Recent（按状态）
+    getTransfers,
     removeByTransferIDs,
     handleCompleteReceive,
     loading: mutating,
@@ -89,14 +89,23 @@ const TransferPage: React.FC = () => {
     null
   )
   const [binPopoverCode, setBinPopoverCode] = useState<string | null>(null)
-  const onBinClick = (evt: MouseEvent<HTMLElement>, code?: string | null) => {
-    if (!code) return
+  const [binPopoverBinID, setBinPopoverBinID] = useState<string | null>(null)
+
+  const onBinClick = (
+    evt: MouseEvent<HTMLElement>,
+    code?: string | null,
+    id?: string | null
+  ) => {
+    if (!code && !id) return
     setBinPopoverAnchor(evt.currentTarget)
-    setBinPopoverCode(code)
+    setBinPopoverCode(code ?? null)
+    setBinPopoverBinID(id ?? null)
   }
+
   const closeBinPopover = () => {
     setBinPopoverAnchor(null)
     setBinPopoverCode(null)
+    setBinPopoverBinID(null)
   }
 
   const loadRecent = useCallback(
@@ -469,9 +478,10 @@ const TransferPage: React.FC = () => {
       </Snackbar>
 
       <BinInventoryPopover
-        open={Boolean(binPopoverAnchor && binPopoverCode)}
+        open={Boolean(binPopoverAnchor && (binPopoverCode || binPopoverBinID))}
         anchorEl={binPopoverAnchor}
         binCode={binPopoverCode}
+        binID={binPopoverBinID}
         onClose={closeBinPopover}
       />
     </Box>

@@ -1,15 +1,14 @@
 import { useState, useCallback } from 'react'
-import { getSessions, SessionLog, SessionQuery } from 'api/log'
+import { getSessions } from 'api/log'
 import { getWorkerNames, WorkerName } from 'api/auth'
+import { SessionLog, SessionQuery } from 'types/Log'
 
 export const useLog = () => {
   const [sessions, setSessions] = useState<SessionLog[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const [loadingWorkers, setLoadingWorkers] = useState(false)
-
   const [workerNames, setWorkerNames] = useState<WorkerName[]>([])
 
   const fetchSessions = useCallback(async (params?: SessionQuery) => {

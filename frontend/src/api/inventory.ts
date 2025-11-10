@@ -17,6 +17,15 @@ export const bulkUpdateInventory = (updates: InventoryUpdate[]) =>
 export const addInventories = (inventories: InventoryUploadType[]) =>
   apiClient.post('/inventories', inventories)
 
-////////////
 export const getAllInventoriesByWarehouse = async (warehouseID: string) =>
   apiClient.get('/inventories/all', { params: { warehouseID } })
+
+export const getInventoriesByBinCode = async (
+  binCode: string,
+  binID?: string
+) => {
+  if (binID) {
+    return apiClient.get(`/inventories/${binCode}/${binID}`)
+  }
+  return apiClient.get(`/inventories/${binCode}`)
+}

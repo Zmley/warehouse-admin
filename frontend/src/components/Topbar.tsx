@@ -75,7 +75,6 @@ const Topbar: React.FC = () => {
         boxShadow: '0 6px 18px rgba(15,23,42,0.06)'
       }}
     >
-      {/* 左侧：问候 */}
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}
       >
@@ -92,9 +91,7 @@ const Topbar: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* 中间：横向滑动仓库选择（胶囊风格 + 渐隐遮罩） */}
       <Box sx={{ position: 'relative', flex: 1, minWidth: 0 }}>
-        {/* 渐隐遮罩 */}
         <Box
           aria-hidden
           sx={{
@@ -198,7 +195,6 @@ const Topbar: React.FC = () => {
                           boxShadow:
                             '0 0 0 3px rgba(59,130,246,0.35), 0 2px 10px rgba(15,23,42,0.15)'
                         },
-                        // Active 下划线
                         '&::after': active
                           ? {
                               content: '""',
@@ -223,17 +219,14 @@ const Topbar: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 右侧：导出按钮 + 账号 */}
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}
       >
-        {/* 独立导出组件（队列下载 + 进度条 + 多仓选择） */}
         <ExportInventoriesButton
           warehouses={warehouses || []}
           fetcher={fetchAllInventoriesForWarehouse}
         />
 
-        {/* 账号 */}
         <Tooltip title='Account'>
           <IconButton onClick={handleMenuClick}>
             <Avatar
@@ -252,7 +245,6 @@ const Topbar: React.FC = () => {
         </Tooltip>
       </Box>
 
-      {/* 账号弹层 */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
