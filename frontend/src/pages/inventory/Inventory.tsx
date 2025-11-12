@@ -384,7 +384,8 @@ const Inventory: React.FC = () => {
                   updates.map(u => ({
                     inventoryID: u.inventoryID!,
                     productCode: u.productCode,
-                    quantity: u.quantity
+                    quantity: u.quantity,
+                    note: (u as any).note
                   }))
                 )
               }

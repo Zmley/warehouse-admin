@@ -5,6 +5,7 @@ export interface InventoryItem {
   quantity: number
   updatedAt: string
   createdAt: string
+  note: string
   bin: {
     binCode: string
     binID: string
@@ -33,6 +34,7 @@ export interface InventoryUpdate {
   quantity?: number
   productCode?: string
   binID?: string
+  note?: string
 }
 
 export type FlatInventoryRow = {

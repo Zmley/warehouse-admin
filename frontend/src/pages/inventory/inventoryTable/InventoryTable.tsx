@@ -36,6 +36,7 @@ interface InventoryTableProps {
       productCode: string
       quantity: number
       binID?: string
+      note?: string
     }[]
   ) => Promise<void>
   productOptions: string[]
@@ -94,6 +95,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     Record<string, number | ''>
   >({})
   const [productDraft, setProductDraft] = useState<Record<string, string>>({})
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
+
   const [emptyDraft, setEmptyDraft] = useState<
     Record<string, { productCode: string; quantity: number | '' }>
   >({})
@@ -150,6 +153,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
   const handleSaveGroup = async (binCode: string) => {
     const items = grouped[binCode] || []
+
+    const getItemNote = (i: InventoryItem) => (i as any).note ?? ''
+
     const targetBinID =
       items.find(i => i?.bin?.binID)?.bin?.binID || items[0]?.bin?.binID || ''
     const empty = isEmptyBin(items)
@@ -195,13 +201,21 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           if (!i.inventoryID) return null
           const qty = quantityDraft[i.inventoryID] ?? i.quantity
           const prod = (productDraft[i.inventoryID] ?? i.productCode)?.trim()
+          const note = noteDraft[i.inventoryID] ?? getItemNote(i)
+
           if (qty === '' || isNaN(Number(qty))) return null
-          if (Number(qty) !== i.quantity || prod !== i.productCode) {
+
+          if (
+            Number(qty) !== i.quantity ||
+            prod !== i.productCode ||
+            note !== getItemNote(i)
+          ) {
             return {
               inventoryID: i.inventoryID,
               binCode,
               productCode: prod!,
-              quantity: Number(qty)
+              quantity: Number(qty),
+              note
             }
           }
           return null
@@ -211,6 +225,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         binCode: string
         productCode: string
         quantity: number
+        note?: string
       }[]
 
       const emptyCreates: {
@@ -276,6 +291,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
       setEditBinCode(null)
       setQuantityDraft({})
       setProductDraft({})
+      setNoteDraft({})
       setNewRows(prev => ({ ...prev, [binCode]: [] }))
       setEmptyDraft(prev => {
         const cp = { ...prev }
@@ -351,6 +367,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 <TableCell align='center'>Bin Code</TableCell>
                 <TableCell align='center'>Product Code</TableCell>
                 <TableCell align='center'>Quantity</TableCell>
+                <TableCell align='center'>Note</TableCell>
                 <TableCell align='center'>Updated At</TableCell>
                 <TableCell align='center'>Action</TableCell>
               </TableRow>
@@ -359,7 +376,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
             {inventories.length === 0 ? (
               <tbody>
                 <TableRow sx={{ height: ROW_HEIGHT * 6 }}>
-                  <TableCell colSpan={5} align='center'>
+                  <TableCell colSpan={6} align='center'>
                     <Typography color='text.secondary' sx={{ fontSize: 13 }}>
                       No inventory found.
                     </Typography>
@@ -368,7 +385,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
                 {showCreate && (
                   <TableRow>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={6}>
                       <CreateInventory
                         onClose={() => setShowCreate(false)}
                         onSuccess={() => {
@@ -394,6 +411,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 setProductDraft={setProductDraft}
                 quantityDraft={quantityDraft}
                 setQuantityDraft={setQuantityDraft}
+                noteDraft={noteDraft}
+                setNoteDraft={setNoteDraft}
                 emptyDraft={emptyDraft}
                 setEmptyDraft={setEmptyDraft}
                 newRows={newRows}
@@ -410,6 +429,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     setProductDraft({})
                     setNewRows({})
                     setEmptyDraft({})
+                    setNoteDraft({})
                   } catch {
                     setSavingBin(null)
                   }

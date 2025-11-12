@@ -41,6 +41,9 @@ type Props = {
   quantityDraft: DraftQty
   setQuantityDraft: React.Dispatch<React.SetStateAction<DraftQty>>
 
+  noteDraft: Record<string, string>
+  setNoteDraft: React.Dispatch<React.SetStateAction<Record<string, string>>>
+
   emptyDraft: EmptyDraft
   setEmptyDraft: React.Dispatch<React.SetStateAction<EmptyDraft>>
 
@@ -71,6 +74,8 @@ const InventoryRows: React.FC<Props> = ({
   setProductDraft,
   quantityDraft,
   setQuantityDraft,
+  noteDraft,
+  setNoteDraft,
   emptyDraft,
   setEmptyDraft,
   newRows,
@@ -283,6 +288,47 @@ const InventoryRows: React.FC<Props> = ({
                     align='center'
                     sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
                   >
+                    {editing && item.inventoryID ? (
+                      <TextField
+                        size='small'
+                        value={
+                          noteDraft[item.inventoryID] ??
+                          (item as any).note ??
+                          ''
+                        }
+                        onChange={e => {
+                          const v = e.target.value
+                          setNoteDraft(prev => ({
+                            ...prev,
+                            [item.inventoryID!]: v
+                          }))
+                        }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: 32,
+                            fontSize: 13,
+                            p: 0
+                          },
+                          '& .MuiOutlinedInput-input': {
+                            p: '0 !important',
+                            height: '32px !important',
+                            lineHeight: '32px !important',
+                            textAlign: 'center'
+                          }
+                        }}
+                        disabled={isBusy}
+                      />
+                    ) : item.inventoryID ? (
+                      <Typography sx={{ fontSize: 13, color: '#0f172a' }}>
+                        {(item as any).note ?? ''}
+                      </Typography>
+                    ) : null}
+                  </TableCell>
+
+                  <TableCell
+                    align='center'
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
+                  >
                     {item.inventoryID && item.updatedAt
                       ? dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss')
                       : null}
@@ -329,6 +375,7 @@ const InventoryRows: React.FC<Props> = ({
                                     setEditBinCode(null)
                                     setQuantityDraft({})
                                     setProductDraft({})
+                                    setNoteDraft({})
                                     setNewRows(prev => ({
                                       ...prev,
                                       [binCode]: []
@@ -503,6 +550,10 @@ const InventoryRows: React.FC<Props> = ({
                     />
                   </TableCell>
 
+                  <TableCell
+                    align='center'
+                    sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
+                  />
                   <TableCell
                     align='center'
                     sx={{ border: `1px solid ${CELL_BORDER}`, p: 0 }}
