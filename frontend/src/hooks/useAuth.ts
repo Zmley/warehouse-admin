@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { AuthContext } from 'contexts/auth'
 import {
   createEmployee,
-  CreateEmployeePayload,
-  CreateEmployeeResponse,
   deleteEmployeeAPI,
-  Employee,
   getAllEmployees,
   loginUser
 } from 'api/auth'
 import { saveTokens, clearTokens } from 'utils/Storages'
+import {
+  CreateEmployeePayload,
+  CreateEmployeeResponse,
+  Employee
+} from 'types/auth'
 
 export const useAuth = () => {
   const { isAuthenticated, setIsAuthenticated, userProfile } =
