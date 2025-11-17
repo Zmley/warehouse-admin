@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react'
 import { getSessions } from 'api/log'
-import { getWorkerNames, WorkerName } from 'api/auth'
+import { getWorkerNames } from 'api/auth'
 import { SessionLog, SessionQuery } from 'types/Log'
+import { WorkerName } from 'types/auth'
 
 export const useLog = () => {
   const [sessions, setSessions] = useState<SessionLog[]>([])

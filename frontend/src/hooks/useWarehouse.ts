@@ -1,10 +1,6 @@
 import { useState, useCallback } from 'react'
 import { getWarehouses } from 'api/warehouse'
-
-interface Warehouse {
-  warehouseID: string
-  warehouseCode: string
-}
+import { Warehouse } from 'types/warehouse'
 
 const useWarehouses = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
