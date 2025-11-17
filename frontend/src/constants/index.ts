@@ -10,7 +10,8 @@ export const PageValues = {
   INVENTORY: 'inventory',
   PRODUCT: 'product',
   BIN: 'bin',
-  LOG: 'log'
+  LOG: 'log',
+  EMPLOYEE: 'employee'
 } as const
 
 export type PageType = (typeof PageValues)[keyof typeof PageValues]
@@ -27,3 +28,9 @@ export type TransferStatusUI =
   | 'IN_PROCESS'
   | 'COMPLETED'
   | 'CANCELED'
+
+export enum EmployeeType {
+  ADMIN = 'ADMIN',
+  PICKER = 'PICKER',
+  TRANSPORT_WORKER = 'TRANSPORT_WORKER'
+}

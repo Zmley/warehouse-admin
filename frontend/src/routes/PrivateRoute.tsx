@@ -9,6 +9,7 @@ import Product from 'pages/product/Product'
 import Bin from 'pages/bin/Bin'
 import LogsPage from 'pages/log/LogsPage'
 import TransferPage from 'pages/transfer/TrasnferPage'
+import EmployeePage from 'pages/employee/EmployeePage'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
@@ -29,6 +30,7 @@ const PrivateRoutes: React.FC = () => {
         <Route path='product' element={<Product />} />
         <Route path='bin' element={<Bin />} />
         <Route path='log' element={<LogsPage />} />
+        <Route path='employee' element={<EmployeePage />} />
       </Route>
     </Routes>
   )

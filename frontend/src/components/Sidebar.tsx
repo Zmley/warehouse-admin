@@ -7,6 +7,7 @@ import CategoryIcon from '@mui/icons-material/Category'
 import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
+import GroupIcon from '@mui/icons-material/Group'
 import { PageType } from 'constants/index'
 
 const sidebarItems: {
@@ -19,7 +20,8 @@ const sidebarItems: {
   { label: 'Inventory', page: 'inventory', icon: <InventoryIcon /> },
   { label: 'Product', page: 'product', icon: <CategoryIcon /> },
   { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> },
-  { label: 'Log', page: 'log', icon: <ReceiptLongIcon /> }
+  { label: 'Log', page: 'log', icon: <ReceiptLongIcon /> },
+  { label: 'Employee', page: 'employee', icon: <GroupIcon /> }
 ]
 
 const Sidebar: React.FC = () => {
