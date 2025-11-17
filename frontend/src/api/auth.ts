@@ -4,7 +4,8 @@ import {
   CreateEmployeeResponse,
   Employee,
   GetEmployeesResponse,
-  NamesResponse
+  NamesResponse,
+  WorkerName
 } from 'types/auth.js'
 
 export const loginUser = async (email: string, password: string) => {
@@ -16,8 +17,6 @@ export const fetchUserProfile = async () => {
   const response = await apiClient.get('/me')
   return response.data || null
 }
-
-export type WorkerName = { name: string }
 
 export async function getWorkerNames(): Promise<WorkerName[]> {
   const res = await apiClient.get<NamesResponse>('/names')

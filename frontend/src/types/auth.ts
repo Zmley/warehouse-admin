@@ -1,4 +1,3 @@
-import { WorkerName } from 'api/auth'
 import { EmployeeType } from 'constants/index'
 
 export type NamesResponse = {
@@ -49,3 +48,5 @@ export interface Employee {
     binCode: string
   } | null
 }
+
+export type WorkerName = { name: string }
