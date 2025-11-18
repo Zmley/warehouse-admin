@@ -16,6 +16,7 @@ import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
 import { UploadProductModal } from 'components/UploadGenericModal'
+import ManualProductModal from 'components/ManualProductModal'
 
 type Mode = 'all' | 'low'
 const ROWS_PER_PAGE = 100
@@ -25,6 +26,7 @@ const ALL_MODE_MAX_QTY = 9999
 
 const Product: React.FC = () => {
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = Math.max(
@@ -61,7 +63,8 @@ const Product: React.FC = () => {
     boxTypes,
     fetchProductCodes,
     fetchBoxTypes,
-    fetchLowStockProducts
+    fetchLowStockProducts,
+    deleteProduct
   } = useProduct()
 
   const syncURL = (
@@ -146,19 +149,34 @@ const Product: React.FC = () => {
           Product Management
         </Typography>
 
-        <Button
-          variant='contained'
-          size='small'
-          sx={{
-            textTransform: 'none',
-            fontWeight: 'bold',
-            borderRadius: 2,
-            px: 2
-          }}
-          onClick={() => setUploadOpen(true)}
-        >
-          ➕ Upload Products
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant='contained'
+            size='small'
+            sx={{
+              textTransform: 'none',
+              fontWeight: 'bold',
+              borderRadius: 2,
+              px: 2
+            }}
+            onClick={() => setUploadOpen(true)}
+          >
+            ➕ Upload Products by Excel
+          </Button>
+          <Button
+            variant='contained'
+            size='small'
+            sx={{
+              textTransform: 'none',
+              fontWeight: 'bold',
+              borderRadius: 2,
+              px: 2
+            }}
+            onClick={() => setManualOpen(true)}
+          >
+            ➕ Manual Add/Update Product
+          </Button>
+        </Box>
       </Box>
 
       <Box
@@ -358,6 +376,16 @@ const Product: React.FC = () => {
           page={page}
           total={totalProductsCount}
           onPageChange={onChangePage}
+          onDelete={async (id: string) => {
+            await deleteProduct(id)
+            fetchLowStockProducts({
+              keyword: keyword || undefined,
+              page: page + 1,
+              limit: ROWS_PER_PAGE,
+              maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+              boxType: boxType?.trim() || undefined
+            })
+          }}
         />
 
         {isLoading && (
@@ -387,6 +415,19 @@ const Product: React.FC = () => {
       <UploadProductModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
+      />
+      <ManualProductModal
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onSuccess={() => {
+          fetchLowStockProducts({
+            keyword: keyword || undefined,
+            page: page + 1,
+            limit: ROWS_PER_PAGE,
+            maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+            boxType: boxType?.trim() || undefined
+          })
+        }}
       />
     </Box>
   )
