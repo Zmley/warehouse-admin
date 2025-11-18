@@ -8,12 +8,14 @@ import {
   ToggleButtonGroup,
   InputAdornment,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  Button
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
+import { UploadProductModal } from 'components/UploadGenericModal'
 
 type Mode = 'all' | 'low'
 const ROWS_PER_PAGE = 100
@@ -22,6 +24,7 @@ const LS_KEY = 'lowStockMaxQty:v1'
 const ALL_MODE_MAX_QTY = 9999
 
 const Product: React.FC = () => {
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = Math.max(
@@ -142,6 +145,20 @@ const Product: React.FC = () => {
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Product Management
         </Typography>
+
+        <Button
+          variant='contained'
+          size='small'
+          sx={{
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: 2,
+            px: 2
+          }}
+          onClick={() => setUploadOpen(true)}
+        >
+          ➕ Upload Products
+        </Button>
       </Box>
 
       <Box
@@ -366,6 +383,11 @@ const Product: React.FC = () => {
           {error}
         </Typography>
       )}
+
+      <UploadProductModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
     </Box>
   )
 }
