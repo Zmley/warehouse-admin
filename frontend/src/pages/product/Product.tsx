@@ -63,8 +63,8 @@ const Product: React.FC = () => {
     boxTypes,
     fetchProductCodes,
     fetchBoxTypes,
-    fetchLowStockProducts,
-    deleteProduct
+    fetchLowStockProducts
+    // deleteProduct
   } = useProduct()
 
   const syncURL = (
@@ -376,16 +376,16 @@ const Product: React.FC = () => {
           page={page}
           total={totalProductsCount}
           onPageChange={onChangePage}
-          onDelete={async (id: string) => {
-            await deleteProduct(id)
-            fetchLowStockProducts({
-              keyword: keyword || undefined,
-              page: page + 1,
-              limit: ROWS_PER_PAGE,
-              maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
-              boxType: boxType?.trim() || undefined
-            })
-          }}
+          // onDelete={async (id: string) => {
+          //   await deleteProduct(id)
+          //   fetchLowStockProducts({
+          //     keyword: keyword || undefined,
+          //     page: page + 1,
+          //     limit: ROWS_PER_PAGE,
+          //     maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
+          //     boxType: boxType?.trim() || undefined
+          //   })
+          // }}
         />
 
         {isLoading && (
