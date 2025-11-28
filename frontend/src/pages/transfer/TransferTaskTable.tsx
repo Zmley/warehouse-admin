@@ -123,7 +123,10 @@ const useBatchGroups = (transfers: any[]) => {
       const sourceBinID: string =
         first?.sourceBinID || first?.sourceBin?.binID || ''
       const sw = first?.sourceWarehouse?.warehouseCode || '--'
-      const sb = first?.sourceBin?.binCode || '--'
+      const sb =
+        (first?.sourceBin && first?.sourceBin?.binCode) ||
+        first?.sourceBinCode ||
+        '--'
       const dw = first?.destinationWarehouse?.warehouseCode || '--'
       const db = first?.destinationBin?.binCode || '--'
       const dz = first?.destinationZone || ''
@@ -187,46 +190,6 @@ const useBatchGroups = (transfers: any[]) => {
     return groups
   }, [transfers])
 }
-
-// const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
-//   const flat: any[] = []
-//   for (const g of groupsForPrint) {
-//     for (const p of g.products) {
-//       const matches = (g.items || []).filter((t: any) => {
-//         const tCode = t?.productCode || t?.Product?.productCode
-//         const tBox =
-//           t?.boxType ??
-//           t?.box_type ??
-//           t?.product?.boxType ??
-//           t?.product?.box_type ??
-//           t?.Product?.boxType ??
-//           t?.Product?.box_type ??
-//           ''
-//         return (
-//           String(tCode) === String(p.productCode) &&
-//           String((tBox || '').trim()) === String((p.boxType || '').trim())
-//         )
-//       })
-//       if (matches.length) {
-//         for (const m of matches) flat.push(m)
-//       } else {
-//         flat.push({
-//           productCode: p.productCode,
-//           quantity: p.quantity,
-//           boxType: p.boxType,
-//           sourceBin: {
-//             binCode: g.sourceBin,
-//             warehouse: { warehouseCode: g.sourceWarehouse }
-//           },
-//           sourceBinCode: g.sourceBin,
-//           sourceWarehouse: { warehouseCode: g.sourceWarehouse },
-//           destinationWarehouse: { warehouseCode: g.destinationWarehouse }
-//         })
-//       }
-//     }
-//   }
-//   return flat
-// }
 
 const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
   const flat: any[] = []
