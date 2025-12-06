@@ -29,3 +29,6 @@ export const getInventoriesByBinCode = async (
   }
   return apiClient.get(`/inventories/${binCode}`)
 }
+
+export const getInventoryTotalByWarehouse = async (warehouseID: string) =>
+  apiClient.get('/inventories/total', { params: { warehouseID } })

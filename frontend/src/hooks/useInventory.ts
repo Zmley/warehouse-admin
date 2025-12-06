@@ -5,7 +5,8 @@ import {
   addInventories,
   bulkUpdateInventory,
   getAllInventoriesByWarehouse,
-  getInventoriesByBinCode
+  getInventoriesByBinCode,
+  getInventoryTotalByWarehouse
 } from 'api/inventory'
 import {
   InventoryItem,
@@ -22,6 +23,9 @@ export const useInventory = () => {
   const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(0)
   const { warehouseID } = useParams()
+
+  const [totalInventoryQuantity, setTotalInventoryQuantity] =
+    useState<number>(0)
 
   const fetchInventories = useCallback(
     async (
@@ -195,17 +199,52 @@ export const useInventory = () => {
     []
   )
 
+  const fetchTotalQtylByWarehouseID = useCallback(
+    async (selectedWarehouseID?: string) => {
+      const targetWarehouseID = selectedWarehouseID || warehouseID
+
+      if (!targetWarehouseID) {
+        const message = '❌ Missing warehouseID for total inventory.'
+        setError(message)
+        return { success: false, message, total: 0 }
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const { data } = await getInventoryTotalByWarehouse(targetWarehouseID)
+
+        const total = Number(data?.totalQuantity ?? 0)
+        setTotalInventoryQuantity(total)
+
+        return { success: true, total }
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message ||
+          '❌ Failed to fetch total inventory for warehouse.'
+        setError(message)
+        return { success: false, message, total: 0 }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [warehouseID]
+  )
+
   return {
     uploadInventoryList,
     inventories,
     isLoading,
     error,
     totalPages,
+    totalInventoryQuantity,
     fetchInventories,
     removeInventory,
     editInventoriesBulk,
     addInventory,
     fetchInventoriesByBinCode,
-    fetchAllInventoriesForWarehouse
+    fetchAllInventoriesForWarehouse,
+    fetchTotalQtylByWarehouseID
   }
 }

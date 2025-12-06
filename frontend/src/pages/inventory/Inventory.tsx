@@ -70,7 +70,9 @@ const Inventory: React.FC = () => {
     removeInventory,
     editInventoriesBulk,
     fetchInventories,
-    addInventory
+    addInventory,
+    totalInventoryQuantity,
+    fetchTotalQtylByWarehouseID
   } = useInventory()
 
   const MIN_CHARS = 2
@@ -126,6 +128,12 @@ const Inventory: React.FC = () => {
     loadCurrent()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, page, keyword, sortOrder, sortField])
+
+  useEffect(() => {
+    if (warehouseID) {
+      fetchTotalQtylByWarehouseID(warehouseID)
+    }
+  }, [warehouseID, fetchTotalQtylByWarehouseID])
 
   const updateSearchParams = (params: Record<string, string>) => {
     const newParams = new URLSearchParams(searchParams)
@@ -201,6 +209,12 @@ const Inventory: React.FC = () => {
       >
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           Inventory Management
+        </Typography>
+        <Typography
+          variant='subtitle1'
+          sx={{ ml: 2, fontWeight: 'bold', color: '#3F72AF' }}
+        >
+          Total: {totalInventoryQuantity}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Tooltip
