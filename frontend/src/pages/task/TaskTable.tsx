@@ -1,4 +1,4 @@
-import React, { MouseEvent, useEffect, useState } from 'react'
+import React, { MouseEvent, useEffect, useState, useRef } from 'react'
 import {
   Paper,
   Table,
@@ -79,6 +79,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
     null
   )
   const [binPopoverCode, setBinPopoverCode] = useState<string | null>(null)
+
+  const dragRef = useRef<HTMLDivElement | null>(null)
+  const isDraggingRef = useRef(false)
+  const startXRef = useRef(0)
+  const scrollLeftRef = useRef(0)
 
   const openBinPopover = (
     evt: MouseEvent<HTMLElement>,
@@ -306,16 +311,42 @@ const TaskTable: React.FC<TaskTableProps> = ({
             <>
               {tooManyBins ? (
                 <Box
+                  ref={dragRef}
+                  onMouseDown={e => {
+                    isDraggingRef.current = true
+                    startXRef.current = e.pageX
+                    scrollLeftRef.current = e.currentTarget.scrollLeft
+                    e.currentTarget.style.cursor = 'grabbing'
+                  }}
+                  onMouseLeave={e => {
+                    isDraggingRef.current = false
+                    e.currentTarget.style.cursor = 'grab'
+                  }}
+                  onMouseUp={e => {
+                    isDraggingRef.current = false
+                    e.currentTarget.style.cursor = 'grab'
+                  }}
+                  onMouseMove={e => {
+                    if (!isDraggingRef.current) return
+                    const x = e.pageX - startXRef.current
+                    e.currentTarget.scrollLeft = scrollLeftRef.current - x
+                  }}
                   sx={{
                     display: 'block',
                     width: '100%',
                     whiteSpace: 'nowrap',
                     overflowX: 'auto',
+                    overflowY: 'hidden',
                     textAlign: 'left',
                     px: 1,
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    '&::-webkit-scrollbar': { display: 'none' }
+                    cursor: 'grab',
+                    userSelect: 'none',
+                    // Hide scrollbars completely:
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none', // IE/Edge
+                    '&::-webkit-scrollbar': {
+                      display: 'none' // Chrome/Safari
+                    }
                   }}
                 >
                   <Box component='span' sx={{ display: 'inline-flex', gap: 8 }}>
