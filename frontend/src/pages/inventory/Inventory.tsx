@@ -20,6 +20,7 @@ import { UploadInventoryModal } from 'components/UploadGenericModal'
 import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import PrintIcon from '@mui/icons-material/Print'
 
 type SortOrder = 'asc' | 'desc'
 type SortField = 'updatedAt' | 'binCode'
@@ -189,6 +190,71 @@ const Inventory: React.FC = () => {
     loadCurrent()
   }
 
+  const handlePrint = () => {
+    const escape = (val: any) =>
+      String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+    const rows = inventories
+      .map(inv => {
+        const binCode = escape(inv.bin?.binCode ?? '--')
+        const productCode = escape(inv.productCode ?? '--')
+        const quantity = escape(inv.quantity ?? '--')
+        const updated =
+          inv.updatedAt && !Number.isNaN(Date.parse(inv.updatedAt))
+            ? escape(new Date(inv.updatedAt).toLocaleString())
+            : '--'
+        return `
+          <tr>
+            <td>${binCode}</td>
+            <td>${productCode}</td>
+            <td style="text-align:right;">${quantity}</td>
+            <td>${updated}</td>
+          </tr>
+        `
+      })
+      .join('')
+
+    const html = `
+      <html>
+        <head>
+          <title>Inventory Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; color: #0f172a; }
+            h1 { margin: 0 0 12px; font-size: 20px; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; }
+            th { background: #eef2ff; text-align: left; }
+            tr:nth-child(even) { background: #f8fafc; }
+          </style>
+        </head>
+        <body>
+          <h1>Inventory Snapshot</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Bin Code</th>
+                <th>Product Code</th>
+                <th style="text-align:right;">Quantity</th>
+                <th>Updated At</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
   return (
     <Box
       sx={{
@@ -262,6 +328,22 @@ const Inventory: React.FC = () => {
           >
             UPLOAD EXCEL
           </Button>
+
+          <Tooltip title='Print current inventory data'>
+            <IconButton
+              color='primary'
+              onClick={handlePrint}
+              sx={{
+                border: '1px solid #3F72AF',
+                borderRadius: '10px',
+                ml: 0.5,
+                width: 38,
+                height: 38
+              }}
+            >
+              <PrintIcon fontSize='small' />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
