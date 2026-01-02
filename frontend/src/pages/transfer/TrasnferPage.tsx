@@ -77,7 +77,9 @@ const TransferPage: React.FC = () => {
     localStorage.setItem('lowStockMaxQty', String(maxQty))
   }, [maxQty])
 
-  const [recentStatus, setRecentStatus] = useState<TransferStatusUI>('PENDING')
+  const [recentStatus, setRecentStatus] = useState<TransferStatusUI>(
+    TaskStatusFilter.PENDING
+  )
   const [recentPage, setRecentPage] = useState(0)
 
   const [snack, setSnack] = useState<{
