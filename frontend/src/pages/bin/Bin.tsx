@@ -103,7 +103,6 @@ const Bin: React.FC = () => {
     fetchProductCodes()
 
     if (!searchKeyword?.trim()) setAutoOpen(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, binType, searchKeyword, page])
 
   const combinedOptions = [...binCodes, ...productCodes]

@@ -27,7 +27,6 @@ const Topbar: React.FC = () => {
 
   useEffect(() => {
     fetchWarehouses()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {

@@ -93,7 +93,6 @@ const Product: React.FC = () => {
   useEffect(() => {
     fetchProductCodes()
     fetchBoxTypes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
   useEffect(() => {
@@ -105,7 +104,6 @@ const Product: React.FC = () => {
       maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
       boxType: boxType?.trim() || undefined
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, mode, page, qty, boxType, keyword])
 
   useEffect(() => {

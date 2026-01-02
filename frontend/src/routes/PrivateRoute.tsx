@@ -16,7 +16,6 @@ const PrivateRoutes: React.FC = () => {
 
   useEffect(() => {
     getMe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

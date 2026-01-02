@@ -119,7 +119,6 @@ const LogsPage: React.FC = () => {
 
     const worker = searchParams.get('worker') || ''
     setWorkerName(worker)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

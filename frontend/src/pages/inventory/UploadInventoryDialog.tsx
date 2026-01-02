@@ -106,7 +106,6 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
 
   React.useEffect(() => {
     fetchProductCodes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedWarehouseID])
 
   const uniqueBins = useMemo(

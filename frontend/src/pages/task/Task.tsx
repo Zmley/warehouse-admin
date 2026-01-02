@@ -122,7 +122,6 @@ const Task: React.FC = () => {
 
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, keyword, warehouseID])
 
   useEffect(() => {
@@ -153,7 +152,6 @@ const Task: React.FC = () => {
     }, 180_000)
 
     return () => clearInterval(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, status, keyword, serverPage])
 
   const handleRefresh = () => {

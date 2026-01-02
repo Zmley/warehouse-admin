@@ -90,7 +90,6 @@ const Inventory: React.FC = () => {
   useEffect(() => {
     fetchBinCodes()
     fetchProductCodes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID])
 
   useEffect(() => {
@@ -118,7 +117,6 @@ const Inventory: React.FC = () => {
 
   useEffect(() => {
     loadCurrent()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseID, page, keyword, sortOrder, sortField])
 
   useEffect(() => {
