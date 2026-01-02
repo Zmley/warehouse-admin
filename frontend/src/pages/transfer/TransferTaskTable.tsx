@@ -22,6 +22,12 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import PrintIcon from '@mui/icons-material/Print'
 import { TransferStatusUI } from 'constants/index'
+import {
+  type BatchGroup,
+  flattenTransfers,
+  type TransferItem
+} from 'types/Transfer'
+import { buildBatchGroups } from 'utils/transferLowStock'
 import PrintPreviewDialog from './PrintPreview'
 import PrintWarehouseDropdown from './PrintWarehouseDropdown'
 import CompleteInProcessDialog from './CompleteInProcessDialog'
@@ -74,132 +80,12 @@ const BinBadge: React.FC<{
   </Box>
 )
 
-type BatchGroup = {
-  key: string
-  taskID: string
-  sourceBinID: string
-  sourceWarehouse: string
-  sourceBin: string
-  destinationWarehouse: string
-  destinationBin: string
-  destinationZone?: string
-  items: any[]
-  products: Array<{
-    id: string
-    productCode: string
-    quantity: number
-    boxType?: string
-  }>
-  createdAt: number
-  batchID?: string | null
+const useBatchGroups = (transfers: TransferItem[]) => {
+  return useMemo<BatchGroup[]>(() => buildBatchGroups(transfers), [transfers])
 }
 
-const boxTypeNum = (s?: string) => {
-  const m = String(s || '').match(/\d+(\.\d+)?/)
-  return m ? parseFloat(m[0]) : Number.POSITIVE_INFINITY
-}
-
-const useBatchGroups = (transfers: any[]) => {
-  return useMemo<BatchGroup[]>(() => {
-    if (!transfers || transfers.length === 0) return []
-
-    const buckets: Record<string, any[]> = {}
-    for (const t of transfers) {
-      const batchID: string | null = t?.batchID ?? null
-      const sourceBinID: string =
-        t?.sourceBinID || t?.sourceBin?.binID || 'UNKNOWN_BIN'
-
-      const legacyKey = `LEGACY:${sourceBinID}|X:${t?.taskID || t?.transferID}`
-      const key = batchID ? `B:${batchID}|S:${sourceBinID}` : legacyKey
-      if (!buckets[key]) buckets[key] = []
-      buckets[key].push(t)
-    }
-
-    const groups: BatchGroup[] = []
-    for (const [k, list] of Object.entries(buckets)) {
-      if (!list.length) continue
-      const first = list[0]
-
-      const sourceBinID: string =
-        first?.sourceBinID || first?.sourceBin?.binID || ''
-      const sw = first?.sourceWarehouse?.warehouseCode || '--'
-      const sb =
-        (first?.sourceBin && first?.sourceBin?.binCode) ||
-        first?.sourceBinCode ||
-        '--'
-      const dw = first?.destinationWarehouse?.warehouseCode || '--'
-      const db = first?.destinationBin?.binCode || '--'
-      const dz = first?.destinationZone || ''
-      const batchID: string | null = first?.batchID ?? null
-
-      const products = list
-        .map((t: any, idx: number) => {
-          const rawBox =
-            t?.boxType ??
-            t?.box_type ??
-            t?.product?.boxType ??
-            t?.product?.box_type ??
-            t?.Product?.boxType ??
-            t?.Product?.box_type ??
-            ''
-          return {
-            id:
-              t?.transferID?.toString?.() ||
-              t?.id?.toString?.() ||
-              t?.inventoryID?.toString?.() ||
-              `${idx}`,
-            productCode: t?.productCode || 'UNKNOWN',
-            quantity: Number(t?.quantity || 0),
-            boxType: (typeof rawBox === 'string' ? rawBox.trim() : '') || '--'
-          }
-        })
-        .sort((a, b) => {
-          const na = boxTypeNum(a.boxType)
-          const nb = boxTypeNum(b.boxType)
-          if (na !== nb) return na - nb
-          const sa = String(a.boxType || '')
-          const sb2 = String(b.boxType || '')
-          const textCmp = sa.localeCompare(sb2)
-          if (textCmp !== 0) return textCmp
-          return String(a.productCode).localeCompare(String(b.productCode))
-        })
-
-      const newest = list.reduce(
-        (max: number, t: any) =>
-          Math.max(max, new Date(t?.updatedAt || t?.createdAt || 0).getTime()),
-        0
-      )
-
-      groups.push({
-        key: k,
-        taskID: first?.taskID,
-        sourceBinID,
-        sourceWarehouse: sw,
-        sourceBin: sb,
-        destinationWarehouse: dw,
-        destinationBin: db,
-        destinationZone: dz || undefined,
-        items: list,
-        products,
-        createdAt: newest,
-        batchID
-      })
-    }
-
-    groups.sort((a, b) => b.createdAt - a.createdAt)
-    return groups
-  }, [transfers])
-}
-
-const flattenForPrint = (groupsForPrint: BatchGroup[]) => {
-  const flat: any[] = []
-  for (const g of groupsForPrint) {
-    for (const t of g.items || []) {
-      flat.push(t)
-    }
-  }
-  return flat
-}
+const flattenForPrint = (groupsForPrint: BatchGroup[]) =>
+  flattenTransfers(groupsForPrint)
 
 const BatchCard: React.FC<{
   g: BatchGroup

@@ -11,6 +11,7 @@ import {
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CheckIcon from '@mui/icons-material/Check'
+import { groupByWarehouseBin, keyOfTask } from 'utils/transferLowStock'
 
 export type OtherInv = {
   inventoryID: string
@@ -49,8 +50,6 @@ export type TaskRow = {
   transfersCount?: number
   hasPendingOutofstockTask?: string | null
 }
-export const keyOf = (t: TaskRow) => String(t.taskID ?? 'no_task')
-
 export type Selection = {
   sourceBinID?: string
   sourceWarehouseID?: string
@@ -129,49 +128,6 @@ const BinBadge = ({
   </Box>
 )
 
-type BinFull = {
-  warehouseCode: string
-  warehouseID?: string
-  binID?: string
-  binCode?: string
-  items: Array<{ inventoryID: string; productCode: string; quantity: number }>
-}
-type WarehouseGroup = { warehouseCode: string; bins: BinFull[] }
-
-const groupByWarehouseBin = (list: OtherInv[]) => {
-  const map: Record<string, WarehouseGroup> = {}
-  ;(list || []).forEach(it => {
-    const wCode = it.bin?.warehouse?.warehouseCode || 'Unknown'
-    const wID = it.bin?.warehouseID || it.bin?.warehouse?.warehouseID
-    const binID = it.bin?.binID
-    const binCode = it.bin?.binCode
-    if (!map[wCode]) map[wCode] = { warehouseCode: wCode, bins: [] }
-    let bin = map[wCode].bins.find(b => b.binID === (binID || ''))
-    if (!bin) {
-      bin = {
-        warehouseCode: wCode,
-        warehouseID: wID,
-        binID,
-        binCode,
-        items: []
-      }
-      map[wCode].bins.push(bin)
-    }
-    const items = (it.bin?.inventories || [])
-      .filter(x => x && x.inventoryID && x.quantity > 0)
-      .map(x => ({
-        inventoryID: x.inventoryID,
-        productCode: x.productCode,
-        quantity: x.quantity
-      }))
-    const seen = new Set(bin.items.map(x => x.inventoryID))
-    items.forEach(x => {
-      if (!seen.has(x.inventoryID)) bin!.items.push(x)
-    })
-  })
-  return map
-}
-
 export type SourceBinsProps = {
   task: TaskRow
   selection: Record<string, Selection>
@@ -196,7 +152,7 @@ const SourceBins: React.FC<SourceBinsProps> = ({
   blockedBinCodes,
   taskKeyOverride
 }) => {
-  const tKey = taskKeyOverride ?? keyOf(task)
+  const tKey = taskKeyOverride ?? keyOfTask(task)
   const list = task.otherInventories || []
   const selectedIDs = useMemo(
     () => new Set(selection[tKey]?.selectedInvIDs || []),

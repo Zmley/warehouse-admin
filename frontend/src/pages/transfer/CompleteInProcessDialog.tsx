@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
+import { sortTransferProducts } from 'utils/transfer'
 
 const R = 4
 const GRID_HEAD_BG = '#f8fafc'
@@ -75,22 +76,8 @@ const BinBadge: React.FC<{ text: string }> = ({ text }) => (
   </Box>
 )
 
-const boxTypeNum = (s?: string) => {
-  const m = String(s || '').match(/\d+(\.\d+)?/)
-  return m ? parseFloat(m[0]) : Number.POSITIVE_INFINITY
-}
-
 const sortProducts = (list: MinimalGroup['products']) =>
-  [...(list || [])].sort((a, b) => {
-    const na = boxTypeNum(a.boxType)
-    const nb = boxTypeNum(b.boxType)
-    if (na !== nb) return na - nb
-    const sa = String(a.boxType || '')
-    const sb = String(b.boxType || '')
-    const textCmp = sa.localeCompare(sb)
-    if (textCmp !== 0) return textCmp
-    return String(a.productCode).localeCompare(String(b.productCode))
-  })
+  sortTransferProducts(list)
 
 const CompleteInProcessDialog: React.FC<Props> = ({
   open,

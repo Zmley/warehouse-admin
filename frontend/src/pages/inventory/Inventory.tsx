@@ -21,11 +21,13 @@ import { useInventory } from 'hooks/useInventory'
 import AddIcon from '@mui/icons-material/Add'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import PrintIcon from '@mui/icons-material/Print'
+import { PAGE_SIZES } from 'constants/ui'
+import { buildInventoryPrintHtml, filterOptions } from 'utils/inventory'
 
 type SortOrder = 'asc' | 'desc'
 type SortField = 'updatedAt' | 'binCode'
 
-const ROWS_PER_PAGE = 50
+const ROWS_PER_PAGE = PAGE_SIZES.INVENTORY
 
 const ALLOWED_WAREHOUSE_CODE_KEYS = ['680', '1630', '1824']
 
@@ -84,17 +86,6 @@ const Inventory: React.FC = () => {
     const code = (warehouseCode || '').toLowerCase()
     return ALLOWED_WAREHOUSE_CODE_KEYS.some(k => code.includes(k))
   }, [warehouseCode])
-
-  const filterOptions = (opts: string[], kw: string) => {
-    const q = kw.trim().toLowerCase()
-    if (!q) return []
-    const out: string[] = []
-    for (let i = 0; i < opts.length && out.length < 50; i++) {
-      const o = opts[i]
-      if (o.toLowerCase().startsWith(q)) out.push(o)
-    }
-    return out
-  }
 
   useEffect(() => {
     fetchBinCodes()
@@ -191,62 +182,7 @@ const Inventory: React.FC = () => {
   }
 
   const handlePrint = () => {
-    const escape = (val: any) =>
-      String(val ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-
-    const rows = inventories
-      .map(inv => {
-        const binCode = escape(inv.bin?.binCode ?? '--')
-        const productCode = escape(inv.productCode ?? '--')
-        const quantity = escape(inv.quantity ?? '--')
-        const updated =
-          inv.updatedAt && !Number.isNaN(Date.parse(inv.updatedAt))
-            ? escape(new Date(inv.updatedAt).toLocaleString())
-            : '--'
-        return `
-          <tr>
-            <td>${binCode}</td>
-            <td>${productCode}</td>
-            <td style="text-align:right;">${quantity}</td>
-            <td>${updated}</td>
-          </tr>
-        `
-      })
-      .join('')
-
-    const html = `
-      <html>
-        <head>
-          <title>Inventory Export</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 16px; color: #0f172a; }
-            h1 { margin: 0 0 12px; font-size: 20px; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; }
-            th { background: #eef2ff; text-align: left; }
-            tr:nth-child(even) { background: #f8fafc; }
-          </style>
-        </head>
-        <body>
-          <h1>Inventory Snapshot</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>Bin Code</th>
-                <th>Product Code</th>
-                <th style="text-align:right;">Quantity</th>
-                <th>Updated At</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </body>
-      </html>
-    `
-
+    const html = buildInventoryPrintHtml(inventories)
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
     printWindow.document.write(html)

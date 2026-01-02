@@ -1,3 +1,20 @@
+// ---- Payload ----
+export type SessionQuery = {
+  warehouseID?: string
+  accountID?: string
+  start?: string | Date
+  end?: string | Date
+  productCode?: string
+  sourceBinCode?: string
+  sourceBinBinID?: string
+  destinationBinCode?: string
+  destinationBinID?: string
+  type?: 'INVENTORY' | 'PICK_UP'
+  limit?: number
+  offset?: number
+}
+
+// ---- Response ----
 export interface LogItem {
   logID: string
   productCode: string
@@ -32,19 +49,4 @@ export interface ListSessionsResponse {
   success: boolean
   totalSessions: number
   data: SessionLog[]
-}
-
-export type SessionQuery = {
-  warehouseID?: string
-  accountID?: string
-  start?: string | Date
-  end?: string | Date
-  productCode?: string
-  sourceBinCode?: string
-  sourceBinBinID?: string
-  destinationBinCode?: string
-  destinationBinID?: string
-  type?: 'INVENTORY' | 'PICK_UP'
-  limit?: number
-  offset?: number
 }

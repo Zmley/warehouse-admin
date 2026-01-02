@@ -9,23 +9,15 @@ import {
   deleteBinByBinID
 } from 'api/bin'
 import { useParams } from 'react-router-dom'
-import { Bin, UpdateBinDto, UpdateBinResponse } from 'types/Bin'
-import { BinUploadType } from 'types/Bin'
+import {
+  Bin,
+  BinFetchParams,
+  UpdateBinDto,
+  UpdateBinResponse,
+  BinUploadType
+} from 'types/Bin'
 
 import * as BinApi from 'api/bin'
-
-export interface FetchParams {
-  warehouseID: string
-  type?: string
-  keyword?: string
-  page?: number
-  limit?: number
-}
-
-export interface BasicBin {
-  binID: string
-  binCode: string
-}
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<Bin[]>([])
@@ -63,7 +55,7 @@ export const useBin = (autoLoad: boolean = false) => {
   }, [warehouseID])
 
   const fetchBins = useCallback(
-    async ({ type, keyword, page = 1, limit = 10 }: FetchParams) => {
+    async ({ type, keyword, page = 1, limit = 10 }: BinFetchParams) => {
       setIsLoading(true)
 
       if (!warehouseID) {

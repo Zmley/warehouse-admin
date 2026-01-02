@@ -24,6 +24,11 @@ import {
 import SourceBins from './SourceBins'
 import { useProduct } from 'hooks/useProduct'
 import { useTransfer } from 'hooks/useTransfer'
+import {
+  getLowStockRowSx,
+  isToday,
+  makeLowStockRowKey
+} from 'utils/transferLowStock'
 
 export type OtherInv = {
   inventoryID: string
@@ -117,15 +122,6 @@ type Props = {
   externalRefreshing?: boolean
 }
 
-const isToday = (d: Date) => {
-  const now = new Date()
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  )
-}
-
 const LowStockTable: React.FC<Props> = ({
   warehouseID,
   onBinClick,
@@ -145,15 +141,7 @@ const LowStockTable: React.FC<Props> = ({
   const [errMsg, setErrMsg] = useState<string>('')
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
-  const rowKeyOf = (t: TaskRow) => {
-    const pc = t.productCode
-    const destWh =
-      t.destinationBin?.warehouse?.warehouseID ||
-      t.destinationBin?.warehouseID ||
-      warehouseID
-    const destBin = t.destinationBin?.binCode || t.destinationBinCode || 'none'
-    return `ls:${pc}|${destWh}|${destBin}`
-  }
+  const rowKeyOf = (t: TaskRow) => makeLowStockRowKey(t, warehouseID)
 
   const loadList = useCallback(async () => {
     if (!warehouseID) return
@@ -374,14 +362,8 @@ const LowStockTable: React.FC<Props> = ({
     </TableHead>
   )
 
-  const getRowSx = (status?: TaskRow['transferStatus']) => {
-    const s = String(status || '').toUpperCase()
-    const isLight = s === 'PENDING' || s === 'COMPLETED'
-    return {
-      background: isLight ? '#f9fafb' : '#fff',
-      '& td': { background: isLight ? '#f9fafb' : '#fff' }
-    }
-  }
+  const getRowSx = (status?: TaskRow['transferStatus']) =>
+    getLowStockRowSx(status)
 
   const PickUpBadge = ({ qty }: { qty: number }) => {
     const isOut = Number(qty) === 0

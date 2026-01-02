@@ -7,16 +7,9 @@ import {
   getProductCodes,
   getProducts
 } from '../api/product'
-import { Product } from 'types/product'
+import { Product, ProductFetchParams, LowStockParams } from 'types/product'
 import { useParams } from 'react-router-dom'
 import { ProductsUploadType } from 'types/product'
-
-export interface FetchParams {
-  keyword?: string
-  page?: number
-  limit?: number
-  boxType?: string
-}
 
 export const useProduct = () => {
   const [productCodes, setProductCodes] = useState<string[]>([])
@@ -42,7 +35,7 @@ export const useProduct = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
 
   const fetchProducts = useCallback(
-    async (params?: FetchParams) => {
+    async (params?: ProductFetchParams) => {
       if (!warehouseID) return
       setIsLoading(true)
       setError(null)
@@ -83,8 +76,6 @@ export const useProduct = () => {
       }
     }
   }, [])
-
-  type LowStockParams = FetchParams & { maxQty: number }
 
   const fetchLowStockProducts = useCallback(
     async (params: LowStockParams) => {

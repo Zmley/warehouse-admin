@@ -31,6 +31,12 @@ import { useInventory } from 'hooks/useInventory'
 import { useBin } from 'hooks/useBin'
 import { useProduct } from 'hooks/useProduct'
 import Autocomplete from '@mui/material/Autocomplete'
+import type { InventoryUploadType } from 'types/Inventory'
+import {
+  mergeInventoryRows,
+  normalizeHeader,
+  pickHeaderKey
+} from 'utils/excelUploadParser'
 
 type Row = {
   binCode: string
@@ -53,31 +59,6 @@ const HEAD_CANDIDATES = {
 
 const BORDER = '#e5e7eb'
 const TYPE = 'INVENTORY' as const
-
-function normalizeHeader(s: any) {
-  return String(s || '')
-    .trim()
-    .toLowerCase()
-}
-function pickHeaderKey(headers: string[], candidates: string[]) {
-  const set = new Set(headers.map(normalizeHeader))
-  for (const c of candidates) if (set.has(c)) return c
-  return ''
-}
-
-function mergeRows(rows: Row[]) {
-  const map = new Map<string, Row>()
-  for (const r of rows) {
-    const key = `${r.binCode}__${r.productCode}`
-    const prev = map.get(key)
-    if (prev) {
-      prev.quantity += Number(r.quantity) || 0
-    } else {
-      map.set(key, { ...r, quantity: Number(r.quantity) || 0 })
-    }
-  }
-  return Array.from(map.values())
-}
 
 const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   open,
@@ -179,10 +160,16 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
     }
   }
 
-  const buildPayload = (all: Row[]) => {
+  const buildPayload = (all: Row[]): InventoryUploadType[] => {
     const manual = all.filter(r => r._manual)
     const excel = all.filter(r => !r._manual)
-    const mergedExcel = mergeRows(excel)
+    const mergedExcel = mergeInventoryRows(
+      excel.map(r => ({
+        binCode: r.binCode,
+        productCode: r.productCode,
+        quantity: r.quantity
+      }))
+    )
     const final = [...manual, ...mergedExcel]
     return final.map(r => ({
       binCode: r.binCode,
@@ -215,7 +202,13 @@ const UploadInventoryDialog: React.FC<UploadInventoryDialogProps> = ({
   }
 
   const mergeOnlyIncomingExcel = (existing: Row[], incoming: Row[]) => {
-    const mergedIncoming = mergeRows(incoming)
+    const mergedIncoming = mergeInventoryRows(
+      incoming.map(r => ({
+        binCode: r.binCode,
+        productCode: r.productCode,
+        quantity: r.quantity
+      }))
+    )
     return [...existing, ...mergedIncoming]
   }
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { Box, Typography, Tooltip } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined'
+import { groupByWarehouse } from 'utils/task'
 
 const RADIUS_OUTER = 1
 const RADIUS_BAR = 2
@@ -14,32 +15,6 @@ type OtherInventory = {
     binCode?: string
     warehouse?: { warehouseCode?: string }
   }
-}
-
-function groupByWarehouse(list: OtherInventory[] = []) {
-  const groups: Record<
-    string,
-    {
-      warehouseCode: string
-      total: number
-      bins: { code: string; qty: number; id: string }[]
-    }
-  > = {}
-
-  list.forEach((it, idx) => {
-    const w = it?.bin?.warehouse?.warehouseCode || 'Unknown'
-    if (!groups[w]) groups[w] = { warehouseCode: w, total: 0, bins: [] }
-    const code = it?.bin?.binCode ?? '-'
-    const qty = Number(it?.quantity ?? 0)
-    groups[w].bins.push({
-      code,
-      qty,
-      id: String(it?.inventoryID ?? `${w}-${code}-${idx}`)
-    })
-    groups[w].total += qty
-  })
-
-  return Object.values(groups)
 }
 
 function DetailPanel({

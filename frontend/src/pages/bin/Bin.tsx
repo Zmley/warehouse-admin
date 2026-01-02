@@ -15,31 +15,15 @@ import { UploadBinModal } from 'components/UploadGenericModal'
 import Autocomplete from '@mui/material/Autocomplete'
 import AddIcon from '@mui/icons-material/Add'
 import { BinType } from 'constants/index'
+import { PAGE_SIZES } from 'constants/ui'
 import { useProduct } from 'hooks/useProduct'
 import AddBinModal from 'pages/bin/AddBinModal'
 import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
+import { expandBins } from 'utils/bin'
 
-const ROWS_PER_PAGE = 100
+const ROWS_PER_PAGE = PAGE_SIZES.BIN
 const BIN_TYPES = Object.values(BinType)
-
-function expandBins(bins: any[]) {
-  const result: any[] = []
-  bins.forEach(bin => {
-    const raw = (bin?.defaultProductCodes ?? '').toString().trim()
-    const codes = raw ? raw.split(',').map((v: string) => v.trim()) : ['']
-    codes.forEach((code: string, idx: number) => {
-      result.push({
-        ...bin,
-        _rowIndex: idx,
-        _rowCount: codes.length,
-        _code: code,
-        _allCodes: codes
-      })
-    })
-  })
-  return result
-}
 
 const Bin: React.FC = () => {
   const {

@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InventoryItem } from 'types/Inventory'
+import { groupByBinCode } from 'utils/inventory'
 import CreateInventory from 'pages/inventory/CreateInventory'
 import InventoryRows from './InventoryRows'
 
@@ -58,16 +59,6 @@ const CELL_BORDER = '#edf2f7'
 const ROW_STRIPE_BG = '#fbfdff'
 const CELL_TEXT = '#0f172a'
 const MUTED_TEXT = '#6b7280'
-
-const groupByBinCode = (list: InventoryItem[]) => {
-  const map: Record<string, InventoryItem[]> = {}
-  list.forEach(item => {
-    const code = item.bin?.binCode || '--'
-    if (!map[code]) map[code] = []
-    map[code].push(item)
-  })
-  return map
-}
 
 const InventoryTable: React.FC<InventoryTableProps> = ({
   inventories,

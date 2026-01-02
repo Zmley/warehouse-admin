@@ -18,6 +18,7 @@ import SaveIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import MoveDownIcon from '@mui/icons-material/MoveDown'
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt'
+import { getOriginalCode } from 'utils/bin'
 import MiniAuto from './MiniAuto'
 import { BinType } from 'constants/index'
 
@@ -76,7 +77,7 @@ const BinEditRow: React.FC<Props> = ({
   onDeleteBin
 }) => {
   const originalBinCode = binRows?.[0]?.binCode ?? ''
-  const getOriginalCode = (idx: number) => binRows?.[idx]?._code ?? ''
+  const originalCodeAt = (idx: number) => getOriginalCode(binRows, idx)
 
   const capsuleSx = {
     px: 0.75,
@@ -218,7 +219,7 @@ const BinEditRow: React.FC<Props> = ({
             >
               <Tooltip title='Original product code'>
                 <Typography sx={capsuleSx}>
-                  {getOriginalCode(idx) || '--'}
+                  {originalCodeAt(idx) || '--'}
                 </Typography>
               </Tooltip>
 

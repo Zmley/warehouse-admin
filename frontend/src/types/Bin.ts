@@ -1,16 +1,37 @@
 import { BinType } from 'constants/index'
 
+// ---- Payload ----
+export interface BinUploadType {
+  defaultProductCodes?: string[]
+  binCode: string
+  type: string
+}
+
+export interface BinFetchParams {
+  warehouseID: string
+  type?: string
+  keyword?: string
+  page?: number
+  limit?: number
+}
+
+export interface BasicBin {
+  binID: string
+  binCode: string
+}
+
+export type UpdateBinDto = {
+  binCode?: string
+  type?: BinType
+  defaultProductCodes?: string | null
+}
+
+// ---- Response ----
 export interface Bin {
   binID: string
   binCode: string
   type: BinType
   defaultProductCodes: string | null
-}
-
-export interface BinUploadType {
-  defaultProductCodes?: string[]
-  binCode: string
-  type: string
 }
 
 export type BinDto = {
@@ -21,12 +42,6 @@ export type BinDto = {
   defaultProductCodes: string | null
   createdAt: string
   updatedAt: string
-}
-
-export type UpdateBinDto = {
-  binCode?: string
-  type?: BinType
-  defaultProductCodes?: string | null
 }
 
 export type UpdateBinResponse = {

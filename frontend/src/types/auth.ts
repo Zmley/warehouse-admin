@@ -1,10 +1,6 @@
 import { EmployeeType } from 'constants/index'
 
-export type NamesResponse = {
-  success: boolean
-  workers: WorkerName[]
-}
-
+// ---- Payload ----
 export interface CreateEmployeePayload {
   email: string
   password: string
@@ -12,6 +8,12 @@ export interface CreateEmployeePayload {
   firstName: string
   lastName: string
   warehouseID: string
+}
+
+// ---- Response ----
+export type NamesResponse = {
+  success: boolean
+  workers: WorkerName[]
 }
 
 export interface CreateEmployeeResponse {

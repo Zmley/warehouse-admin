@@ -1,17 +1,4 @@
-export interface InventoryItem {
-  inventoryID: string
-  binID: string
-  productCode: string
-  quantity: number
-  updatedAt: string
-  createdAt: string
-  note: string
-  bin: {
-    binCode: string
-    binID: string
-  }
-}
-
+// ---- Payload ----
 export interface GetInventoriesParams {
   warehouseID: string
   binID?: string
@@ -35,6 +22,21 @@ export interface InventoryUpdate {
   productCode?: string
   binID?: string
   note?: string
+}
+
+// ---- Response ----
+export interface InventoryItem {
+  inventoryID: string
+  binID: string
+  productCode: string
+  quantity: number
+  updatedAt: string
+  createdAt: string
+  note: string
+  bin: {
+    binCode: string
+    binID: string
+  }
 }
 
 export type FlatInventoryRow = {

@@ -4,6 +4,31 @@ import { ProductsUploadType } from 'types/product'
 
 export const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str)
 
+export const normalizeHeader = (s: any) =>
+  String(s || '')
+    .trim()
+    .toLowerCase()
+
+export const pickHeaderKey = (headers: string[], candidates: string[]) => {
+  const set = new Set(headers.map(normalizeHeader))
+  for (const c of candidates) if (set.has(c)) return c
+  return ''
+}
+
+export const mergeInventoryRows = (rows: InventoryUploadType[]) => {
+  const map = new Map<string, InventoryUploadType>()
+  for (const r of rows) {
+    const key = `${r.binCode}__${r.productCode}`
+    const prev = map.get(key)
+    if (prev) {
+      prev.quantity += Number(r.quantity) || 0
+    } else {
+      map.set(key, { ...r, quantity: Number(r.quantity) || 0 })
+    }
+  }
+  return Array.from(map.values())
+}
+
 export const parseInventoryRows = (
   raw: (string | number | undefined)[][]
 ): { inventories: InventoryUploadType[]; error?: string } => {

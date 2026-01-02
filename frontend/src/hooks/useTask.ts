@@ -3,30 +3,13 @@ import * as taskApi from 'api/taskApi'
 import { TaskStatusFilter } from 'constants/index'
 import { useParams } from 'react-router-dom'
 import { createPickerTask } from 'api/taskApi'
-
-interface CreateTaskPayload {
-  sourceBinCode: string
-  destinationBinCode: string
-  productCode: string
-  quantity?: number
-}
-
-interface FetchParams {
-  warehouseID: string
-  status?: string
-  keyword?: string
-  page?: number
-  pageSize?: number
-}
-
-export type UITask = any & {
-  destinationBinCode?: string
-  sourceBins?: Array<{
-    bin?: { binCode?: string }
-    quantity?: number
-    inventoryID?: string
-  }>
-}
+import {
+  CreateTaskPayload,
+  TaskFetchParams,
+  TaskCancelParams,
+  TaskUpdatePayload,
+  UITask
+} from 'types/task'
 
 function normalizeOpenTasks(list: any[]): UITask[] {
   return list as UITask[]
@@ -68,7 +51,7 @@ export const useTask = () => {
   } | null>(null)
 
   const fetchOpenTasks = useCallback(
-    async ({ warehouseID, status, keyword }: FetchParams) => {
+    async ({ warehouseID, status, keyword }: TaskFetchParams) => {
       try {
         setIsLoading(true)
         setError(null)
@@ -102,7 +85,7 @@ export const useTask = () => {
       keyword,
       page = 1,
       pageSize = 10
-    }: FetchParams) => {
+    }: TaskFetchParams) => {
       try {
         setIsLoading(true)
         setError(null)
@@ -129,7 +112,13 @@ export const useTask = () => {
   )
 
   const fetchTasks = useCallback(
-    async ({ warehouseID, status, keyword, page, pageSize }: FetchParams) => {
+    async ({
+      warehouseID,
+      status,
+      keyword,
+      page,
+      pageSize
+    }: TaskFetchParams) => {
       const finished = isFinishedStatus(status)
       if (finished) {
         return fetchFinishedTasksPaged({
@@ -145,10 +134,7 @@ export const useTask = () => {
     [fetchFinishedTasksPaged, fetchOpenTasks]
   )
 
-  const cancelTask = async (
-    taskID: string,
-    params: { warehouseID: string; status: TaskStatusFilter; keyword: string }
-  ) => {
+  const cancelTask = async (taskID: string, params: TaskCancelParams) => {
     try {
       await taskApi.cancelTask(taskID)
       alert('✅ Task canceled successfully.')
@@ -216,8 +202,8 @@ export const useTask = () => {
 
   const updateTask = async (
     taskID: string,
-    payload: { sourceBinCode?: string; status?: string },
-    p0: { warehouseID: any; status: any; keyword: string }
+    payload: TaskUpdatePayload,
+    p0: TaskCancelParams
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)
