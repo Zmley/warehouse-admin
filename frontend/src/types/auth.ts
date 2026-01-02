@@ -1,10 +1,10 @@
-import { EmployeeType } from 'constants/index'
+import { EmployeeRole } from 'constants/index'
 
 // ---- Payload ----
 export interface CreateEmployeePayload {
   email: string
   password: string
-  role: EmployeeType
+  role: EmployeeRole
   firstName: string
   lastName: string
   warehouseID: string

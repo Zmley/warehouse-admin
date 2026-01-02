@@ -1,4 +1,4 @@
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 
 // ---- Payload ----
 export interface BinUploadType {
@@ -22,7 +22,7 @@ export interface BasicBin {
 
 export type UpdateBinDto = {
   binCode?: string
-  type?: BinType
+  type?: BinKind
   defaultProductCodes?: string | null
 }
 
@@ -30,7 +30,7 @@ export type UpdateBinDto = {
 export interface Bin {
   binID: string
   binCode: string
-  type: BinType
+  type: BinKind
   defaultProductCodes: string | null
 }
 
@@ -38,7 +38,7 @@ export type BinDto = {
   binID: string
   warehouseID: string
   binCode: string
-  type: BinType
+  type: BinKind
   defaultProductCodes: string | null
   createdAt: string
   updatedAt: string

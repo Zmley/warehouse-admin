@@ -11,7 +11,7 @@ import {
   Typography,
   TableContainer
 } from '@mui/material'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 import BinRow from './BinRow'
 import BinEditRow from './BinEditRow'
 import type { NavigateFunction } from 'react-router-dom'
@@ -155,12 +155,12 @@ const BinTable: React.FC<Props> = props => {
   const [editingBinCode, setEditingBinCode] = React.useState<string>(
     currentEditingRow?.binCode ?? ''
   )
-  const [editingType, setEditingType] = React.useState<BinType>(
-    (currentEditingRow?.type as BinType) ?? BinType.PICK_UP
+  const [editingType, setEditingType] = React.useState<BinKind>(
+    (currentEditingRow?.type as BinKind) ?? BinKind.PICK_UP
   )
   React.useEffect(() => {
     setEditingBinCode(currentEditingRow?.binCode ?? '')
-    setEditingType((currentEditingRow?.type as BinType) ?? BinType.PICK_UP)
+    setEditingType((currentEditingRow?.type as BinKind) ?? BinKind.PICK_UP)
   }, [currentEditingRow?.binCode, currentEditingRow?.type, editBinID])
 
   const groups = React.useMemo(() => {
@@ -251,7 +251,7 @@ const BinTable: React.FC<Props> = props => {
     const nextCode = (editingBinCode || '').trim()
     const codeChanged = nextCode && nextCode !== originalCode
 
-    const originalType = currentEditingRow?.type as BinType | undefined
+    const originalType = currentEditingRow?.type as BinKind | undefined
     const typeChanged = editingType && editingType !== originalType
 
     if (codeChanged || typeChanged) {
@@ -327,7 +327,7 @@ const BinTable: React.FC<Props> = props => {
     const items: React.ReactNode[] = []
 
     const canEditType =
-      binType === BinType.PICK_UP || binType === BinType.INVENTORY
+      binType === BinKind.PICK_UP || binType === BinKind.INVENTORY
 
     groups.forEach((binRows, binID) => {
       const isEditing = canEditType && editBinID === binID

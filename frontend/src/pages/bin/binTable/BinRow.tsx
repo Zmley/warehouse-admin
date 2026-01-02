@@ -2,7 +2,7 @@ import * as React from 'react'
 import dayjs from 'dayjs'
 import { TableRow, TableCell, Tooltip, IconButton } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 
 const COL_WIDTH = {
   type: 90,
@@ -32,7 +32,7 @@ const BinRow: React.FC<Props> = ({
   codes,
   onEdit
 }) => {
-  const canEdit = binType === BinType.PICK_UP || binType === BinType.INVENTORY
+  const canEdit = binType === BinKind.PICK_UP || binType === BinKind.INVENTORY
   const applies = canEdit
 
   return (

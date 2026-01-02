@@ -13,7 +13,7 @@ import {
 import { InventoryUploadType } from 'types/Inventory'
 import { ProductsUploadType } from 'types/product'
 import { BinUploadType } from 'types/Bin'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 
 interface Props {
   open: boolean
@@ -213,18 +213,18 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
 
-  const isBinType = (v?: string | null): v is BinType =>
-    v === BinType.INVENTORY ||
-    v === BinType.PICK_UP ||
-    v === BinType.CART ||
-    v === BinType.AISLE
+  const isBinType = (v?: string | null): v is BinKind =>
+    v === BinKind.INVENTORY ||
+    v === BinKind.PICK_UP ||
+    v === BinKind.CART ||
+    v === BinKind.AISLE
 
-  const getTypeFromUrl = (): BinType => {
+  const getTypeFromUrl = (): BinKind => {
     const raw = (queryParams.get('type') || '').toUpperCase()
-    return isBinType(raw) ? (raw as BinType) : BinType.INVENTORY
+    return isBinType(raw) ? (raw as BinKind) : BinKind.INVENTORY
   }
 
-  const [selectedType, setSelectedType] = useState<BinType>(getTypeFromUrl())
+  const [selectedType, setSelectedType] = useState<BinKind>(getTypeFromUrl())
   useEffect(() => {
     if (open) setSelectedType(getTypeFromUrl())
   }, [open, location.search])

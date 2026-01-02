@@ -8,7 +8,7 @@ import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import GroupIcon from '@mui/icons-material/Group'
-import { PageType } from 'constants/index'
+import { PageType } from 'types/page'
 
 const sidebarItems: {
   label: string

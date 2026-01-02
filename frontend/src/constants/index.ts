@@ -1,4 +1,4 @@
-export enum BinType {
+export enum BinKind {
   PICK_UP = 'PICK_UP',
   INVENTORY = 'INVENTORY',
   CART = 'CART',
@@ -14,8 +14,6 @@ export const PageValues = {
   EMPLOYEE: 'employee'
 } as const
 
-export type PageType = (typeof PageValues)[keyof typeof PageValues]
-
 export enum TaskStatusFilter {
   CANCELED = 'CANCELED',
   PENDING = 'PENDING',
@@ -23,13 +21,9 @@ export enum TaskStatusFilter {
   IN_PROCESS = 'IN_PROCESS'
 }
 
-export type TransferStatusUI =
-  | 'PENDING'
-  | 'IN_PROCESS'
-  | 'COMPLETED'
-  | 'CANCELED'
+export const TransferStatusUIValues = TaskStatusFilter
 
-export enum EmployeeType {
+export enum EmployeeRole {
   ADMIN = 'ADMIN',
   PICKER = 'PICKER',
   TRANSPORT_WORKER = 'TRANSPORT_WORKER'

@@ -1,11 +1,11 @@
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 
 type BinLike = {
   defaultProductCodes?: string | null
   binID?: string
   warehouseID?: string
   binCode?: string
-  type?: BinType | string
+  type?: BinKind | string
 }
 
 // Expand a bin row with comma-separated defaultProductCodes into multiple rows.

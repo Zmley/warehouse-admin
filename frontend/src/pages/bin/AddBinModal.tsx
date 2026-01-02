@@ -25,7 +25,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 import { useBin } from 'hooks/useBin'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
@@ -48,11 +48,11 @@ const EMPTY_ROW: BinRow = {
   _autoText: ''
 }
 
-const isBinType = (v?: string | null): v is BinType =>
-  v === BinType.INVENTORY ||
-  v === BinType.PICK_UP ||
-  v === BinType.CART ||
-  v === BinType.AISLE
+const isBinType = (v?: string | null): v is BinKind =>
+  v === BinKind.INVENTORY ||
+  v === BinKind.PICK_UP ||
+  v === BinKind.CART ||
+  v === BinKind.AISLE
 
 const AddBinModal: React.FC<AddBinModalProps> = ({
   open,
@@ -64,12 +64,12 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
   const { productCodes, fetchProductCodes } = useProduct()
   const [searchParams] = useSearchParams()
 
-  const getTypeFromUrl = (): BinType => {
+  const getTypeFromUrl = (): BinKind => {
     const raw = (searchParams.get('type') || '').toUpperCase()
-    return isBinType(raw) ? (raw as BinType) : BinType.INVENTORY
+    return isBinType(raw) ? (raw as BinKind) : BinKind.INVENTORY
   }
 
-  const [selectedType, setSelectedType] = useState<BinType>(getTypeFromUrl())
+  const [selectedType, setSelectedType] = useState<BinKind>(getTypeFromUrl())
 
   useEffect(() => {
     if (open) {
@@ -82,10 +82,10 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
   const [loading, setLoading] = useState(false)
 
   const productSet = useMemo(() => new Set(productCodes), [productCodes])
-  const showProductCol = selectedType === BinType.PICK_UP
+  const showProductCol = selectedType === BinKind.PICK_UP
 
   useEffect(() => {
-    if (selectedType === BinType.PICK_UP) fetchProductCodes()
+    if (selectedType === BinKind.PICK_UP) fetchProductCodes()
   }, [selectedType, fetchProductCodes])
 
   const handleAddRow = () => setRows(prev => [...prev, { ...EMPTY_ROW }])
@@ -145,7 +145,7 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
         setError('❌ Bin Code is required.')
         return
       }
-      if (selectedType === BinType.PICK_UP && !r.defaultProductCodes.length) {
+      if (selectedType === BinKind.PICK_UP && !r.defaultProductCodes.length) {
         setError('❌ Default Product Codes are required for PICK_UP bins.')
         return
       }
@@ -170,7 +170,7 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
       binCode: r.binCode,
       type: selectedType,
       defaultProductCodes:
-        selectedType === BinType.PICK_UP ? r.defaultProductCodes : [],
+        selectedType === BinKind.PICK_UP ? r.defaultProductCodes : [],
       warehouseID
     }))
 
@@ -196,10 +196,10 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
           <FormControl size='small' sx={{ minWidth: 220 }}>
             <Select
               value={selectedType}
-              onChange={e => setSelectedType(e.target.value as BinType)}
+              onChange={e => setSelectedType(e.target.value as BinKind)}
               displayEmpty
               renderValue={val => {
-                const v = val as BinType
+                const v = val as BinKind
                 return v || 'Bin Type'
               }}
               sx={{ height: 40 }}
@@ -207,10 +207,10 @@ const AddBinModal: React.FC<AddBinModalProps> = ({
               <MenuItem disabled value=''>
                 Bin Type
               </MenuItem>
-              <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
-              <MenuItem value={BinType.PICK_UP}>PICK_UP</MenuItem>
-              <MenuItem value={BinType.CART}>CART</MenuItem>
-              <MenuItem value={BinType.AISLE}>AISLE</MenuItem>
+              <MenuItem value={BinKind.INVENTORY}>INVENTORY</MenuItem>
+              <MenuItem value={BinKind.PICK_UP}>PICK_UP</MenuItem>
+              <MenuItem value={BinKind.CART}>CART</MenuItem>
+              <MenuItem value={BinKind.AISLE}>AISLE</MenuItem>
             </Select>
           </FormControl>
 

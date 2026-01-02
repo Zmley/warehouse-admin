@@ -20,7 +20,7 @@ import MoveDownIcon from '@mui/icons-material/MoveDown'
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt'
 import { getOriginalCode } from 'utils/bin'
 import MiniAuto from './MiniAuto'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 
 const COL_WIDTH = {
   type: 90,
@@ -43,8 +43,8 @@ type Props = {
   editingBinCode: string
   setEditingBinCode: (v: string) => void
 
-  editingType: BinType
-  setEditingType: React.Dispatch<React.SetStateAction<BinType>>
+  editingType: BinKind
+  setEditingType: React.Dispatch<React.SetStateAction<BinKind>>
 
   onDeleteProduct: (idx: number) => void
   onAddRow: () => void
@@ -128,10 +128,10 @@ const BinEditRow: React.FC<Props> = ({
                 value={editingType}
                 size='small'
                 onChange={e => {
-                  const next = e.target.value as BinType
+                  const next = e.target.value as BinKind
                   setEditingType(next)
 
-                  if (next === BinType.INVENTORY) {
+                  if (next === BinKind.INVENTORY) {
                     setEditProductCodes([''])
                     setNewRows([])
                   }
@@ -142,10 +142,10 @@ const BinEditRow: React.FC<Props> = ({
                   minWidth: 150
                 }}
               >
-                <MenuItem value={BinType.PICK_UP}>PICK UP</MenuItem>
-                <MenuItem value={BinType.INVENTORY}>INVENTORY</MenuItem>
-                <MenuItem value={BinType.CART}>CART</MenuItem>
-                <MenuItem value={BinType.AISLE}>AISLE</MenuItem>
+                <MenuItem value={BinKind.PICK_UP}>PICK UP</MenuItem>
+                <MenuItem value={BinKind.INVENTORY}>INVENTORY</MenuItem>
+                <MenuItem value={BinKind.CART}>CART</MenuItem>
+                <MenuItem value={BinKind.AISLE}>AISLE</MenuItem>
               </Select>
             </TableCell>
           )}

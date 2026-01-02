@@ -22,7 +22,8 @@ import SearchIcon from '@mui/icons-material/Search'
 import { useParams } from 'react-router-dom'
 import { useTransfer } from 'hooks/useTransfer'
 import BinInventoryPopover from 'components/BinInventoryPopover'
-import { TaskStatusFilter, TransferStatusUI } from 'constants/index'
+import { TaskStatusFilter } from 'constants/index'
+import { TransferStatusUI } from 'types/Transfer'
 import TransferTaskTable from './TransferTaskTable'
 import LowStockTable, {
   type FilterMode

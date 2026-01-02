@@ -32,7 +32,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import CloseIcon from '@mui/icons-material/Close'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useAuth } from 'hooks/useAuth'
-import { EmployeeType } from 'constants/index'
+import { EmployeeRole } from 'constants/index'
 
 const EmployeePage: React.FC = () => {
   const {
@@ -49,7 +49,7 @@ const EmployeePage: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [role, setRole] = useState<EmployeeType>(EmployeeType.PICKER)
+  const [role, setRole] = useState<EmployeeRole>(EmployeeRole.PICKER)
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -57,8 +57,8 @@ const EmployeePage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const [roleFilter, setRoleFilter] = useState<EmployeeType>(
-    EmployeeType.PICKER
+  const [roleFilter, setRoleFilter] = useState<EmployeeRole>(
+    EmployeeRole.PICKER
   )
 
   const [cooldown, setCooldown] = useState(false)
@@ -155,17 +155,17 @@ const EmployeePage: React.FC = () => {
             >
               <Tab
                 label='Picker'
-                value={EmployeeType.PICKER}
+                value={EmployeeRole.PICKER}
                 sx={{ fontWeight: 700 }}
               />
               <Tab
                 label='Transport Worker'
-                value={EmployeeType.TRANSPORT_WORKER}
+                value={EmployeeRole.TRANSPORT_WORKER}
                 sx={{ fontWeight: 700 }}
               />
               <Tab
                 label='Admin'
-                value={EmployeeType.ADMIN}
+                value={EmployeeRole.ADMIN}
                 sx={{ fontWeight: 700 }}
               />
             </Tabs>
@@ -356,10 +356,10 @@ const EmployeePage: React.FC = () => {
                     fullWidth
                     size='small'
                     value={role}
-                    onChange={e => setRole(e.target.value as EmployeeType)}
+                    onChange={e => setRole(e.target.value as EmployeeRole)}
                   >
-                    <MenuItem value={EmployeeType.PICKER}>Picker</MenuItem>
-                    <MenuItem value={EmployeeType.TRANSPORT_WORKER}>
+                    <MenuItem value={EmployeeRole.PICKER}>Picker</MenuItem>
+                    <MenuItem value={EmployeeRole.TRANSPORT_WORKER}>
                       Transport Worker
                     </MenuItem>
                   </TextField>
@@ -536,14 +536,14 @@ const EmployeePage: React.FC = () => {
                         <IconButton
                           size='small'
                           onClick={() => {
-                            if (emp.role === EmployeeType.PICKER) {
+                            if (emp.role === EmployeeRole.PICKER) {
                               setEditingAccountID(emp.accountID)
                             }
                           }}
-                          disabled={emp.role !== EmployeeType.PICKER}
+                          disabled={emp.role !== EmployeeRole.PICKER}
                           sx={{
                             color:
-                              emp.role === EmployeeType.PICKER
+                              emp.role === EmployeeRole.PICKER
                                 ? '#1976d2'
                                 : '#9e9e9e'
                           }}

@@ -14,7 +14,7 @@ import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
 import Autocomplete from '@mui/material/Autocomplete'
 import AddIcon from '@mui/icons-material/Add'
-import { BinType } from 'constants/index'
+import { BinKind } from 'constants/index'
 import { PAGE_SIZES } from 'constants/ui'
 import { useProduct } from 'hooks/useProduct'
 import AddBinModal from 'pages/bin/AddBinModal'
@@ -23,7 +23,7 @@ import { useNavigate } from 'react-router-dom'
 import { expandBins } from 'utils/bin'
 
 const ROWS_PER_PAGE = PAGE_SIZES.BIN
-const BIN_TYPES = Object.values(BinType)
+const BIN_TYPES = Object.values(BinKind)
 
 const Bin: React.FC = () => {
   const {
@@ -46,7 +46,7 @@ const Bin: React.FC = () => {
   }>()
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const typeParam = (searchParams.get('type') as BinType) || BinType.PICK_UP
+  const typeParam = (searchParams.get('type') as BinKind) || BinKind.PICK_UP
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
 
@@ -86,7 +86,7 @@ const Bin: React.FC = () => {
     if (!warehouseID) return
     if (!searchParams.get('type')) {
       setSearchParams(prev => {
-        prev.set('type', BinType.PICK_UP)
+        prev.set('type', BinKind.PICK_UP)
         return prev
       })
     }

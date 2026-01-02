@@ -1,6 +1,8 @@
-import { TaskStatusFilter } from 'constants/index'
+import { TaskStatusFilter, TransferStatusUIValues } from 'constants/index'
 
 export type TransferStatus = TaskStatusFilter
+export type TransferStatusUI =
+  (typeof TransferStatusUIValues)[keyof typeof TransferStatusUIValues]
 
 // ---- Payload ----
 export type CreateTransferPayload = {

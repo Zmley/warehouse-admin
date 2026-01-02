@@ -21,7 +21,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll'
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import PrintIcon from '@mui/icons-material/Print'
-import { TransferStatusUI } from 'constants/index'
+import { TransferStatusUI } from 'types/Transfer'
 import {
   type BatchGroup,
   flattenTransfers,
