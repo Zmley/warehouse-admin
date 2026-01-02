@@ -36,7 +36,6 @@ function DetailPanel({
         minWidth: 260
       }}
     >
-      {/* 仓库条 */}
       <Box
         sx={{
           display: 'flex',
@@ -70,7 +69,6 @@ function DetailPanel({
         </Box>
       </Box>
 
-      {/* 明细表 */}
       <Box
         sx={{
           border: '1px solid #ead8ad',
@@ -226,10 +224,6 @@ const AvailableOtherWarehouses: React.FC<BadgeProps> = ({
   )
 }
 
-/**
- * 绿色徽章（命名导出）：
- * 「Waiting transfer from other warehouses」— 仅标识状态，不展开。
- */
 export const WaitingTransferBadge: React.FC = () => {
   return (
     <Box
