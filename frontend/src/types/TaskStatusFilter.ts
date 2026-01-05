@@ -1,6 +1,0 @@
-export enum TaskStatusFilter {
-  CANCELED = 'CANCELED',
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  IN_PROCESS = 'IN_PROCESS'
-}

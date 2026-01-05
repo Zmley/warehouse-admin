@@ -1,11 +1,14 @@
 import React from 'react'
 import { Box, Typography, Tooltip } from '@mui/material'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import CategoryIcon from '@mui/icons-material/Category'
 import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
-import { PageType } from 'constants/pageTypes'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
+import GroupIcon from '@mui/icons-material/Group'
+import { PageType } from 'types/page'
 
 const sidebarItems: {
   label: string
@@ -13,18 +16,26 @@ const sidebarItems: {
   icon: React.ReactNode
 }[] = [
   { label: 'Task', page: 'task', icon: <AssignmentIcon /> },
+  { label: 'Transfer', page: 'transfer', icon: <CompareArrowsIcon /> },
   { label: 'Inventory', page: 'inventory', icon: <InventoryIcon /> },
   { label: 'Product', page: 'product', icon: <CategoryIcon /> },
-  { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> }
+  { label: 'Bin', page: 'bin', icon: <MoveToInboxRounded /> },
+  { label: 'Log', page: 'log', icon: <ReceiptLongIcon /> },
+  { label: 'Employee', page: 'employee', icon: <GroupIcon /> }
 ]
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { warehouseID, warehouseCode, page } = useParams<{
     warehouseID: string
     warehouseCode: string
     page: PageType
   }>()
+
+  const pathSegments = location.pathname.split('/').filter(Boolean)
+  const currentPage =
+    (pathSegments[pathSegments.length - 1] as PageType | undefined) || page
 
   const handleClick = (targetPage: PageType) => {
     if (warehouseID && warehouseCode) {
@@ -35,8 +46,8 @@ const Sidebar: React.FC = () => {
   return (
     <Box
       sx={{
-        width: 120,
-        minWidth: 120,
+        width: 110,
+        minWidth: 110,
         backgroundColor: '#2f3e4e',
         display: 'flex',
         flexDirection: 'column',
@@ -47,7 +58,7 @@ const Sidebar: React.FC = () => {
       }}
     >
       {sidebarItems.map(item => {
-        const selected = page === item.page
+        const selected = currentPage === item.page
         return (
           <Tooltip title={item.label} placement='right' key={item.page}>
             <Box
@@ -61,14 +72,18 @@ const Sidebar: React.FC = () => {
                 py: 1.5,
                 mb: 1,
                 cursor: 'pointer',
-                color: selected ? '#1976d2' : '#fff',
-                backgroundColor: selected ? '#1976D21A' : 'transparent',
+                color: selected ? '#ffffff' : '#dbeafe',
+                background: selected
+                  ? 'linear-gradient(90deg, rgba(37,99,235,0.75) 0%, rgba(59,130,246,0.55) 60%, rgba(96,165,250,0.45) 100%)'
+                  : 'transparent',
                 position: 'relative',
                 fontWeight: selected ? 700 : 400,
                 transition: 'all 0.18s cubic-bezier(.45,2,.55,.9)',
                 '&:hover': {
-                  color: '#1976d2',
-                  transform: 'scale(1.08)'
+                    color: '#e0ecff',
+                  transform: 'scale(1.08)',
+                  background:
+                    'linear-gradient(90deg, rgba(37,99,235,0.5) 0%, rgba(59,130,246,0.3) 100%)'
                 },
                 '&::after': selected
                   ? {
@@ -77,10 +92,11 @@ const Sidebar: React.FC = () => {
                       right: 0,
                       top: 6,
                       bottom: 6,
-                      width: 5,
-                      borderRadius: '5px 0 0 5px',
+                      width: 8,
+                      borderRadius: '8px 0 0 8px',
                       background:
-                        'linear-gradient(180deg,#1976d2 0%,#90caf9 100%)'
+                        'linear-gradient(180deg,#1e3a8a 0%,#3b82f6 50%,#93c5fd 100%)',
+                      boxShadow: '0 0 14px rgba(59,130,246,0.65)'
                     }
                   : {}
               }}

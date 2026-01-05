@@ -1,20 +1,39 @@
 import { useState, useCallback } from 'react'
 import * as taskApi from 'api/taskApi'
-import { TaskStatusFilter } from 'types/TaskStatusFilter'
+import { TaskStatusFilter } from 'constants/index'
 import { useParams } from 'react-router-dom'
 import { createPickerTask } from 'api/taskApi'
+import {
+  CreateTaskPayload,
+  TaskFetchParams,
+  TaskCancelParams,
+  TaskUpdatePayload,
+  UITask
+} from 'types/task'
 
-interface CreateTaskPayload {
-  sourceBinCode: string
-  destinationBinCode: string
-  productCode: string
-  quantity?: number
+function normalizeOpenTasks(list: any[]): UITask[] {
+  return list as UITask[]
 }
 
-interface FetchParams {
-  warehouseID: string
-  status?: string
-  keyword?: string
+function normalizeFinishedTasks(list: any[]): UITask[] {
+  return (list || []).map(t => {
+    const destCode = t?.destinationBin?.binCode
+    const srcCode = t?.sourceBin?.binCode
+    const sourceBins = srcCode
+      ? [{ bin: { binCode: srcCode }, quantity: t?.quantity }]
+      : []
+
+    return {
+      ...t,
+      destinationBinCode: destCode,
+      sourceBins
+    } as UITask
+  })
+}
+
+function isFinishedStatus(s?: string) {
+  const up = (s || '').toUpperCase()
+  return up === 'COMPLETED' || up === 'CANCELED'
 }
 
 export const useTask = () => {
@@ -24,20 +43,34 @@ export const useTask = () => {
 
   const warehouseID = useParams().warehouseID as string
 
-  const fetchTasks = useCallback(
-    async ({ warehouseID, status, keyword }: FetchParams) => {
+  const [isPaginated, setIsPaginated] = useState(false)
+  const [pagination, setPagination] = useState<{
+    page: number
+    pageSize: number
+    total: number
+  } | null>(null)
+
+  const fetchOpenTasks = useCallback(
+    async ({ warehouseID, status, keyword }: TaskFetchParams) => {
       try {
         setIsLoading(true)
+        setError(null)
 
-        const res = await taskApi.fetchTasks({
+        const up = (status || '').toUpperCase()
+        const effectiveStatus =
+          up === 'OUT_OF_STOCK' ? TaskStatusFilter.PENDING : up
+
+        const resp = await taskApi.fetchTasks({
           warehouseID,
-          status,
+          status: effectiveStatus,
           keyword
         })
-        setTasks(res.tasks)
-      } catch (err) {
-        console.error('❌ Error fetching tasks:', err)
-        setError('Failed to fetch tasks')
+        setTasks(normalizeOpenTasks(resp.tasks || []))
+        setIsPaginated(false)
+        setPagination(null)
+      } catch (e: any) {
+        console.error('fetchOpenTasks failed:', e)
+        setError(e?.message || 'Failed to fetch tasks')
       } finally {
         setIsLoading(false)
       }
@@ -45,14 +78,66 @@ export const useTask = () => {
     []
   )
 
-  const cancelTask = async (
-    taskID: string,
-    params: { warehouseID: string; status: TaskStatusFilter; keyword: string }
-  ) => {
+  const fetchFinishedTasksPaged = useCallback(
+    async ({
+      warehouseID,
+      status,
+      keyword,
+      page = 1,
+      pageSize = 10
+    }: TaskFetchParams) => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const up = (status || '').toUpperCase() as 'COMPLETED' | 'CANCELED'
+        const resp = await taskApi.fetchFinishedTasks({
+          warehouseID,
+          status: up,
+          page,
+          pageSize,
+          keyword
+        })
+        setTasks(normalizeFinishedTasks(resp.data || []))
+        setIsPaginated(true)
+        setPagination({ page, pageSize, total: resp.total ?? 0 })
+      } catch (e: any) {
+        console.error('fetchFinishedTasksPaged failed:', e)
+        setError(e?.message || 'Failed to fetch finished tasks')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
+  const fetchTasks = useCallback(
+    async ({
+      warehouseID,
+      status,
+      keyword,
+      page,
+      pageSize
+    }: TaskFetchParams) => {
+      const finished = isFinishedStatus(status)
+      if (finished) {
+        return fetchFinishedTasksPaged({
+          warehouseID,
+          status,
+          keyword,
+          page,
+          pageSize
+        })
+      }
+      return fetchOpenTasks({ warehouseID, status, keyword })
+    },
+    [fetchFinishedTasksPaged, fetchOpenTasks]
+  )
+
+  const cancelTask = async (taskID: string, params: TaskCancelParams) => {
     try {
       await taskApi.cancelTask(taskID)
       alert('✅ Task canceled successfully.')
-      await fetchTasks(params)
     } catch (error) {
       console.error('❌ Failed to cancel task:', error)
       alert('Failed to cancel task.')
@@ -117,8 +202,8 @@ export const useTask = () => {
 
   const updateTask = async (
     taskID: string,
-    payload: { sourceBinCode?: string; status?: string },
-    params: { warehouseID: string; status?: string; keyword?: string }
+    payload: TaskUpdatePayload,
+    p0: TaskCancelParams
   ) => {
     try {
       await taskApi.updateTask(taskID, payload)
@@ -136,6 +221,10 @@ export const useTask = () => {
     fetchTasks,
     createTask,
     createPickTask,
-    updateTask
+    updateTask,
+    isPaginated,
+    pagination,
+    fetchOpenTasks,
+    fetchFinishedTasksPaged
   }
 }

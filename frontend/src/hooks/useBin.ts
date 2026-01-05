@@ -7,23 +7,17 @@ import {
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
   updateBinDefaultProductCodes,
   deleteBinByBinID
-} from 'api/binApi'
-import { useLocation, useParams } from 'react-router-dom'
-import { Bin } from 'types/Bin'
-import { BinUploadType } from 'types/BinUploadType'
+} from 'api/bin'
+import { useParams } from 'react-router-dom'
+import {
+  Bin,
+  BinFetchParams,
+  UpdateBinDto,
+  UpdateBinResponse,
+  BinUploadType
+} from 'types/Bin'
 
-export interface FetchParams {
-  warehouseID: string
-  type?: string
-  keyword?: string
-  page?: number
-  limit?: number
-}
-
-export interface BasicBin {
-  binID: string
-  binCode: string
-}
+import * as BinApi from 'api/bin'
 
 export const useBin = (autoLoad: boolean = false) => {
   const [bins, setBins] = useState<Bin[]>([])
@@ -34,11 +28,6 @@ export const useBin = (autoLoad: boolean = false) => {
   const { warehouseID } = useParams()
 
   const [pickupBinCode, setPickupBinCode] = useState<string | null>(null)
-
-  const location = useLocation()
-
-  const searchParams = new URLSearchParams(location.search)
-  const type = searchParams.get('type')
 
   const fetchBinCodes = useCallback(async () => {
     try {
@@ -66,7 +55,7 @@ export const useBin = (autoLoad: boolean = false) => {
   }, [warehouseID])
 
   const fetchBins = useCallback(
-    async ({ type, keyword, page = 1, limit = 10 }: FetchParams) => {
+    async ({ type, keyword, page = 1, limit = 10 }: BinFetchParams) => {
       setIsLoading(true)
 
       if (!warehouseID) {
@@ -75,19 +64,16 @@ export const useBin = (autoLoad: boolean = false) => {
       }
 
       try {
-        const res = await getBins({
-          warehouseID,
-          type,
-          keyword,
-          page,
-          limit
-        })
-        setBins(res.data)
-        setTotalPages(res.total)
-        return res.data
+        const res = await getBins({ warehouseID, type, keyword, page, limit })
+
+        setBins(res.data ?? [])
+        setTotalPages(res.total ?? 0)
+
+        return res.data ?? []
       } catch (err) {
         console.error('❌ Error fetching bins:', err)
         setError('Failed to fetch bins')
+        return []
       } finally {
         setIsLoading(false)
       }
@@ -96,17 +82,18 @@ export const useBin = (autoLoad: boolean = false) => {
   )
 
   const uploadBinList = useCallback(
-    async (list: BinUploadType[]) => {
-      if (!warehouseID || !type) {
-        const errorMsg = '❌ Missing warehouseID or type'
+    async (list: BinUploadType[], type: string) => {
+      if (!warehouseID) {
+        const errorMsg = '❌ Missing warehouseID'
         console.error(errorMsg)
-        return { error: errorMsg }
+        return { success: false, error: errorMsg }
       }
 
       const payload = list.map(bin => ({
         ...bin,
         warehouseID,
-        type
+        type,
+        defaultProductCodes: bin.defaultProductCodes ?? []
       }))
 
       try {
@@ -118,13 +105,12 @@ export const useBin = (autoLoad: boolean = false) => {
 
         return res
       } catch (err: any) {
-        setError(err?.message || '❌ Upload exception occurred')
-        return {
-          error: err?.message || '❌ Upload exception occurred'
-        }
+        const msg = err?.message || '❌ Upload exception occurred'
+        setError(msg)
+        return { success: false, error: msg }
       }
     },
-    [warehouseID, type]
+    [warehouseID]
   )
 
   const fetchAvailableBinCodes = useCallback(
@@ -191,6 +177,33 @@ export const useBin = (autoLoad: boolean = false) => {
     }
   }, [])
 
+  const updateSingleBin = useCallback(
+    async (
+      binID: string,
+      payload: UpdateBinDto
+    ): Promise<UpdateBinResponse> => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const res: UpdateBinResponse = await BinApi.updateBin(binID, payload)
+
+        if (!res?.success || !res?.bin) {
+          const msg = res?.error || res?.errorCode || '❌ Update failed'
+          setError(typeof msg === 'string' ? msg : '❌ Update failed')
+        }
+        return res
+      } catch (e: any) {
+        const msg =
+          e?.response?.data?.error || e?.message || '❌ Update exception'
+        setError(msg)
+        return { success: false, error: msg }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
   return {
     deleteBin,
     pickupBinCode,
@@ -205,6 +218,7 @@ export const useBin = (autoLoad: boolean = false) => {
     error,
     fetchBinCodes,
     fetchAvailableBinCodes,
-    updateBin
+    updateBin,
+    updateSingleBin
   }
 }

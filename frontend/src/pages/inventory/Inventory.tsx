@@ -1,0 +1,466 @@
+import React, { useEffect, useState } from 'react'
+import {
+  Box,
+  Typography,
+  Button,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  TextField,
+  IconButton,
+  Tooltip
+} from '@mui/material'
+import Autocomplete from '@mui/material/Autocomplete'
+import { useSearchParams, useParams } from 'react-router-dom'
+import { useBin } from 'hooks/useBin'
+import { useProduct } from 'hooks/useProduct'
+import InventoryTable from 'pages/inventory/inventoryTable/InventoryTable'
+import UploadInventoryDialog from 'pages/inventory/UploadInventoryDialog'
+import { UploadInventoryModal } from 'components/UploadGenericModal'
+import { useInventory } from 'hooks/useInventory'
+import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import PrintIcon from '@mui/icons-material/Print'
+import { PAGE_SIZES } from 'constants/ui'
+import { buildInventoryPrintHtml, filterOptions } from 'utils/inventory'
+
+type SortOrder = 'asc' | 'desc'
+type SortField = 'updatedAt' | 'binCode'
+
+const ROWS_PER_PAGE = PAGE_SIZES.INVENTORY
+
+const ALLOWED_WAREHOUSE_CODE_KEYS = ['680', '1630', '1824']
+
+const Inventory: React.FC = () => {
+  const { warehouseID, warehouseCode } = useParams<{
+    warehouseID: string
+    warehouseCode: string
+  }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialPage = parseInt(searchParams.get('page') || '1', 10) - 1
+  const initialKeyword = searchParams.get('keyword') || ''
+
+  const urlOrder = (searchParams.get('order') || '').toLowerCase()
+  const urlSortBy = (searchParams.get('sortBy') as SortField) || 'updatedAt'
+
+  const initialSortOrder: SortOrder =
+    urlOrder === 'asc' || urlOrder === 'desc'
+      ? (urlOrder as SortOrder)
+      : urlSortBy === 'binCode'
+      ? 'asc'
+      : 'desc'
+
+  const initialSortField: SortField = urlSortBy
+
+  const [page, setPage] = useState(initialPage)
+  const [keyword, setKeyword] = useState(initialKeyword)
+  const [inputKeyword, setInputKeyword] = useState(initialKeyword)
+
+  const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder)
+  const [sortField, setSortField] = useState<SortField>(initialSortField)
+  const [isUploadInventoryOpen, setUploadInventoryOpen] = useState(false)
+  const [isUnloadAndUploadOpen, setIsUnloadAndUploadOpen] = useState(false)
+
+  const { binCodes, fetchBinCodes } = useBin()
+  const { productCodes, fetchProductCodes } = useProduct()
+
+  const {
+    inventories,
+    totalPages,
+    isLoading,
+    error,
+    removeInventory,
+    editInventoriesBulk,
+    fetchInventories,
+    addInventory,
+    totalInventoryQuantity,
+    fetchTotalQtylByWarehouseID
+  } = useInventory()
+
+  const MIN_CHARS = 2
+  const [openSuggest, setOpenSuggest] = useState(false)
+  const canSuggest = inputKeyword.trim().length >= MIN_CHARS && openSuggest
+
+  const canAddNewInventory = React.useMemo(() => {
+    const code = (warehouseCode || '').toLowerCase()
+    return ALLOWED_WAREHOUSE_CODE_KEYS.some(k => code.includes(k))
+  }, [warehouseCode])
+
+  useEffect(() => {
+    fetchBinCodes()
+    fetchProductCodes()
+  }, [warehouseID])
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setKeyword(inputKeyword)
+      setPage(0)
+      updateSearchParams({
+        page: '1',
+        keyword: inputKeyword,
+        sortBy: sortField,
+        order: sortOrder
+      })
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [inputKeyword, sortField, sortOrder]) // eslint-disable-line
+
+  const loadCurrent = () =>
+    fetchInventories({
+      page: page + 1,
+      limit: ROWS_PER_PAGE,
+      keyword: keyword || undefined,
+      sort: sortOrder,
+      sortBy: sortField
+    })
+
+  useEffect(() => {
+    loadCurrent()
+  }, [warehouseID, page, keyword, sortOrder, sortField])
+
+  useEffect(() => {
+    if (warehouseID) {
+      fetchTotalQtylByWarehouseID(warehouseID)
+    }
+  }, [warehouseID, fetchTotalQtylByWarehouseID])
+
+  const updateSearchParams = (params: Record<string, string>) => {
+    const newParams = new URLSearchParams(searchParams)
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) newParams.set(key, value)
+      else newParams.delete(key)
+    })
+    setSearchParams(newParams)
+  }
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage)
+    updateSearchParams({
+      page: (newPage + 1).toString(),
+      keyword,
+      sortBy: sortField,
+      order: sortOrder
+    })
+  }
+
+  const handleSortOrderChange = (event: SelectChangeEvent) => {
+    const selected = String(event.target.value).toLowerCase() as SortOrder
+    setSortOrder(selected)
+    setPage(0)
+    updateSearchParams({
+      page: '1',
+      keyword,
+      sortBy: sortField,
+      order: selected
+    })
+  }
+
+  const handleSortFieldChange = (event: SelectChangeEvent) => {
+    const selected = event.target.value as SortField
+    const nextOrder: SortOrder = selected === 'binCode' ? 'asc' : sortOrder
+
+    setSortField(selected)
+    if (selected === 'binCode' && sortOrder !== 'asc') {
+      setSortOrder('asc')
+    }
+    setPage(0)
+
+    updateSearchParams({
+      page: '1',
+      keyword,
+      sortBy: selected,
+      order: nextOrder
+    })
+  }
+
+  const handleDelete = async (id: string) => {
+    await removeInventory(id)
+    loadCurrent()
+  }
+
+  const handlePrint = () => {
+    const html = buildInventoryPrintHtml(inventories)
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
+      <Box
+        sx={{
+          flex: '0 0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3
+        }}
+      >
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          Inventory Management
+        </Typography>
+        <Typography
+          variant='subtitle1'
+          sx={{ ml: 2, fontWeight: 'bold', color: '#3F72AF' }}
+        >
+          Total: {totalInventoryQuantity}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Tooltip
+            title={
+              canAddNewInventory
+                ? ''
+                : '（Only 680 / 1630 / 1824大和小 can use this funtion）'
+            }
+          >
+            <span>
+              <Button
+                variant='contained'
+                disabled={!canAddNewInventory}
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams)
+                  next.set('type', 'INVENTORY')
+                  setSearchParams(next, { replace: true })
+                  setIsUnloadAndUploadOpen(true)
+                }}
+                startIcon={<AddIcon />}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#3F72AF',
+                  '&:hover': { backgroundColor: '#2d5e8c' },
+                  textTransform: 'none'
+                }}
+              >
+                ADD NEW INVENTORY
+              </Button>
+            </span>
+          </Tooltip>
+
+          <Button
+            variant='outlined'
+            onClick={() => setUploadInventoryOpen(true)}
+            startIcon={<AddIcon />}
+            sx={{
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              borderColor: '#3F72AF',
+              color: '#3F72AF',
+              '&:hover': { borderColor: '#2d5e8c', backgroundColor: '#e3f2fd' }
+            }}
+          >
+            UPLOAD EXCEL
+          </Button>
+
+          <Tooltip title='Print current inventory data'>
+            <IconButton
+              color='primary'
+              onClick={handlePrint}
+              sx={{
+                border: '1px solid #3F72AF',
+                borderRadius: '10px',
+                ml: 0.5,
+                width: 38,
+                height: 38
+              }}
+            >
+              <PrintIcon fontSize='small' />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          flex: '0 0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 2,
+          minWidth: 0,
+          flexWrap: 'wrap'
+        }}
+      >
+        <Autocomplete
+          freeSolo
+          options={
+            canSuggest
+              ? filterOptions([...binCodes, ...productCodes], inputKeyword)
+              : []
+          }
+          value={keyword || null}
+          inputValue={inputKeyword}
+          onInputChange={(_, v, reason) => {
+            setInputKeyword(v)
+            if (reason === 'input') setOpenSuggest(true)
+          }}
+          open={canSuggest}
+          onOpen={() => {
+            if (inputKeyword.trim().length >= MIN_CHARS) setOpenSuggest(true)
+          }}
+          onClose={(_, reason) => {
+            if (
+              reason === 'blur' ||
+              reason === 'toggleInput' ||
+              reason === 'escape' ||
+              reason === 'selectOption'
+            ) {
+              setOpenSuggest(false)
+            }
+          }}
+          autoSelect={false}
+          autoHighlight={false}
+          selectOnFocus={false}
+          clearOnBlur={false}
+          blurOnSelect='mouse'
+          noOptionsText=''
+          ListboxProps={{ style: { maxHeight: 300 } }}
+          renderInput={params => (
+            <TextField
+              {...params}
+              size='small'
+              placeholder='Search Bin / Product Code'
+              onBlur={() => setOpenSuggest(false)}
+            />
+          )}
+          sx={{ width: 260, flexShrink: 0 }}
+        />
+
+        <Select
+          value={sortField}
+          onChange={handleSortFieldChange}
+          size='small'
+          sx={{ minWidth: 160 }}
+        >
+          <MenuItem value='updatedAt'>Sort by Date</MenuItem>
+          <MenuItem value='binCode'>Sort by Bin Code</MenuItem>
+        </Select>
+
+        <Select
+          value={sortOrder}
+          onChange={handleSortOrderChange}
+          size='small'
+          sx={{ minWidth: 140 }}
+        >
+          <MenuItem value='desc'>Descending</MenuItem>
+          <MenuItem value='asc'>Ascending</MenuItem>
+        </Select>
+
+        <Tooltip title='Refresh'>
+          <span>
+            <IconButton
+              size='small'
+              onClick={() => void loadCurrent()}
+              disabled={isLoading}
+              sx={{
+                ml: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(37,99,235,0.08)'
+                },
+                ...(isLoading
+                  ? {
+                      animation: 'spin 1s linear infinite',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }
+                  : {})
+              }}
+            >
+              <RefreshIcon fontSize='small' />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
+
+      <Box
+        sx={{
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          minWidth: 0
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <InventoryTable
+            inventories={inventories}
+            page={page}
+            totalPages={totalPages}
+            isLoading={isLoading}
+            onPageChange={handleChangePage}
+            onDelete={handleDelete}
+            onEditBin={() => {
+              void loadCurrent()
+            }}
+            onUpsert={async changes => {
+              const updates = changes.filter(c => c.inventoryID)
+              const creates = changes.filter(c => !c.inventoryID)
+
+              if (updates.length) {
+                await editInventoriesBulk(
+                  updates.map(u => ({
+                    inventoryID: u.inventoryID!,
+                    productCode: u.productCode,
+                    quantity: u.quantity,
+                    note: (u as any).note
+                  }))
+                )
+              }
+
+              for (const c of creates) {
+                const res = await addInventory({
+                  binID: (c as any).binID,
+                  binCode: c.binCode,
+                  productCode: c.productCode,
+                  quantity: c.quantity
+                })
+                if (!res.success) alert(res.message)
+              }
+
+              await loadCurrent()
+            }}
+            productOptions={productCodes}
+            searchedBinCode={keyword}
+            onRefresh={() => {
+              void loadCurrent()
+            }}
+          />
+        </Box>
+      </Box>
+
+      <UploadInventoryModal
+        open={isUploadInventoryOpen}
+        onClose={() => setUploadInventoryOpen(false)}
+      />
+      <UploadInventoryDialog
+        open={isUnloadAndUploadOpen}
+        onClose={() => setIsUnloadAndUploadOpen(false)}
+        onSuccess={async () => {
+          setIsUnloadAndUploadOpen(false)
+          await loadCurrent()
+        }}
+      />
+
+      {error && (
+        <Typography color='error' align='center' sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
+    </Box>
+  )
+}
+
+export default Inventory

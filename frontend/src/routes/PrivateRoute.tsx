@@ -2,18 +2,20 @@ import { Routes, Route } from 'react-router-dom'
 import { useContext, useEffect } from 'react'
 import { AuthContext } from 'contexts/auth'
 import Dashboard from 'pages/Dashboard'
-import Task from 'pages/Task'
-import Inventory from 'pages/Inventory'
+import Task from 'pages/task/Task'
+import Inventory from 'pages/inventory/Inventory'
 import ManagementLayout from 'components/ManagementLayout'
-import Product from 'pages/Product'
-import Bin from 'pages/Bin'
+import Product from 'pages/product/Product'
+import Bin from 'pages/bin/Bin'
+import LogsPage from 'pages/log/LogsPage'
+import TransferPage from 'pages/transfer/TrasnferPage'
+import EmployeePage from 'pages/employee/EmployeePage'
 
 const PrivateRoutes: React.FC = () => {
   const { getMe } = useContext(AuthContext)!
 
   useEffect(() => {
     getMe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -22,9 +24,12 @@ const PrivateRoutes: React.FC = () => {
 
       <Route path='/:warehouseID/:warehouseCode' element={<ManagementLayout />}>
         <Route path='task' element={<Task />} />
+        <Route path='transfer' element={<TransferPage />} />
         <Route path='inventory' element={<Inventory />} />
         <Route path='product' element={<Product />} />
         <Route path='bin' element={<Bin />} />
+        <Route path='log' element={<LogsPage />} />
+        <Route path='employee' element={<EmployeePage />} />
       </Route>
     </Routes>
   )

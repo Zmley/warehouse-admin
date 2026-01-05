@@ -10,9 +10,10 @@ import {
   parseProductRows,
   parseBinUploadRows
 } from 'utils/excelUploadParser'
-import { InventoryUploadType } from 'types/InventoryUploadType'
-import { ProductsUploadType } from 'types/ProductsUploadType'
-import { BinUploadType } from 'types/BinUploadType'
+import { InventoryUploadType } from 'types/Inventory'
+import { ProductsUploadType } from 'types/product'
+import { BinUploadType } from 'types/Bin'
+import { BinKind } from 'constants/index'
 
 interface Props {
   open: boolean
@@ -70,17 +71,22 @@ export const UploadInventoryModal: React.FC<Props> = ({ open, onClose }) => {
   const handleConfirmUpload = async () => {
     setIsUploading(true)
     try {
-      const res = await uploadInventoryList(inventories)
-      if (res.success) {
+      const result = await uploadInventoryList(inventories)
+
+      if (result?.success) {
+        setError('')
         setInventories([])
         setSuccessMessage(
-          `✅ Inserted ${res.insertedCount}, Updated ${res.updatedCount} inventory item(s).`
+          `✅ Inserted ${result.insertedCount}, Updated ${result.updatedCount} inventory item(s).`
         )
       } else {
-        setError(res.message || 'Upload failed.')
+        setSuccessMessage('')
+        setError(result?.message || 'Upload failed.')
       }
     } catch (err: any) {
-      setError('Upload failed. Please try again.')
+      setError(
+        err?.response?.data?.message || 'Upload failed. Please try again.'
+      )
     } finally {
       setIsUploading(false)
     }
@@ -203,9 +209,25 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
   const [isUploading, setIsUploading] = useState(false)
 
   const { uploadBinList } = useBin()
+
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
-  const type = queryParams.get('type') || ''
+
+  const isBinType = (v?: string | null): v is BinKind =>
+    v === BinKind.INVENTORY ||
+    v === BinKind.PICK_UP ||
+    v === BinKind.CART ||
+    v === BinKind.AISLE
+
+  const getTypeFromUrl = (): BinKind => {
+    const raw = (queryParams.get('type') || '').toUpperCase()
+    return isBinType(raw) ? (raw as BinKind) : BinKind.INVENTORY
+  }
+
+  const [selectedType, setSelectedType] = useState<BinKind>(getTypeFromUrl())
+  useEffect(() => {
+    if (open) setSelectedType(getTypeFromUrl())
+  }, [open, location.search])
 
   useEffect(() => {
     if (!open) {
@@ -229,7 +251,7 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
         | undefined
       )[][]
 
-      const { bins, error } = parseBinUploadRows(raw, type)
+      const { bins, error } = parseBinUploadRows(raw, selectedType)
       if (error) return setError(error)
 
       setBins(bins)
@@ -242,7 +264,7 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
   const handleConfirmUpload = async () => {
     setIsUploading(true)
     try {
-      const res = await uploadBinList(bins)
+      const res = await uploadBinList(bins, selectedType)
       if (res.success) {
         const inserted = res.insertedCount || 0
         const updated = res.updatedCount || 0
@@ -256,7 +278,7 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
       } else {
         setError(res.error || 'Upload failed.')
       }
-    } catch (err: any) {
+    } catch {
       setError('Upload failed. Please try again.')
     } finally {
       setIsUploading(false)
@@ -272,7 +294,7 @@ export const UploadBinModal: React.FC<Props> = ({ open, onClose }) => {
       getRowCells={row => [
         row.binCode,
         row.defaultProductCodes?.join(', ') || '--',
-        row.type || '--'
+        row.type || selectedType || '--'
       ]}
       onClose={onClose}
       onFileUpload={handleFileUpload}
