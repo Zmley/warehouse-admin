@@ -1,10 +1,5 @@
 import { useState, useCallback } from 'react'
-import {
-  createWarehouse,
-  deleteWarehouse,
-  getWarehouses,
-  updateWarehouse
-} from 'api/warehouse'
+import * as warehouseAPI from 'api/warehouse'
 import {
   CreateWarehousePayload,
   UpdateWarehousePayload,
@@ -23,7 +18,7 @@ const useWarehouses = () => {
 
   const fetchWarehouses = useCallback(async () => {
     try {
-      const data = await getWarehouses()
+      const data = await warehouseAPI.getWarehouses()
       setWarehouses(data)
     } catch (err) {
       setError('Error fetching warehouses')
@@ -31,12 +26,12 @@ const useWarehouses = () => {
     }
   }, [])
 
-  const createWarehouseEntry = useCallback(
+  const createWarehouse = useCallback(
     async (payload: CreateWarehousePayload) => {
       setCreateError(null)
       setIsCreating(true)
       try {
-        const data = await createWarehouse(payload)
+        const data = await warehouseAPI.createWarehouse(payload)
         if (data?.warehouseID && data?.warehouseCode) {
           setWarehouses(prev => {
             if (prev.some(item => item.warehouseID === data.warehouseID)) {
@@ -62,12 +57,12 @@ const useWarehouses = () => {
     []
   )
 
-  const updateWarehouseEntry = useCallback(
+  const updateWarehouse = useCallback(
     async (payload: UpdateWarehousePayload) => {
       setUpdateError(null)
       setIsUpdating(true)
       try {
-        const data = await updateWarehouse(payload)
+        const data = await warehouseAPI.updateWarehouse(payload)
         setWarehouses(prev =>
           prev.map(item =>
             item.warehouseID === data.warehouseID ? data : item
@@ -90,11 +85,11 @@ const useWarehouses = () => {
     []
   )
 
-  const deleteWarehouseEntry = useCallback(async (warehouseID: string) => {
+  const deleteWarehouse = useCallback(async (warehouseID: string) => {
     setDeleteError(null)
     setIsDeleting(true)
     try {
-      const data = await deleteWarehouse(warehouseID)
+      const data = await warehouseAPI.deleteWarehouse(warehouseID)
       if (data?.success) {
         setWarehouses(prev =>
           prev.filter(item => item.warehouseID !== warehouseID)
@@ -119,15 +114,15 @@ const useWarehouses = () => {
     warehouses,
     error,
     fetchWarehouses,
-    createWarehouse: createWarehouseEntry,
+    createWarehouse,
     createError,
     isCreating,
     clearCreateError: () => setCreateError(null),
-    updateWarehouse: updateWarehouseEntry,
+    updateWarehouse,
     updateError,
     isUpdating,
     clearUpdateError: () => setUpdateError(null),
-    deleteWarehouse: deleteWarehouseEntry,
+    deleteWarehouse,
     deleteError,
     isDeleting,
     clearDeleteError: () => setDeleteError(null)
