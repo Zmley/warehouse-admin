@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography, Tooltip } from '@mui/material'
+import { Box, Typography, Tooltip, IconButton } from '@mui/material'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import InventoryIcon from '@mui/icons-material/Inventory'
@@ -8,6 +8,7 @@ import MoveToInboxRounded from '@mui/icons-material/MoveToInboxRounded'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import GroupIcon from '@mui/icons-material/Group'
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import { PageType } from 'types/page'
 
 const sidebarItems: {
@@ -52,11 +53,28 @@ const Sidebar: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'space-around',
+        justifyContent: 'flex-start',
         py: 4,
         boxShadow: '4px 0 10px #0000001A'
       }}
     >
+      <Tooltip title='Back to Dashboard' placement='right'>
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
+            mb: 3,
+            color: '#dbeafe',
+            border: '1px solid rgba(219,234,254,0.4)',
+            backgroundColor: 'rgba(219,234,254,0.08)',
+            '&:hover': {
+              backgroundColor: 'rgba(219,234,254,0.16)',
+              color: '#ffffff'
+            }
+          }}
+        >
+          <HomeOutlinedIcon />
+        </IconButton>
+      </Tooltip>
       {sidebarItems.map(item => {
         const selected = currentPage === item.page
         return (
