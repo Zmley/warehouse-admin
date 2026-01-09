@@ -29,10 +29,8 @@ type SortField = 'updatedAt' | 'binCode'
 
 const ROWS_PER_PAGE = PAGE_SIZES.INVENTORY
 
-const ALLOWED_WAREHOUSE_CODE_KEYS = ['680', '1630', '1824']
-
 const Inventory: React.FC = () => {
-  const { warehouseID, warehouseCode } = useParams<{
+  const { warehouseID } = useParams<{
     warehouseID: string
     warehouseCode: string
   }>()
@@ -82,10 +80,7 @@ const Inventory: React.FC = () => {
   const [openSuggest, setOpenSuggest] = useState(false)
   const canSuggest = inputKeyword.trim().length >= MIN_CHARS && openSuggest
 
-  const canAddNewInventory = React.useMemo(() => {
-    const code = (warehouseCode || '').toLowerCase()
-    return ALLOWED_WAREHOUSE_CODE_KEYS.some(k => code.includes(k))
-  }, [warehouseCode])
+  const canAddNewInventory = true
 
   useEffect(() => {
     fetchBinCodes()
@@ -243,7 +238,7 @@ const Inventory: React.FC = () => {
                   textTransform: 'none'
                 }}
               >
-                ADD NEW INVENTORY
+                ADD NEW INVENTORY（No Real BinCode）
               </Button>
             </span>
           </Tooltip>
