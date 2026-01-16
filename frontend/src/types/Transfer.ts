@@ -22,6 +22,7 @@ export interface FetchTransfersParams {
   status?: TaskStatusFilter
   page?: number
   limit?: number
+  keyword?: string
 }
 
 export interface ConfirmItem {

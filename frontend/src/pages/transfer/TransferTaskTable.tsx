@@ -15,6 +15,7 @@ import {
   InputAdornment
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
+import CloseIcon from '@mui/icons-material/Close'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
@@ -417,6 +418,9 @@ type Props = {
   onDelete?: (transferIDs: string[]) => Promise<any>
   onComplete?: (items: any[]) => Promise<any>
   updating?: boolean
+  searchValue: string
+  onSearchChange: (value: string) => void
+  onSearchSubmit: (value: string) => void
 }
 
 const TransferTaskTable: React.FC<Props> = ({
@@ -430,7 +434,10 @@ const TransferTaskTable: React.FC<Props> = ({
   onBinClick,
   panelWidth = 420,
   onDelete,
-  onComplete
+  onComplete,
+  searchValue,
+  onSearchChange,
+  onSearchSubmit
 }) => {
   const groups = useBatchGroups(transfers)
 
@@ -448,23 +455,12 @@ const TransferTaskTable: React.FC<Props> = ({
   )
 
   const [whFilter, setWhFilter] = useState<string>(ALL_KEY)
-  const [productKeyword, setProductKeyword] = useState('')
 
   const shownGroups = useMemo(() => {
-    let filtered =
-      whFilter === ALL_KEY
-        ? groups
-        : groups.filter(g => g.sourceWarehouse === whFilter)
-    if (productKeyword.trim() !== '') {
-      const kw = productKeyword.trim().toLowerCase()
-      filtered = filtered.filter(g =>
-        g.products.some(product =>
-          (product.productCode || '').toLowerCase().includes(kw)
-        )
-      )
-    }
-    return filtered
-  }, [groups, whFilter, productKeyword])
+    return whFilter === ALL_KEY
+      ? groups
+      : groups.filter(g => g.sourceWarehouse === whFilter)
+  }, [groups, whFilter])
 
   // Dialog state for selective complete
   const [completeOpen, setCompleteOpen] = useState(false)
@@ -679,16 +675,34 @@ const TransferTaskTable: React.FC<Props> = ({
           </Select>
 
           <TextField
-            placeholder=''
+            placeholder='Search productCode'
             size='small'
-            value={productKeyword}
-            onChange={e => setProductKeyword(e.target.value)}
+            value={searchValue}
+            onChange={e => onSearchChange(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') onSearchSubmit(searchValue)
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position='start'>
                   <SearchIcon fontSize='small' sx={{ opacity: 0.7 }} />
                 </InputAdornment>
-              )
+              ),
+              endAdornment: searchValue ? (
+                <InputAdornment position='end'>
+                  <IconButton
+                    size='small'
+                    aria-label='clear search'
+                    onClick={() => {
+                      onSearchChange('')
+                      onSearchSubmit('')
+                    }}
+                    edge='end'
+                  >
+                    <CloseIcon fontSize='small' />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined
             }}
             sx={{
               width: 200,
