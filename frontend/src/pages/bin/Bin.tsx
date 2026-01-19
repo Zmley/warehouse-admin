@@ -14,6 +14,7 @@ import { useBin } from 'hooks/useBin'
 import { UploadBinModal } from 'components/UploadGenericModal'
 import Autocomplete from '@mui/material/Autocomplete'
 import AddIcon from '@mui/icons-material/Add'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { BinKind } from 'constants/index'
 import { PAGE_SIZES } from 'constants/ui'
 import { useProduct } from 'hooks/useProduct'
@@ -21,6 +22,8 @@ import AddBinModal from 'pages/bin/AddBinModal'
 import BinTable from 'pages/bin/binTable/BinTable'
 import { useNavigate } from 'react-router-dom'
 import { expandBins } from 'utils/bin'
+import useWarehouses from 'hooks/useWarehouse'
+import BatchMoveBinsDialog from 'pages/bin/BatchMoveBinsDialog'
 
 const ROWS_PER_PAGE = PAGE_SIZES.BIN
 const BIN_TYPES = Object.values(BinKind)
@@ -55,6 +58,7 @@ const Bin: React.FC = () => {
   const [page, setPage] = useState(initialPage)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const { fetchProductCodes, productCodes } = useProduct()
+  const { warehouses, fetchWarehouses } = useWarehouses()
 
   const [editBinID, setEditBinID] = useState<string | null>(null)
   const [editProductCodes, setEditProductCodes] = useState<string[]>([])
@@ -64,6 +68,8 @@ const Bin: React.FC = () => {
   const navigate = useNavigate()
 
   const [autoOpen, setAutoOpen] = useState(false)
+
+  const [batchMoveOpen, setBatchMoveOpen] = useState(false)
 
   const updateQueryParams = (
     type: string,
@@ -101,6 +107,7 @@ const Bin: React.FC = () => {
 
     fetchBinCodes()
     fetchProductCodes()
+    fetchWarehouses()
 
     if (!searchKeyword?.trim()) setAutoOpen(false)
   }, [warehouseID, binType, searchKeyword, page])
@@ -175,6 +182,7 @@ const Bin: React.FC = () => {
     }
   }
 
+
   return (
     <Box sx={{ pt: 0 }}>
       <Box
@@ -189,6 +197,24 @@ const Bin: React.FC = () => {
           Bin Management
         </Typography>
         <Stack direction='row' spacing={2}>
+          <Button
+            variant='outlined'
+            startIcon={<SwapHorizIcon />}
+            onClick={() => setBatchMoveOpen(true)}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              borderColor: '#3F72AF',
+              color: '#3F72AF',
+              '&:hover': {
+                borderColor: '#2d5e8c',
+                backgroundColor: '#e3f2fd'
+              },
+              textTransform: 'none'
+            }}
+          >
+            BATCH MOVE
+          </Button>
           <Button
             variant='contained'
             startIcon={<AddIcon />}
@@ -338,6 +364,21 @@ const Bin: React.FC = () => {
             limit: ROWS_PER_PAGE
           })
         }}
+      />
+
+      <BatchMoveBinsDialog
+        open={batchMoveOpen}
+        onClose={() => setBatchMoveOpen(false)}
+        binCodes={binCodes}
+        rows={rows}
+        warehouses={warehouses}
+        warehouseID={warehouseID}
+        binType={binType}
+        searchKeyword={searchKeyword}
+        page={page}
+        rowsPerPage={ROWS_PER_PAGE}
+        updateSingleBin={updateSingleBin}
+        fetchBins={fetchBins}
       />
     </Box>
   )

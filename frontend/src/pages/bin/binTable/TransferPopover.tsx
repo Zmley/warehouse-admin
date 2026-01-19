@@ -19,6 +19,8 @@ type Props = {
   onClose: () => void
   onConfirm: () => void
   width?: number
+  title?: string
+  openOnFocus?: boolean
 }
 
 const TransferPopover: React.FC<Props> = ({
@@ -29,7 +31,9 @@ const TransferPopover: React.FC<Props> = ({
   onChange,
   onClose,
   onConfirm,
-  width = 200
+  width = 200,
+  title = 'Transfer to another bin',
+  openOnFocus = false
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation()
@@ -83,7 +87,7 @@ const TransferPopover: React.FC<Props> = ({
           variant='caption'
           sx={{ fontWeight: 700, letterSpacing: 0.3, opacity: 0.8 }}
         >
-          Transfer to another bin
+          {title}
         </Typography>
         <IconButton
           size='small'
@@ -137,6 +141,7 @@ const TransferPopover: React.FC<Props> = ({
           options={options}
           freeSolo={false}
           width={width}
+          openOnFocus={openOnFocus}
         />
 
         <Button
