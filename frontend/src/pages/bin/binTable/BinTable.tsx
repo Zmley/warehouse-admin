@@ -147,6 +147,7 @@ const BinTable: React.FC<Props> = props => {
     setTransferTargetCode('')
   }, [])
 
+
   const currentEditingRow = React.useMemo(
     () => (editBinID ? rows.find(r => r.binID === editBinID) : null),
     [editBinID, rows]
@@ -290,6 +291,7 @@ const BinTable: React.FC<Props> = props => {
     page,
     rowsPerPage
   ])
+
 
   const visibleRowCount = rows.length
   const effectiveRowCount = Math.max(visibleRowCount, MIN_BODY_ROWS)
@@ -526,6 +528,7 @@ const BinTable: React.FC<Props> = props => {
         onClose={closeTransfer}
         onConfirm={handleTransferConfirm}
       />
+
     </Box>
   )
 }

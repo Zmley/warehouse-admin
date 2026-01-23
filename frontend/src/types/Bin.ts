@@ -24,6 +24,7 @@ export type UpdateBinDto = {
   binCode?: string
   type?: BinKind
   defaultProductCodes?: string | null
+  warehouseID?: string
 }
 
 // ---- Response ----

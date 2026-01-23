@@ -62,6 +62,7 @@ const TransferPage: React.FC = () => {
   const [inProcessTransfers, setInProcessTransfers] = useState<any[]>([])
 
   const [keyword, setKeyword] = useState('')
+  const [transferKeyword, setTransferKeyword] = useState('')
 
   const [maxQty, setMaxQty] = useState<number>(() => {
     const saved = localStorage.getItem('lowStockMaxQty')
@@ -94,16 +95,19 @@ const TransferPage: React.FC = () => {
   const [binPopoverCode, setBinPopoverCode] = useState<string | null>(null)
   const [binPopoverBinID, setBinPopoverBinID] = useState<string | null>(null)
 
-  const onBinClick = (
-    evt: MouseEvent<HTMLElement>,
-    code?: string | null,
-    id?: string | null
-  ) => {
-    if (!code && !id) return
-    setBinPopoverAnchor(evt.currentTarget)
-    setBinPopoverCode(code ?? null)
-    setBinPopoverBinID(id ?? null)
-  }
+  const onBinClick = useCallback(
+    (
+      evt: MouseEvent<HTMLElement>,
+      code?: string | null,
+      id?: string | null
+    ) => {
+      if (!code && !id) return
+      setBinPopoverAnchor(evt.currentTarget)
+      setBinPopoverCode(code ?? null)
+      setBinPopoverBinID(id ?? null)
+    },
+    []
+  )
 
   const closeBinPopover = () => {
     setBinPopoverAnchor(null)
@@ -112,13 +116,15 @@ const TransferPage: React.FC = () => {
   }
 
   const loadRecent = useCallback(
-    async (status: TransferStatusUI, page0 = 0) => {
+    async (status: TransferStatusUI, page0 = 0, kw?: string) => {
       if (!warehouseID) return
+      const normalizedKeyword = kw?.trim()
       await getTransfers({
         warehouseID,
         status: status as TaskStatusFilter,
         page: page0 + 1,
-        limit: SERVER_PAGE_SIZE
+        limit: SERVER_PAGE_SIZE,
+        keyword: normalizedKeyword || undefined
       })
     },
     [warehouseID, getTransfers]
@@ -145,14 +151,17 @@ const TransferPage: React.FC = () => {
   }, [warehouseID, getTransfersBlocked])
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadRecent(recentStatus, recentPage), loadBlocked()])
+    await Promise.all([
+      loadRecent(recentStatus, recentPage, transferKeyword),
+      loadBlocked()
+    ])
     setLowRefreshTick(x => x + 1)
-  }, [loadRecent, loadBlocked, recentStatus, recentPage])
+  }, [loadRecent, loadBlocked, recentStatus, recentPage, transferKeyword])
 
   useEffect(() => {
     if (!warehouseID) return
     setRecentPage(0)
-    loadRecent(recentStatus, 0)
+    loadRecent(recentStatus, 0, transferKeyword)
     loadBlocked()
     setLowRefreshTick(x => x + 1)
   }, [warehouseID]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -215,17 +224,17 @@ const TransferPage: React.FC = () => {
     async (s: TransferStatusUI) => {
       setRecentStatus(s)
       setRecentPage(0)
-      await loadRecent(s, 0)
+      await loadRecent(s, 0, transferKeyword)
     },
-    [loadRecent]
+    [loadRecent, transferKeyword]
   )
 
   const handleRecentPageChange = useCallback(
     async (p: number) => {
       setRecentPage(p)
-      await loadRecent(recentStatus, p)
+      await loadRecent(recentStatus, p, transferKeyword)
     },
-    [loadRecent, recentStatus]
+    [loadRecent, recentStatus, transferKeyword]
   )
 
   const refreshing = transferLoading || mutating
@@ -460,6 +469,14 @@ const TransferPage: React.FC = () => {
             onDelete={handleDeleteGroup}
             updating={refreshing}
             onComplete={handleCompleteGroup}
+            searchValue={transferKeyword}
+            onSearchChange={setTransferKeyword}
+            onSearchSubmit={async value => {
+              const normalized = value.trim()
+              setTransferKeyword(normalized)
+              setRecentPage(0)
+              await loadRecent(recentStatus, 0, normalized)
+            }}
           />
         </Box>
       </Paper>

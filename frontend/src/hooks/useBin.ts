@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import {
   addBins,
   getBinCodes,
+  getBinByBinCode,
   getBinCodesByProductCode,
   getBins,
   getPickupBinsByProductCodeApi as getPickBinByProductCode,
@@ -204,6 +205,17 @@ export const useBin = (autoLoad: boolean = false) => {
     []
   )
 
+  const fetchBinByCode = useCallback(async (binCode: string) => {
+    try {
+      const bin = await getBinByBinCode(binCode)
+      return { success: true, bin }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error || err?.message || 'Failed to fetch bin'
+      return { success: false, error: msg }
+    }
+  }, [])
+
   return {
     deleteBin,
     pickupBinCode,
@@ -219,6 +231,7 @@ export const useBin = (autoLoad: boolean = false) => {
     fetchBinCodes,
     fetchAvailableBinCodes,
     updateBin,
-    updateSingleBin
+    updateSingleBin,
+    fetchBinByCode
   }
 }

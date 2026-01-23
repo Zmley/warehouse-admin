@@ -10,6 +10,7 @@ type Props = {
   freeSolo?: boolean
   width?: number
   sx?: any
+  openOnFocus?: boolean
 }
 
 const MiniAuto: React.FC<Props> = ({
@@ -19,17 +20,20 @@ const MiniAuto: React.FC<Props> = ({
   label = '',
   freeSolo = false,
   width = 180,
-  sx
+  sx,
+  openOnFocus = false
 }) => {
   const [inputValue, setInputValue] = React.useState(value ?? '')
   const [userTyped, setUserTyped] = React.useState(false)
+  const [isFocused, setIsFocused] = React.useState(false)
 
   React.useEffect(() => {
     setInputValue(value ?? '')
   }, [value])
 
   const trimmed = (inputValue || '').trim()
-  const shouldOpen = userTyped && trimmed.length >= 1
+  const shouldOpen =
+    (openOnFocus && isFocused) || (userTyped && trimmed.length >= 1)
 
   return (
     <Autocomplete
@@ -54,6 +58,7 @@ const MiniAuto: React.FC<Props> = ({
         setUserTyped(false)
       }}
       filterOptions={opts => {
+        if (openOnFocus && isFocused && trimmed.length < 1) return opts
         if (!userTyped) return []
         const q = trimmed.toLowerCase()
         if (q.length < 1) return []
@@ -65,6 +70,10 @@ const MiniAuto: React.FC<Props> = ({
           {...params}
           label={label}
           size='small'
+          onFocus={() => {
+            if (openOnFocus) setIsFocused(true)
+          }}
+          onBlur={() => setIsFocused(false)}
           sx={{
             width,
             minWidth: width,
