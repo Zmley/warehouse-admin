@@ -10,7 +10,7 @@ export const getProductCodes = async (): Promise<{
 }
 
 export const getProducts = async (params: {
-  warehouseID: string
+  warehouseID?: string
   keyword?: string
   page?: number
   limit?: number
@@ -23,6 +23,9 @@ export const addProducts = async (list: ProductsUploadType[]) => {
   const response = await apiClient.post('/products/add', list, {})
   return response.data
 }
+
+export const deleteProduct = async (productID: string) =>
+  apiClient.delete(`/products/${productID}`)
 
 export const getLowStockProducts = async (params: {
   warehouseID: string

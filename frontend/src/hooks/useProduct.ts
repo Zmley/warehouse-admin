@@ -35,12 +35,15 @@ export const useProduct = () => {
   const { warehouseID } = useParams<{ warehouseID: string }>()
 
   const fetchProducts = useCallback(
-    async (params?: ProductFetchParams) => {
-      if (!warehouseID) return
+    async (params?: ProductFetchParams & { warehouseID?: string }) => {
       setIsLoading(true)
       setError(null)
       try {
-        const res = await getProducts({ warehouseID, ...params })
+        const effectiveWarehouseID = params?.warehouseID ?? warehouseID
+        const payload = effectiveWarehouseID
+          ? { warehouseID: effectiveWarehouseID, ...params }
+          : { ...params }
+        const res = await getProducts(payload)
         if (res.success) {
           setProducts(res.products)
           setTotalProductsCount(res.total || res.products.length)

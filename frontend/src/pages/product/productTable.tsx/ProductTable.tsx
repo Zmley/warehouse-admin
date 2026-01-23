@@ -62,6 +62,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
     warehouseID: string
     warehouseCode: string
   }>()
+  const canLink = Boolean(warehouseID && warehouseCode)
 
   let body: React.ReactNode
   if (isLoading) {
@@ -91,22 +92,26 @@ const ProductTable: React.FC<ProductTableProps> = ({
               'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
           }}
         >
-          <Box
-            component={RouterLink}
-            to={`/${warehouseID}/${warehouseCode}/inventory?page=1&keyword=${p.productCode}&sortBy=updatedAt&order=desc`}
-            sx={{
-              color: '#2563eb',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              fontSize: 'inherit',
-              fontWeight: 'inherit',
-              fontFamily: 'inherit',
-              lineHeight: 'inherit',
-              '&:hover': { textDecoration: 'underline' }
-            }}
-          >
-            {p.productCode}
-          </Box>
+          {canLink ? (
+            <Box
+              component={RouterLink}
+              to={`/${warehouseID}/${warehouseCode}/inventory?page=1&keyword=${p.productCode}&sortBy=updatedAt&order=desc`}
+              sx={{
+                color: '#2563eb',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                fontSize: 'inherit',
+                fontWeight: 'inherit',
+                fontFamily: 'inherit',
+                lineHeight: 'inherit',
+                '&:hover': { textDecoration: 'underline' }
+              }}
+            >
+              {p.productCode}
+            </Box>
+          ) : (
+            p.productCode
+          )}
         </TableCell>
 
         <TableCell align='center' sx={{ border: `1px solid ${CELL_BORDER}` }}>
