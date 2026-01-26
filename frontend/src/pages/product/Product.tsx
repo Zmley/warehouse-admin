@@ -15,8 +15,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { useSearchParams, useParams } from 'react-router-dom'
 import { useProduct } from 'hooks/useProduct'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
-import { UploadProductModal } from 'components/UploadGenericModal'
-import ManualProductModal from 'components/ManualProductModal'
+import ProductUploadModal from 'components/ProductUploadModal'
 
 type Mode = 'all' | 'low'
 const ROWS_PER_PAGE = 100
@@ -26,7 +25,6 @@ const ALL_MODE_MAX_QTY = 9999
 
 const Product: React.FC = () => {
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [manualOpen, setManualOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const keywordParam = searchParams.get('keyword') || ''
   const initialPage = Math.max(
@@ -159,20 +157,7 @@ const Product: React.FC = () => {
             }}
             onClick={() => setUploadOpen(true)}
           >
-            ➕ Upload Products by Excel
-          </Button>
-          <Button
-            variant='contained'
-            size='small'
-            sx={{
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderRadius: 2,
-              px: 2
-            }}
-            onClick={() => setManualOpen(true)}
-          >
-            ➕ Manual Add/Update Product
+            ➕ Upload Products
           </Button>
         </Box>
       </Box>
@@ -410,13 +395,9 @@ const Product: React.FC = () => {
         </Typography>
       )}
 
-      <UploadProductModal
+      <ProductUploadModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
-      />
-      <ManualProductModal
-        open={manualOpen}
-        onClose={() => setManualOpen(false)}
         onSuccess={() => {
           fetchLowStockProducts({
             keyword: keyword || undefined,
@@ -425,6 +406,8 @@ const Product: React.FC = () => {
             maxQty: mode === 'low' ? qty : ALL_MODE_MAX_QTY,
             boxType: boxType?.trim() || undefined
           })
+          fetchProductCodes()
+          fetchBoxTypes()
         }}
       />
     </Box>

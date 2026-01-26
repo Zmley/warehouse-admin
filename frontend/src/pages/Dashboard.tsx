@@ -28,7 +28,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import { useNavigate } from 'react-router-dom'
 import useWarehouses from 'hooks/useWarehouse'
 import { useProduct } from 'hooks/useProduct'
-import { UploadProductModal } from 'components/UploadGenericModal'
+import ProductUploadModal from 'components/ProductUploadModal'
 import { PageValues } from 'constants/index'
 import ProductTable from 'pages/product/productTable.tsx/ProductTable'
 import BatchDeleteProductsDialog from 'pages/product/BatchDeleteProductsDialog'
@@ -398,9 +398,16 @@ const Dashboard: React.FC = () => {
         />
       </Box>
 
-      <UploadProductModal
+      <ProductUploadModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
+        onSuccess={() =>
+          fetchProducts({
+            keyword: productKeyword || undefined,
+            page: productPage + 1,
+            limit: 100
+          }).then(() => fetchProductCodes())
+        }
       />
 
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
